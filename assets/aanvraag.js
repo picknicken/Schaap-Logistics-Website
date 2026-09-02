@@ -33,6 +33,40 @@
     return 'dag';
   }
 
+  /* Bij spoed en directe spoed kiest de klant geen tijdvak. Spoed is per
+     definitie zo snel mogelijk; een keuze tussen "overdag" en "avond" hoort
+     daar niet bij. Wat hij wel weet is vanaf wanneer de zending klaarstaat, en
+     daar leiden we het tijdvak — en dus de toeslag — zelf uit af. */
+  function isSpoed() {
+    var r = CONFIG.ritten[gekozenDienst()];
+    return !!(r && r.spoed);
+  }
+
+  /* Het tijdvak dat voor deze aanvraag geldt: bij spoed afgeleid uit datum en
+     tijd, anders wat de klant zelf koos. */
+  function tijdSleutel() {
+    if (isSpoed()) {
+      return window.SL.tijdvakUit(veld('r-datum'), veld('r-tijd'));
+    }
+    return tijdSleutelUit(veld('r-tijdstip'));
+  }
+
+  function aantalStops() {
+    return window.SL.stopsUit(veld('r-stops'));
+  }
+
+  /* Zet het derde blok in de stand die bij de gekozen dienst hoort. */
+  function ververWanneer() {
+    var spoed = isSpoed();
+    document.getElementById('tijdvakVeld').hidden = spoed;
+    document.getElementById('spoedNoot').hidden = !spoed;
+    document.getElementById('labelTijd').textContent =
+      spoed ? 'Vanaf wanneer staat het klaar?' : 'Gewenste ophaaltijd';
+    document.getElementById('wanneerNoot').textContent =
+      spoed ? 'Wij bevestigen wanneer wij er kunnen zijn'
+            : 'Datum en gewenste ophaaltijd';
+  }
+
   /* ===================== keuzes overnemen van de calculator ===================== */
 
   /* De knop onder de calculator op de homepage linkt hierheen met de gemaakte
@@ -50,6 +84,11 @@
     var tijd = q.get('tijd');
     var tv   = document.getElementById('r-tijdstip');
     if (tijd && tv && CONFIG.tijden[tijd]) { tv.value = CONFIG.tijden[tijd].naam; }
+
+    var stops = q.get('stops');
+    if (stops && window.SL.stopsUit(stops) > 0) {
+      document.getElementById('r-stops').value = window.SL.stopsUit(stops);
+    }
 
     if (q.get('van'))  { document.getElementById('r-opPc').value = q.get('van'); }
     if (q.get('naar')) { document.getElementById('r-afPc').value = q.get('naar'); }
@@ -69,16 +108,25 @@
   function ververSamenvatting() {
     var dienst = gekozenDienst();
     var rit    = CONFIG.ritten[dienst];
-    var tKey   = tijdSleutelUit(veld('r-tijdstip'));
+    var tKey   = tijdSleutel();
+    var stops  = aantalStops();
     var op     = veld('r-opPc');
     var af     = veld('r-afPc');
+
+    ververWanneer();
 
     samRijen.innerHTML = '';
     samRijen.appendChild(samRij('Dienst', rit.naam));
     if (op) { samRijen.appendChild(samRij('Ophalen', op)); }
     if (af) { samRijen.appendChild(samRij('Afleveren', af)); }
+    if (stops > 0) {
+      samRijen.appendChild(samRij('Extra stops', String(stops)));
+    }
     if (veld('r-datum')) { samRijen.appendChild(samRij('Datum', veld('r-datum'))); }
-    if (veld('r-tijd'))  { samRijen.appendChild(samRij('Ophaaltijd', veld('r-tijd'))); }
+    if (veld('r-tijd')) {
+      samRijen.appendChild(samRij(
+        isSpoed() ? 'Klaar vanaf' : 'Ophaaltijd', veld('r-tijd')));
+    }
     if (CONFIG.tijden[tKey].toeslag > 0) {
       samRijen.appendChild(samRij('Tijdvak', CONFIG.tijden[tKey].naam));
     }
@@ -99,12 +147,18 @@
       return;
     }
 
-    var b = window.SL.bereken(dienst, km, tKey);
+    var b = window.SL.bereken(dienst, km, tKey, stops);
     samRijen.appendChild(samRij('Geschatte afstand', km + ' km'));
     samPrijs.textContent = euro.format(b.totaal);
     samNoot.textContent  = 'Indicatie op basis van een geschatte rijafstand van ' + km +
-                           ' km, excl. btw. De definitieve prijs wordt bevestigd na ' +
-                           'controle van de opdracht.';
+                           ' km' + (stops > 0
+                             ? ' en ' + stops + (stops === 1 ? ' extra stop' : ' extra stops')
+                             : '') +
+                           ', excl. btw. De definitieve prijs wordt bevestigd na ' +
+                           'controle van de opdracht.' +
+                           (isSpoed()
+                             ? ' Wij laten zo snel mogelijk weten hoe laat wij er kunnen zijn.'
+                             : '');
   }
 
   /* ===================== foto's bij de aanvraag ===================== */
@@ -215,9 +269,10 @@
     var rit    = CONFIG.ritten[dienst];
     var op     = veld('r-opPc');
     var af     = veld('r-afPc');
-    var tKey   = tijdSleutelUit(veld('r-tijdstip'));
+    var tKey   = tijdSleutel();
+    var stops  = aantalStops();
     var km     = rit.offerte ? null : window.SL.schatAfstand(window.SL.postcodeUit(op), window.SL.postcodeUit(af));
-    var prijs  = km === null ? null : window.SL.bereken(dienst, km, tKey).totaal;
+    var prijs  = km === null ? null : window.SL.bereken(dienst, km, tKey, stops).totaal;
 
     return {
       'Status':                   'Nieuw',
@@ -230,7 +285,7 @@
       'Afleverpostcode':          window.SL.postcodeUit(af) || '',
       'Datum':                    veld('r-datum'),
       'Ophaaltijd':               veld('r-tijd'),
-      'Extra stops':              veld('r-stops'),
+      'Extra stops':              stops ? String(stops) : '',
       'Omschrijving':             veld('r-omschrijving'),
       'Aantal colli':             veld('r-colli'),
       'Gewicht':                  veld('r-gewicht'),

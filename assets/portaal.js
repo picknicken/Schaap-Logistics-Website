@@ -328,6 +328,44 @@
            encodeURIComponent(adres);
   }
 
+  /* De hele route van ophalen naar bezorgen. Hiermee lees je de kortste
+     afstand af en tik je hem hieronder in. Automatisch overnemen kan niet:
+     daar is een betaalde sleutel bij Google voor nodig, en die hoort niet in
+     een pagina te staan die iedereen kan openen. */
+  function routeVan(van, naar) {
+    return 'https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=' +
+           encodeURIComponent(van) + '&destination=' + encodeURIComponent(naar);
+  }
+
+  /* Een genummerd invoerveld met een label erboven. Kwam op drie plekken voor
+     en zag er telkens net anders uit; nu niet meer. */
+  function getalVeld(naam, waarde) {
+    var veld = maak('label', 'veld');
+    veld.style.margin = '0';
+    veld.appendChild(maak('span', '', naam));
+    var invoer = document.createElement('input');
+    invoer.type = 'number';
+    invoer.inputMode = 'decimal';
+    invoer.min = '0';
+    invoer.step = '1';
+    invoer.value = waarde || '';
+    invoer.placeholder = '0';
+    veld.appendChild(invoer);
+    veld.invoer = invoer;
+    return veld;
+  }
+
+  /* Een tekstlink onder een invoerveld, voor iets wat je opzoekt en daarna
+     zelf invult. */
+  function afstandLink(van, naar) {
+    if (!van || !naar) { return null; }
+    var a = maak('a', 'veldlink', 'Kortste route opzoeken in Maps');
+    a.href = routeVan(van, naar);
+    a.target = '_blank';
+    a.rel = 'noopener';
+    return a;
+  }
+
   function tekenLijst() {
     var lijst = el('lijst');
     lijst.innerHTML = '';
@@ -435,33 +473,32 @@
     }
 
     if (rit.status !== 'Geannuleerd') {
-      var kmRij = maak('div', 'velrij velrij--knop');
-      var kv = maak('label', 'veld');
-      kv.style.margin = '0';
-      kv.appendChild(maak('span', '', 'Gereden km'));
-      var ki = document.createElement('input');
-      ki.type = 'number';
-      ki.inputMode = 'decimal';
-      ki.min = '0';
-      ki.step = '1';
-      ki.value = rit.km || '';
-      ki.placeholder = '0';
-      kv.appendChild(ki);
-      kmRij.appendChild(kv);
+      var cijferRij = maak('div', 'velrij');
+      var kmVeldRit = getalVeld('Gereden km', rit.km);
+      var stopVeldRit = getalVeld('Extra stops', rit.stops);
+      cijferRij.appendChild(kmVeldRit);
+      cijferRij.appendChild(stopVeldRit);
+      lijf.appendChild(cijferRij);
 
-      var kmKnop = maak('button', 'knop knop--rand', 'Kilometers opslaan');
+      var ritLink = afstandLink(rit.ophaal, rit.aflever);
+      if (ritLink) { lijf.appendChild(ritLink); }
+
+      var kmKnop = maak('button', 'knop knop--rand', 'Afstand en stops opslaan');
       kmKnop.type = 'button';
       kmKnop.addEventListener('click', function () {
         bezig(kmKnop, 'Opslaan…', function (klaar) {
-          verstuur('ritkm', { id: rit.id, km: ki.value }).then(function (data) {
+          verstuur('ritkm', {
+            id: rit.id,
+            km: kmVeldRit.invoer.value,
+            stops: stopVeldRit.invoer.value
+          }).then(function (data) {
             ververs(data.rit);
             meldApp('');
             klaar(true);
           }).catch(function (fout) { meldApp(fout.message); klaar(false); });
         });
       });
-      kmRij.appendChild(kmKnop);
-      lijf.appendChild(kmRij);
+      lijf.appendChild(kmKnop);
     }
 
     /* Een rit zonder klant kun je rijden, maar niet factureren. Dat moet je
@@ -772,20 +809,21 @@
     datumVeld.appendChild(invoer);
     rij.appendChild(datumVeld);
 
-    var kmVeld = maak('label', 'veld');
-    kmVeld.style.margin = '0';
-    kmVeld.appendChild(maak('span', '', 'Kilometers'));
-    var kmInvoer = document.createElement('input');
-    kmInvoer.type = 'number';
-    kmInvoer.inputMode = 'decimal';
-    kmInvoer.min = '0';
-    kmInvoer.step = '1';
-    kmInvoer.value = o.km || '';
-    kmInvoer.placeholder = '0';
-    kmVeld.appendChild(kmInvoer);
+    var kmVeld = getalVeld('Kilometers', o.km);
+    var kmInvoer = kmVeld.invoer;
     rij.appendChild(kmVeld);
 
     lijf.appendChild(rij);
+
+    var stopRij = maak('div', 'velrij');
+    var stopVeld = getalVeld('Extra stops', o.stops);
+    stopRij.appendChild(stopVeld);
+    stopRij.appendChild(maak('div', 'terzijde',
+      '€ 25 per extra adres onderweg, zoals de klant het op de site zag.'));
+    lijf.appendChild(stopRij);
+
+    var opdrachtLink = afstandLink(o.ophaal, o.aflever);
+    if (opdrachtLink) { lijf.appendChild(opdrachtLink); }
 
     if (!o.km) {
       var geenKm = maak('div', 'bewijs bewijs--mist');
@@ -801,7 +839,7 @@
     var plan = maak('button', 'knop knop--blauw', 'Inplannen');
     plan.type = 'button';
     plan.addEventListener('click', function () {
-      planIn(o, invoer.value, kmInvoer.value, plan);
+      planIn(o, invoer.value, kmInvoer.value, stopVeld.invoer.value, plan);
     });
     lijf.appendChild(plan);
 
@@ -866,13 +904,13 @@
     lijf.appendChild(knop);
   }
 
-  function planIn(o, datumWaarde, kmWaarde, knop) {
+  function planIn(o, datumWaarde, kmWaarde, stopWaarde, knop) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(datumWaarde || '')) {
       meldApp('Kies eerst een datum om op te rijden.');
       return;
     }
     bezig(knop, 'Inplannen…', function (klaar) {
-      verstuur('planrit', { id: o.id, datum: datumWaarde, km: kmWaarde })
+      verstuur('planrit', { id: o.id, datum: datumWaarde, km: kmWaarde, stops: stopWaarde })
         .then(function (data) {
           opdrachten = opdrachten.filter(function (x) { return x.id !== o.id; });
           if (data.rit && data.rit.datum === dag) { ritten = ritten.concat([data.rit]); }

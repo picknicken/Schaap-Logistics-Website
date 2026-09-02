@@ -17,8 +17,8 @@
     btw: 0.21,
     ritten: {
       standaard:     { naam: 'Standaard transport',    start: 50,  km: 1.50 },
-      spoed:         { naam: 'Spoedtransport',         start: 75,  km: 2.00 },
-      direct:        { naam: 'Directe spoed',          start: 100, km: 2.50 },
+      spoed:         { naam: 'Spoedtransport',         start: 75,  km: 2.00, spoed: true },
+      direct:        { naam: 'Directe spoed',          start: 100, km: 2.50, spoed: true },
       internationaal:{ naam: 'Internationaal transport', offerte: true }
     },
     tijden: {
@@ -26,6 +26,9 @@
       avond: { naam: 'Avondrit (18:00-23:00)', toeslag: 15 },
       nacht: { naam: 'Nacht- of weekendrit',   toeslag: 35 }
     },
+    /* Toeslag per extra adres onderweg. Een stop is omrijden plus laden en
+       lossen; dat zit niet in het kilometertarief. */
+    stoptoeslag: 25,
     /* Omrekenfactor van hemelsbrede afstand naar werkelijke rijafstand. */
     wegfactor: 1.25,
 
@@ -106,18 +109,45 @@
   /* ===================== prijsberekening ===================== */
 
   /* Ritprijs = starttarief + kilometers. Ligt die onder het minimumtarief,
-     dan geldt het minimum. Toeslagen komen daar bovenop. */
-  function bereken(soort, km, tijd) {
+     dan geldt het minimum. Toeslagen — tijdvak en extra stops — komen daar
+     bovenop, net als in de factuurberekening in Airtable. */
+  function bereken(soort, km, tijd, stops) {
     var r = CONFIG.ritten[soort];
     if (!r || r.offerte) { return null; }
     var t = CONFIG.tijden[tijd] || CONFIG.tijden.dag;
+    var n = stopsUit(stops);
     var kmSom = km * r.km;
+    var stopSom = n * CONFIG.stoptoeslag;
     var ritprijs = r.start + kmSom;
     var correctie = Math.max(0, CONFIG.minimum - ritprijs);
     return {
       tarief: r, tijdstip: t, kmSom: kmSom, correctie: correctie,
-      totaal: ritprijs + correctie + t.toeslag
+      stops: n, stopSom: stopSom,
+      totaal: ritprijs + correctie + t.toeslag + stopSom
     };
+  }
+
+  /* Wat er als aantal stops binnenkomt is soms een getal, soms een leeg veld
+     en soms iets als "2 adressen". Alleen een heel getal telt mee. */
+  function stopsUit(w) {
+    var n = parseInt(String(w === undefined || w === null ? '' : w).trim(), 10);
+    if (isNaN(n) || n < 0) { return 0; }
+    return Math.min(n, 20);
+  }
+
+  /* Bij spoed kiest de klant geen tijdvak: spoed is per definitie zo snel
+     mogelijk. Het tijdvak volgt dan uit het moment waarop de zending
+     klaarstaat, zodat een avond- of nachtrit toch zijn toeslag krijgt.
+     Zaterdag en zondag tellen als weekend, ongeacht het uur. */
+  function tijdvakUit(datum, tijd) {
+    var d = /^\d{4}-\d{2}-\d{2}$/.test(datum || '') ? new Date(datum + 'T12:00:00') : null;
+    if (d && (d.getDay() === 0 || d.getDay() === 6)) { return 'nacht'; }
+    var m = /^(\d{1,2}):(\d{2})$/.exec(String(tijd || ''));
+    if (!m) { return 'dag'; }
+    var uur = Number(m[1]);
+    if (uur >= 23 || uur < 6) { return 'nacht'; }
+    if (uur >= 18) { return 'avond'; }
+    return 'dag';
   }
 
   /* ===================== e-mail ===================== */
@@ -143,6 +173,8 @@
     regioVan: regioVan,
     schatAfstand: schatAfstand,
     bereken: bereken,
+    stopsUit: stopsUit,
+    tijdvakUit: tijdvakUit,
     verstuurViaMail: verstuurViaMail
   };
 

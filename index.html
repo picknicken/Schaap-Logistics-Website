@@ -37,6 +37,7 @@
         <li><a href="aanvragen/">Rit aanvragen</a></li>
         <li><a href="werkwijze/">Werkwijze</a></li>
         <li><a href="contact/">Contact</a></li>
+        <li><a href="klant/">Mijn zendingen</a></li>
       </ul>
 
       <!-- PLACEHOLDER telefoonnummer -->
@@ -127,6 +128,14 @@
           <button type="button" id="btnNacht" aria-pressed="false">Nacht/weekend<small>+ &euro;35</small></button>
         </div>
 
+        <span class="calc__label" id="stopLabel">Extra stops onderweg</span>
+        <div class="seg seg--4" role="group" aria-labelledby="stopLabel">
+          <button type="button" id="btnStop0" aria-pressed="true">Geen<small>&nbsp;</small></button>
+          <button type="button" id="btnStop1" aria-pressed="false">1 stop<small>+ &euro;25</small></button>
+          <button type="button" id="btnStop2" aria-pressed="false">2 stops<small>+ &euro;50</small></button>
+          <button type="button" id="btnStop3" aria-pressed="false">3 stops<small>+ &euro;75</small></button>
+        </div>
+
         <div class="calc__rows" id="calcRows"></div>
 
         <div class="calc__total">
@@ -139,8 +148,8 @@
 
         <p class="calc__note" id="kmHint">
           Indicatieve prijs. De definitieve prijs wordt bevestigd na controle van de opdracht.
-          Wachttijd, extra stops en werkelijke tol- of parkeerkosten komen er alleen bij als
-          ze van toepassing zijn.
+          Wachttijd en werkelijke tol- of parkeerkosten komen er alleen bij als ze van
+          toepassing zijn.
         </p>
       </div>
     </div>
@@ -266,6 +275,7 @@
           <li><a href="mailto:info@schaaplogistics.nl">info@schaaplogistics.nl</a></li>
           <li>KvK-nummer: <span data-placeholder>nog invullen</span></li>
           <li>Btw-nummer: <span data-placeholder>nog invullen</span></li>
+          <li><a href="klant/">Mijn zendingen (inloggen)</a></li>
         </ul>
       </div>
     </div>

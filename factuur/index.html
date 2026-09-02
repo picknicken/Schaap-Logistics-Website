@@ -289,6 +289,8 @@ tbody tr.leeg td{color:var(--zacht)}
   var start     = getal('start', 50);
   var toeslag   = getal('toeslag', 0);
   var toeslagOms= lees('toeslagoms', '');
+  var stops     = Math.round(getal('stops', 0));
+  var stoptarief= getal('stoptarief', 25);
   var van       = lees('van', '3011 AA 12, Rotterdam');
   var naar      = lees('naar', '5611 AB 5, Eindhoven');
 
@@ -319,11 +321,19 @@ tbody tr.leeg td{color:var(--zacht)}
   var termijn = lees('termijn', '14');
   zet('v-termijn', termijn + (termijn === '1' ? ' dag' : ' dagen'));
 
-  /* ---------- de regels, in dezelfde volgorde als de mal ---------- */
-  var regels = [];
+  /* ---------- de regels, in dezelfde volgorde als de mal ----------
+
+     De ritprijs is starttarief plus kilometers. Ligt die onder het
+     minimumtarief, dan geldt het minimum — en pas daarna komen de stops en de
+     toeslag erbij. Precies zoals de calculator op de site het voorrekent en
+     zoals Airtable het in Automatisch totaal excl. BTW berekent; anders zou de
+     klant een ander bedrag op de factuur zien dan hij te horen kreeg.
+
+     De regelnummers zijn niet vast maar lopen op met tien, zodat er een regel
+     bij kan zonder dat de nummering gaten krijgt. */
+  var ritregels = [];
   if (km > 0) {
-    regels.push({
-      nr: 10,
+    ritregels.push({
       oms: 'Transport ' + van + ' → ' + naar,
       aantal: km.toLocaleString('nl-NL') + ' km',
       prijs: kmtarief,
@@ -331,11 +341,39 @@ tbody tr.leeg td{color:var(--zacht)}
     });
   }
   if (start > 0) {
-    regels.push({ nr: 20, oms: 'Starttarief', aantal: '1 rit', prijs: start, bedrag: start });
+    ritregels.push({ oms: 'Starttarief', aantal: '1 rit', prijs: start, bedrag: start });
+  }
+
+  /* Het minimumtarief van EUR 75 per opdracht. Anders dan de andere bedragen
+     geldt hier altijd een standaard: een factuur zonder minimum in de
+     adresregel moet er nog steeds mee rekenen. */
+  var minimumRuw = q.get('minimum');
+  var minimum = (minimumRuw === null || minimumRuw === '')
+    ? 75
+    : (parseFloat(String(minimumRuw).replace(',', '.')) || 0);
+
+  var ritprijs = ritregels.reduce(function (t, r) { return t + r.bedrag; }, 0);
+  if (ritregels.length && ritprijs < minimum) {
+    var aanvulling = minimum - ritprijs;
+    ritregels.push({
+      oms: 'Aanvulling tot minimumtarief per opdracht',
+      aantal: '1 stuk',
+      prijs: aanvulling,
+      bedrag: aanvulling
+    });
+  }
+
+  var regels = ritregels;
+  if (stops > 0 && stoptarief > 0) {
+    regels.push({
+      oms: 'Extra stop onderweg',
+      aantal: stops + (stops === 1 ? ' stop' : ' stops'),
+      prijs: stoptarief,
+      bedrag: stops * stoptarief
+    });
   }
   if (toeslag > 0) {
     regels.push({
-      nr: 30,
       oms: toeslagOms || 'Toeslag',
       aantal: '1 stuk',
       prijs: toeslag,
@@ -355,11 +393,11 @@ tbody tr.leeg td{color:var(--zacht)}
   }
 
   var subtotaal = 0;
-  regels.forEach(function (r) {
+  regels.forEach(function (r, i) {
     subtotaal += r.bedrag;
     var tr = document.createElement('tr');
     [
-      [String(r.nr), ''],
+      [String((i + 1) * 10), ''],
       [r.oms, ''],
       [r.aantal, 'num'],
       [euro.format(r.prijs), 'num'],
@@ -374,32 +412,6 @@ tbody tr.leeg td{color:var(--zacht)}
     lijf.appendChild(tr);
   });
 
-  /* Het minimumtarief van EUR 75 per opdracht, net als op de website. Anders dan
-     de andere bedragen geldt hier altijd een standaard: een factuur zonder
-     minimum in de adresregel moet er nog steeds mee rekenen. */
-  var minimumRuw = q.get('minimum');
-  var minimum = (minimumRuw === null || minimumRuw === '')
-    ? 75
-    : (parseFloat(String(minimumRuw).replace(',', '.')) || 0);
-  if (regels.length && subtotaal < minimum) {
-    var aanvulling = minimum - subtotaal;
-    subtotaal = minimum;
-    var tr = document.createElement('tr');
-    [
-      ['40', ''],
-      ['Aanvulling tot minimumtarief per opdracht', ''],
-      ['1 stuk', 'num'],
-      [euro.format(aanvulling), 'num'],
-      ['21%', 'num'],
-      [euro.format(aanvulling), 'num']
-    ].forEach(function (cel) {
-      var td = document.createElement('td');
-      td.textContent = cel[0];
-      if (cel[1]) { td.className = cel[1]; }
-      tr.appendChild(td);
-    });
-    lijf.appendChild(tr);
-  }
 
   var btw = Math.round(subtotaal * BTW * 100) / 100;
   zet('v-subtotaal', euro.format(subtotaal));

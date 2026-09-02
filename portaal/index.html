@@ -224,6 +224,10 @@ input{font:inherit}
 /* Een terzijde in de kaart zelf: al gedaan, geen actie nodig. Bewust
    geen gekleurd vak, anders vecht het met de waarschuwingen. */
 .terzijde{font-size:.85rem;color:var(--muted)}
+/* Iets wat je opzoekt en daarna zelf invult. Bewust een link en geen knop:
+   er gebeurt niets aan de rit, je gaat even ergens anders kijken. */
+.veldlink{font-size:.85rem;color:var(--onderweg);text-decoration:none;
+  border-bottom:1px solid currentColor;justify-self:start}
 .kaart__lijf{border-top:1px solid var(--line);padding:14px 16px;display:grid;gap:14px}
 
 .prijs{

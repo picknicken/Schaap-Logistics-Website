@@ -37,6 +37,7 @@ const R = {
   ophaal:     'Ophaaladres',
   aflever:    'Afleveradres',
   km:         'Kilometers',
+  stops:      'Extra stops',
   klant:      'Klantnaam',
   telefoon:   'Klant telefoon',
   opmerking:  'Opmerkingen',
@@ -60,6 +61,7 @@ const O = {
   opmerking:  'Opmerkingen',
   type:       'Type rit',
   km:         'Kilometers',
+  stops:      'Extra stops',
   ritten:     'Ritten'
 };
 
@@ -350,6 +352,12 @@ async function planRit(env, body, origin) {
   const km = kilometers(body.km !== undefined && body.km !== '' ? body.km : f[O.km]);
   if (km !== null) { velden[R.km] = km; }
 
+  /* Extra stops op dezelfde manier: elke stop is een vast bedrag op de
+     factuur, dus die moet met de rit meereizen en niet in de aanvraag
+     blijven hangen. */
+  const stops = heelGetal(body.stops !== undefined && body.stops !== '' ? body.stops : f[O.stops]);
+  if (stops !== null) { velden[R.stops] = stops; }
+
   const rit = naarRit(await maak(env, env.AIRTABLE_RITTEN, velden));
 
   /* De opdracht staat nu ingepland; dat hoort ook in de opdrachtstatus. */
@@ -494,7 +502,15 @@ async function zetRitKm(env, body, origin) {
   if (km === null) {
     return antwoord(400, { fout: 'Vul een aantal kilometers in' }, origin, true);
   }
-  const rit = naarRit(await patch(env, env.AIRTABLE_RITTEN, id, { [R.km]: km }));
+  const velden = { [R.km]: km };
+
+  /* De stops gaan mee met dezelfde knop. Ze staan naast de kilometers op het
+     scherm en horen bij hetzelfde antwoord op dezelfde vraag: wat is er
+     werkelijk gereden? Laat je het veld leeg, dan blijft het zoals het was. */
+  const stops = heelGetal(body.stops);
+  if (stops !== null) { velden[R.stops] = stops; }
+
+  const rit = naarRit(await patch(env, env.AIRTABLE_RITTEN, id, velden));
   return antwoord(200, { ok: true, rit }, origin, true);
 }
 
@@ -738,6 +754,15 @@ function kilometers(w) {
   return Math.round(km * 10) / 10;
 }
 
+/* Een aantal dat je telt, geen bedrag: extra stops. Leeg blijft leeg, zodat
+   "niets ingevuld" iets anders is dan "nul stops". */
+function heelGetal(w) {
+  if (w === undefined || w === null || w === '') { return null; }
+  const n = Number(String(w).trim());
+  if (!isFinite(n) || n < 0 || n > 50) { return null; }
+  return Math.round(n);
+}
+
 function recordId(w) {
   return /^rec[A-Za-z0-9]{14}$/.test(String(w || '')) ? String(w) : null;
 }
@@ -765,6 +790,7 @@ function naarRit(record) {
     ophaal:     f[R.ophaal] || '',
     aflever:    f[R.aflever] || '',
     km:         f[R.km] || 0,
+    stops:      f[R.stops] || 0,
     klant:      eerste(f[R.klant]),
     telefoon:   eerste(f[R.telefoon]),
     opmerking:  f[R.opmerking] || '',
@@ -796,6 +822,7 @@ function naarOpdracht(record) {
     opmerking:  f[O.opmerking] || '',
     type:       keuze(f[O.type]),
     km:         f[O.km] || 0,
+    stops:      f[O.stops] || 0,
     ritten:     Array.isArray(f[O.ritten]) ? f[O.ritten].length : 0
   };
 }

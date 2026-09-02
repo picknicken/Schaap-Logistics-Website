@@ -29,9 +29,16 @@
     avond: document.getElementById('btnAvond'),
     nacht: document.getElementById('btnNacht')
   };
+  var stopKnop = {
+    0: document.getElementById('btnStop0'),
+    1: document.getElementById('btnStop1'),
+    2: document.getElementById('btnStop2'),
+    3: document.getElementById('btnStop3')
+  };
 
   var soort = 'standaard';
   var tijd  = 'dag';
+  var stops = 0;
 
   /* De knop wijst naar het aanvraagformulier op een eigen pagina. Het adres
      staat in de HTML, zodat dit bestand niet hoeft te weten waar die pagina
@@ -60,7 +67,7 @@
      prijsindicatie altijd hoort bij wat er daadwerkelijk in de aanvraag staat. */
   function ververCta() {
     if (!ctaBasis) { return; }
-    var q = ['dienst=' + soort, 'tijd=' + tijd];
+    var q = ['dienst=' + soort, 'tijd=' + tijd, 'stops=' + stops];
     if (pcVan.value.trim())  { q.push('van='  + encodeURIComponent(pcVan.value.trim())); }
     if (pcNaar.value.trim()) { q.push('naar=' + encodeURIComponent(pcNaar.value.trim())); }
     calcCta.href = ctaBasis + '?' + q.join('&');
@@ -68,7 +75,7 @@
 
   function render() {
     var km = huidigeKm();
-    var b  = window.SL.bereken(soort, km, tijd);
+    var b  = window.SL.bereken(soort, km, tijd, stops);
 
     rowsBox.innerHTML = '';
     rowsBox.appendChild(regel('Starttarief', b.tarief.start));
@@ -79,6 +86,11 @@
     if (b.tijdstip.toeslag > 0) {
       rowsBox.appendChild(regel(b.tijdstip.naam, b.tijdstip.toeslag, 'calc__row--toeslag'));
     }
+    if (b.stopSom > 0) {
+      rowsBox.appendChild(regel(
+        b.stops + (b.stops === 1 ? ' extra stop' : ' extra stops') +
+        ' × ' + euro.format(CONFIG.stoptoeslag), b.stopSom, 'calc__row--toeslag'));
+    }
 
     rowTotal.textContent = euro.format(b.totaal);
     rowVat.textContent   = euro.format(b.totaal * (1 + CONFIG.btw)) + ' incl. 21% btw';
@@ -86,6 +98,9 @@
     var k;
     for (k in ritKnop)  { ritKnop[k].setAttribute('aria-pressed',  k === soort ? 'true' : 'false'); }
     for (k in tijdKnop) { tijdKnop[k].setAttribute('aria-pressed', k === tijd  ? 'true' : 'false'); }
+    for (k in stopKnop) {
+      stopKnop[k].setAttribute('aria-pressed', Number(k) === stops ? 'true' : 'false');
+    }
 
     ververCta();
   }
@@ -142,6 +157,9 @@
   });
   Object.keys(tijdKnop).forEach(function (k) {
     tijdKnop[k].addEventListener('click', function () { tijd = k; render(); });
+  });
+  Object.keys(stopKnop).forEach(function (k) {
+    stopKnop[k].addEventListener('click', function () { stops = Number(k); render(); });
   });
 
   render();

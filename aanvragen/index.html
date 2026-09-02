@@ -37,6 +37,7 @@
         <li><a href="../aanvragen/" aria-current="page">Rit aanvragen</a></li>
         <li><a href="../werkwijze/">Werkwijze</a></li>
         <li><a href="../contact/">Contact</a></li>
+        <li><a href="../klant/">Mijn zendingen</a></li>
       </ul>
 
       <!-- PLACEHOLDER telefoonnummer -->
@@ -105,12 +106,18 @@
               <input type="text" id="r-afPc" name="aflever" placeholder="5611 AB 5, Eindhoven" required>
             </div>
           </div>
+          <div class="field" style="margin-bottom:0">
+            <label for="r-stops">Extra stops onderweg</label>
+            <input type="number" id="r-stops" name="stops" min="0" max="10" step="1" placeholder="0"
+                   inputmode="numeric">
+            <small class="veldnoot">Adressen tussen ophalen en bezorgen. &euro;&nbsp;25 per extra stop.</small>
+          </div>
         </div>
 
         <div class="stap">
           <div class="stap__kop">
             <span class="stap__num">3</span>
-            <div><h3>Wanneer?</h3><p>Datum en gewenste ophaaltijd</p></div>
+            <div><h3>Wanneer?</h3><p id="wanneerNoot">Datum en gewenste ophaaltijd</p></div>
           </div>
           <div class="field-row">
             <div class="field">
@@ -118,11 +125,17 @@
               <input type="date" id="r-datum" name="datum">
             </div>
             <div class="field">
-              <label for="r-tijd">Gewenste ophaaltijd</label>
+              <label for="r-tijd" id="labelTijd">Gewenste ophaaltijd</label>
               <input type="time" id="r-tijd" name="tijd">
             </div>
           </div>
-          <div class="field" style="margin-bottom:0">
+          <p class="veldnoot" id="spoedNoot" hidden style="margin-top:0;margin-bottom:0">
+            Bij spoed kiest u geen tijdvak: wij komen zo snel mogelijk. Zeg hierboven vanaf
+            wanneer de zending klaarstaat, dan laten wij weten hoe laat wij er kunnen zijn.
+            Staat het klaar in de avond, &rsquo;s nachts of in het weekend, dan geldt de
+            bijbehorende toeslag.
+          </p>
+          <div class="field" id="tijdvakVeld" style="margin-bottom:0">
             <label for="r-tijdstip">Tijdvak</label>
             <select id="r-tijdstip" name="tijdstip">
               <option value="Overdag">Overdag — geen toeslag</option>
@@ -155,11 +168,6 @@
             <label for="r-afmetingen">Afmetingen</label>
             <input type="text" id="r-afmetingen" name="afmetingen" placeholder="pallet 80 x 120 x 90 cm">
           </div>
-          <div class="field">
-            <label for="r-stops">Extra stops onderweg</label>
-            <input type="text" id="r-stops" name="stops" placeholder="geen">
-          </div>
-
           <div class="field" style="margin-bottom:0">
             <span class="field__label">Foto's van de zending <span style="font-weight:400;color:var(--muted)">— optioneel</span></span>
             <label class="upload" for="r-fotos">
@@ -276,6 +284,7 @@
           <li><a href="mailto:info@schaaplogistics.nl">info@schaaplogistics.nl</a></li>
           <li>KvK-nummer: <span data-placeholder>nog invullen</span></li>
           <li>Btw-nummer: <span data-placeholder>nog invullen</span></li>
+          <li><a href="../klant/">Mijn zendingen (inloggen)</a></li>
         </ul>
       </div>
     </div>
