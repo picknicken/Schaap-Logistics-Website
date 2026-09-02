@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Factuur — Schaap Logistics</title>
+<meta name="description" content="Factuur van Schaap Logistics.">
+<meta name="theme-color" content="#0b1526">
+<!-- Deze pagina hoort nooit in Google: hij toont klantgegevens uit de URL. -->
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="../assets/favicon.png" type="image/png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* =========================================================================
+   Factuur van Schaap Logistics, opgemaakt naar de Word-mal.
+   De gegevens komen uit de adresregel van de browser; zie het veld
+   Factuurlink in de tabel Facturen. Zonder gegevens toont de pagina een
+   voorbeeldfactuur, zodat je altijd ziet hoe hij eruitziet.
+   ========================================================================= */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --inkt:#0b1526;
+  --tekst:#2f3b52;
+  --zacht:#6f7c94;
+  --lijn:#d7dee9;
+  --lijn-sterk:#0b1526;
+  --vlak:#f4f6fa;
+  --papier:#ffffff;
+}
+
+body{
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:#e9edf3;color:var(--tekst);
+  font-size:13px;line-height:1.55;-webkit-font-smoothing:antialiased;
+  padding:24px 16px 64px;
+}
+
+/* ---------- balk met bediening, verdwijnt bij printen ---------- */
+.balk{
+  max-width:820px;margin:0 auto 20px;
+  background:var(--inkt);color:#c9d6ea;border-radius:10px;
+  padding:14px 20px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;
+  font-size:12.5px;
+}
+.balk p{flex:1;min-width:240px}
+.balk b{color:#fff}
+.balk button{
+  font:inherit;font-weight:600;cursor:pointer;
+  background:#ffb020;color:#22160a;border:0;border-radius:7px;padding:9px 18px;
+}
+.balk button:hover{background:#ffc04d}
+.balk button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+
+/* ---------- het vel ---------- */
+.vel{
+  max-width:820px;margin:0 auto;background:var(--papier);
+  padding:44px 48px 40px;border-radius:4px;
+  box-shadow:0 2px 4px rgba(11,21,38,.06),0 18px 44px rgba(11,21,38,.13);
+}
+
+.kop{display:flex;justify-content:space-between;align-items:flex-start;gap:32px;margin-bottom:34px}
+.kop h1{font-size:2.1rem;font-weight:700;letter-spacing:-.02em;color:var(--inkt);line-height:1}
+.kop__logo{height:62px;width:auto;display:block}
+.afzender{text-align:right;font-size:11.5px;color:var(--zacht);line-height:1.6;margin-top:10px}
+.afzender b{display:block;color:var(--inkt);font-size:13px;font-weight:600;margin-bottom:2px}
+
+/* ---------- meta in twee kolommen ---------- */
+.meta{
+  display:grid;grid-template-columns:1fr 1fr;gap:0 44px;
+  border-top:1px solid var(--lijn);border-bottom:1px solid var(--lijn);
+  padding:16px 0;margin-bottom:26px;
+}
+.meta dl{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:12px}
+.meta dt{color:var(--zacht)}
+.meta dd{color:var(--inkt);font-weight:500;font-variant-numeric:tabular-nums}
+
+/* ---------- klant en opdracht ---------- */
+.blokken{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-bottom:30px}
+.blok h2{
+  font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--zacht);margin-bottom:7px;
+}
+.blok p{color:var(--inkt);line-height:1.6}
+.blok .naam{font-weight:600}
+
+/* ---------- regels ---------- */
+table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:4px}
+thead th{
+  font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--zacht);text-align:left;padding:0 8px 7px;
+  border-bottom:1.5px solid var(--lijn-sterk);
+}
+tbody td{padding:9px 8px;border-bottom:1px solid var(--lijn);color:var(--inkt)}
+th:first-child,td:first-child{padding-left:0;width:44px}
+th:last-child,td:last-child{padding-right:0;text-align:right}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tbody tr.leeg td{color:var(--zacht)}
+
+/* ---------- totalen ---------- */
+.totalen{display:flex;justify-content:flex-end;margin:18px 0 30px}
+.totalen dl{
+  display:grid;grid-template-columns:auto 128px;gap:7px 28px;
+  font-size:12.5px;min-width:320px;
+}
+.totalen dt{color:var(--tekst)}
+.totalen dd{text-align:right;font-variant-numeric:tabular-nums;color:var(--inkt);font-weight:500}
+.totalen .som dt,.totalen .som dd{
+  font-weight:700;font-size:15px;color:var(--inkt);
+  border-top:1.5px solid var(--lijn-sterk);padding-top:9px;margin-top:3px;
+}
+
+/* ---------- betaling en voet ---------- */
+.betaling{
+  background:var(--vlak);border-radius:8px;padding:16px 20px;margin-bottom:22px;font-size:12px;
+}
+.betaling p + p{margin-top:8px}
+.betaling b{color:var(--inkt)}
+.betaalregels{display:flex;gap:26px;flex-wrap:wrap;margin-top:4px;font-variant-numeric:tabular-nums}
+.voet{
+  border-top:1px solid var(--lijn);padding-top:14px;
+  font-size:11px;color:var(--zacht);text-align:center;line-height:1.7;
+}
+
+@media (max-width:680px){
+  body{padding:14px 10px 48px}
+  .vel{padding:28px 22px}
+  .kop{flex-direction:column;gap:18px}
+  .afzender{text-align:left}
+  .meta,.blokken{grid-template-columns:1fr;gap:18px}
+  .totalen dl{min-width:0;width:100%}
+}
+
+@media print{
+  @page{size:A4;margin:14mm}
+  body{background:#fff;padding:0;font-size:11pt}
+  .balk{display:none}
+  .vel{max-width:none;box-shadow:none;border-radius:0;padding:0}
+  .betaling{background:none;border:1px solid var(--lijn);padding:12px 14px}
+}
+</style>
+</head>
+<body>
+
+<div class="balk">
+  <p>
+    <b>Zo maak je hier een PDF van:</b> druk op de knop hiernaast en kies bij
+    bestemming <em>Bewaren als PDF</em>. Sleep dat bestand daarna in het veld PDF
+    bij de factuur in Airtable.
+  </p>
+  <button type="button" id="printen">Opslaan als PDF</button>
+</div>
+
+<main class="vel">
+
+  <header class="kop">
+    <div>
+      <h1>Factuur</h1>
+      <div class="afzender" style="text-align:left;margin-top:14px">
+        <b>Schaap Logistics</b>
+        <!-- PLACEHOLDER bedrijfsgegevens -->
+        <span id="afzender">[Adres] &middot; [Postcode + Plaats]<br>
+        KvK [nummer] &middot; Btw [nummer]<br>
+        [Telefoon] &middot; [E-mail]</span>
+      </div>
+    </div>
+    <img class="kop__logo" src="../assets/logo-volledig.png" alt="Schaap Logistics" width="720" height="510">
+  </header>
+
+  <section class="meta">
+    <dl>
+      <dt>Factuurnr.</dt><dd id="v-nr">—</dd>
+      <dt>Adres</dt><dd id="v-eigenadres">[Adres]</dd>
+      <dt>Woonplaats</dt><dd id="v-eigenplaats">[Postcode + Plaats]</dd>
+      <dt>Telefoon</dt><dd id="v-eigentel">[Telefoon]</dd>
+      <dt>Datum</dt><dd id="v-datum">—</dd>
+    </dl>
+    <dl>
+      <dt>Debiteur</dt><dd id="v-debiteur">—</dd>
+      <dt>Uw btw-nr.</dt><dd id="v-klantbtw">—</dd>
+      <dt>Bladnr.</dt><dd>1 / 1</dd>
+      <dt>Uw referentie</dt><dd id="v-referentie">—</dd>
+      <dt>Ritdatum</dt><dd id="v-ritdatum">—</dd>
+      <dt>Opdracht</dt><dd id="v-opdracht">—</dd>
+    </dl>
+  </section>
+
+  <section class="blokken">
+    <div class="blok">
+      <h2>Klant</h2>
+      <p class="naam" id="v-klant">—</p>
+      <p id="v-klantadres"></p>
+      <p id="v-klantplaats"></p>
+    </div>
+    <div class="blok">
+      <h2>Opdracht</h2>
+      <p id="v-route">—</p>
+      <p id="v-omschrijving"></p>
+      <p id="v-refregel"></p>
+    </div>
+  </section>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Regel</th>
+        <th>Omschrijving</th>
+        <th class="num">Aantal</th>
+        <th class="num">Prijs</th>
+        <th class="num">Btw</th>
+        <th class="num">Nettobedrag</th>
+      </tr>
+    </thead>
+    <tbody id="regels"></tbody>
+  </table>
+
+  <div class="totalen">
+    <dl>
+      <dt>Totaal goederen / diensten</dt><dd id="v-subtotaal">&euro; 0,00</dd>
+      <dt>Af te dragen btw 21%</dt><dd id="v-btw">&euro; 0,00</dd>
+      <div class="som" style="display:contents">
+        <dt>Totaal te betalen</dt><dd id="v-totaal">&euro; 0,00</dd>
+      </div>
+    </dl>
+  </div>
+
+  <section class="betaling">
+    <p>
+      Gelieve het totaalbedrag binnen <b id="v-termijn">14 dagen</b> na factuurdatum
+      over te maken onder vermelding van het factuurnummer.
+    </p>
+    <p>
+      <b>Betaalgegevens</b>
+      <!-- PLACEHOLDER bankgegevens -->
+      <span class="betaalregels">
+        <span>IBAN: [NL00 XXXX 0000 0000 00]</span>
+        <span>BIC: [BIC]</span>
+        <span>Ten name van: Schaap Logistics</span>
+      </span>
+    </p>
+  </section>
+
+  <footer class="voet">
+    Op al onze opdrachten zijn onze algemene voorwaarden van toepassing.<br>
+    <!-- PLACEHOLDER website en e-mailadres -->
+    Schaap Logistics &middot; [website] &middot; [e-mailadres]
+  </footer>
+
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  var BTW = 0.21;
+
+  var euro = new Intl.NumberFormat('nl-NL', {
+    style: 'currency', currency: 'EUR', minimumFractionDigits: 2
+  });
+
+  var q = new URLSearchParams(window.location.search);
+
+  /* Zonder gegevens in de adresregel tonen we een voorbeeld, zodat de pagina
+     nooit leeg is en je meteen ziet hoe een factuur eruitziet. */
+  var voorbeeld = !q.toString();
+  function lees(sleutel, alsLeeg) {
+    var w = q.get(sleutel);
+    if (w !== null && w !== '') { return w; }
+    return voorbeeld ? alsLeeg : '';
+  }
+  function getal(sleutel, alsLeeg) {
+    var w = parseFloat(String(lees(sleutel, alsLeeg)).replace(',', '.'));
+    return isNaN(w) ? 0 : w;
+  }
+
+  /* Datums uit Airtable komen als 2026-09-15 binnen; op papier hoort 15-09-2026. */
+  function datum(w) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(w || '');
+    return m ? m[3] + '-' + m[2] + '-' + m[1] : (w || '—');
+  }
+
+  function zet(id, waarde) {
+    var el = document.getElementById(id);
+    if (el) { el.textContent = waarde || ''; }
+  }
+
+  var km        = getal('km', 109);
+  var kmtarief  = getal('kmtarief', 1.5);
+  var start     = getal('start', 50);
+  var toeslag   = getal('toeslag', 0);
+  var toeslagOms= lees('toeslagoms', '');
+  var van       = lees('van', '3011 AA 12, Rotterdam');
+  var naar      = lees('naar', '5611 AB 5, Eindhoven');
+
+  zet('v-nr',         lees('nr', 'SL-2026-0001'));
+  zet('v-datum',      datum(lees('datum', '2026-09-15')));
+  zet('v-debiteur',   lees('debiteur', '1001'));
+  zet('v-klantbtw',   lees('klantbtw', 'NL000000000B01'));
+  zet('v-referentie', lees('ref', '—'));
+  zet('v-ritdatum',   datum(lees('ritdatum', '2026-09-15')));
+  zet('v-opdracht',   lees('opdracht', '—'));
+
+  zet('v-klant',       lees('klant', 'Voorbeeld Bedrijf BV'));
+  /* Airtable heeft een adres in een veld staan, met de woonplaats op de tweede
+     regel. Staat plaats niet apart in de adresregel, dan splitsen we het adres:
+     de laatste regel is de woonplaats, de rest is straat en huisnummer. */
+  var adresRuw = lees('adres', 'Voorbeeldstraat 1\n1234 AB Voorbeeldstad');
+  var adresRegels = adresRuw.split(/\r?\n/).filter(function (r) { return r.trim(); });
+  var plaats = lees('plaats', '');
+  if (!plaats && adresRegels.length > 1) { plaats = adresRegels.pop(); }
+  zet('v-klantadres',  adresRegels.join(', '));
+  zet('v-klantplaats', plaats);
+
+  zet('v-route',        van + '  →  ' + naar);
+  zet('v-omschrijving', lees('oms', 'Transportopdracht'));
+  var ref = lees('ref', '');
+  zet('v-refregel', ref ? 'Uw referentie: ' + ref : '');
+
+  var termijn = lees('termijn', '14');
+  zet('v-termijn', termijn + (termijn === '1' ? ' dag' : ' dagen'));
+
+  /* ---------- de regels, in dezelfde volgorde als de mal ---------- */
+  var regels = [];
+  if (km > 0) {
+    regels.push({
+      nr: 10,
+      oms: 'Transport ' + van + ' → ' + naar,
+      aantal: km.toLocaleString('nl-NL') + ' km',
+      prijs: kmtarief,
+      bedrag: km * kmtarief
+    });
+  }
+  if (start > 0) {
+    regels.push({ nr: 20, oms: 'Starttarief', aantal: '1 rit', prijs: start, bedrag: start });
+  }
+  if (toeslag > 0) {
+    regels.push({
+      nr: 30,
+      oms: toeslagOms || 'Toeslag',
+      aantal: '1 stuk',
+      prijs: toeslag,
+      bedrag: toeslag
+    });
+  }
+
+  var lijf = document.getElementById('regels');
+  if (!regels.length) {
+    var leeg = document.createElement('tr');
+    leeg.className = 'leeg';
+    var cel = document.createElement('td');
+    cel.colSpan = 6;
+    cel.textContent = 'Geen regels. Vul de gegevens aan in de adresregel van de browser.';
+    leeg.appendChild(cel);
+    lijf.appendChild(leeg);
+  }
+
+  var subtotaal = 0;
+  regels.forEach(function (r) {
+    subtotaal += r.bedrag;
+    var tr = document.createElement('tr');
+    [
+      [String(r.nr), ''],
+      [r.oms, ''],
+      [r.aantal, 'num'],
+      [euro.format(r.prijs), 'num'],
+      ['21%', 'num'],
+      [euro.format(r.bedrag), 'num']
+    ].forEach(function (cel) {
+      var td = document.createElement('td');
+      td.textContent = cel[0];
+      if (cel[1]) { td.className = cel[1]; }
+      tr.appendChild(td);
+    });
+    lijf.appendChild(tr);
+  });
+
+  /* Het minimumtarief van EUR 75 per opdracht, net als op de website. Anders dan
+     de andere bedragen geldt hier altijd een standaard: een factuur zonder
+     minimum in de adresregel moet er nog steeds mee rekenen. */
+  var minimumRuw = q.get('minimum');
+  var minimum = (minimumRuw === null || minimumRuw === '')
+    ? 75
+    : (parseFloat(String(minimumRuw).replace(',', '.')) || 0);
+  if (regels.length && subtotaal < minimum) {
+    var aanvulling = minimum - subtotaal;
+    subtotaal = minimum;
+    var tr = document.createElement('tr');
+    [
+      ['40', ''],
+      ['Aanvulling tot minimumtarief per opdracht', ''],
+      ['1 stuk', 'num'],
+      [euro.format(aanvulling), 'num'],
+      ['21%', 'num'],
+      [euro.format(aanvulling), 'num']
+    ].forEach(function (cel) {
+      var td = document.createElement('td');
+      td.textContent = cel[0];
+      if (cel[1]) { td.className = cel[1]; }
+      tr.appendChild(td);
+    });
+    lijf.appendChild(tr);
+  }
+
+  var btw = Math.round(subtotaal * BTW * 100) / 100;
+  zet('v-subtotaal', euro.format(subtotaal));
+  zet('v-btw',       euro.format(btw));
+  zet('v-totaal',    euro.format(subtotaal + btw));
+
+  document.title = 'Factuur ' + (lees('nr', 'SL-2026-0001') || '') + ' — Schaap Logistics';
+  document.getElementById('printen').addEventListener('click', function () { window.print(); });
+})();
+</script>
+</body>
+</html>

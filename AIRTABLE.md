@@ -239,6 +239,61 @@ openstaat, en zet die op *Te laat*.
 Nog niet gebouwd: een seintje naar Schaap Logistics zelf wanneer dat gebeurt, en
 automatische herinneringen naar de klant. Allebei wachten op een e-mailadres.
 
+### Van aanvraag tot factuur
+
+De keten loopt nu door zonder dat je gegevens overtypt. Vier tabellen, drie
+overgangen:
+
+`Website-aanvragen` → `Opdrachten` → `Ritten` → `Facturen`
+
+**Aanvraag → opdracht.** Zet op de aanvraag het vinkje `Omzetten naar opdracht`
+aan zodra je hem accepteert. De automatisering **Aanvraag omzetten naar opdracht**
+(`wflAifOACxeRziDZm`) maakt de opdracht, neemt datum, adressen, type rit en
+opmerkingen over, koppelt hem terug aan de aanvraag en zet de status om. Hij
+start alleen als er nog géén opdracht aan hangt, dus twee keer aanvinken levert
+geen dubbele opdracht op. De **klant** koppel je zelf: de aanvraag heeft alleen
+een bedrijfsnaam als tekst, en of dat een bestaande klant is kan Airtable niet
+weten.
+
+**Rit → factuur.** Zet een rit op *Uitgevoerd* en de automatisering **Uitgevoerde
+rit factureren** (`wflr5jqQPW55xwTNR`) maakt er een conceptfactuur bij, met de
+klant, de opdracht en de bedragen uit de rit en de factuurdatum op vandaag. De
+status blijft *Concept*, zodat je hem eerst nakijkt. Ook deze start alleen als er
+nog geen factuur aan de rit hangt.
+
+### Het factuurnummer
+
+`Factuurnummer` op `Facturen` is een formule: het jaar uit de factuurdatum plus
+`Volgnummer`, aangevuld tot vier cijfers — `SL-2026-0001`, net als in de mal.
+Blijft leeg zolang factuurdatum of volgnummer ontbreekt.
+
+`Volgnummer` moet type **Autonumber** zijn. Airtable vult hem dan zelf en je kunt
+nooit twee keer hetzelfde factuurnummer uitgeven — een eis van de Belastingdienst.
+Datzelfde geldt voor `Klantnummer` op `Klanten`, dat als debiteurnummer op de
+factuur komt.
+
+### De factuur uitdraaien
+
+`Factuurlink` op `Facturen` is een formule die een adres bouwt naar
+`/factuur/` op de website, met alle gegevens in de adresregel. Klik hem aan en de
+factuur staat in de opmaak van de mal op je scherm; daar druk je op *Opslaan als
+PDF* en sleep je het bestand terug in het veld `PDF`.
+
+De link vult zichzelf uit de gekoppelde rit, klant en opdracht. Daarvoor staan er
+opzoekvelden op `Facturen` (`Rit ritdatum`, `Rit ophaaladres`, `Rit afleveradres`,
+`Rit kilometers`, `Rit km-tarief`, `Rit starttarief`, `Rit extra kosten`,
+`Rit type`, `Klant naam`, `Klant adres`, `Klant BTW-nummer`,
+`Klant debiteurnummer`, `Opdracht omschrijving`, `Uw referentie`). Die zijn er
+alleen om de factuur te vullen; je hoeft ze niet zelf in te vullen.
+
+De pagina rekent zelf het minimum van €75 per opdracht en de 21% btw, precies
+zoals de calculator op de site. Gecontroleerd met een testfactuur: spoed,
+109 km, €35 toeslag → €328,00 excl., €68,88 btw, €396,88 incl., gelijk aan wat
+Airtable in de rit berekende.
+
+Nog niet automatisch: het aanmaken van de PDF zelf. Dat blijft één handeling per
+factuur.
+
 ### Wat alleen met de hand kan
 
 De koppeling waarmee ik de base bewerk kan velden aanmaken en aanpassen, maar niet
@@ -250,6 +305,18 @@ aanzetten. Die drie zijn op 2 september met de hand gedaan:
   `Openstaand`. `Dagen te laat` blijft bewust op nul decimalen — dat zijn hele dagen.
 - De verouderde velden zijn weg uit `Ritten`, `Opdrachten` en `Tarieven`.
 - Beide automatiseringen staan aan.
+
+Op 2 september kwamen daar deze bij, en die staan **nog open**:
+
+- `Volgnummer` op `Facturen` en `Klantnummer` op `Klanten` omzetten naar type
+  **Autonumber** (kolomnaam aanklikken → *Edit field* → *Autonumber* → *Save*).
+  Zolang dat niet gebeurd is, moet je het volgnummer zelf intypen en kun je per
+  ongeluk twee keer hetzelfde factuurnummer uitgeven.
+- De automatiseringen **Aanvraag omzetten naar opdracht** en **Uitgevoerde rit
+  factureren** aanzetten. Ze zijn compleet en gecontroleerd, maar Airtable maakt
+  een nieuwe automatisering altijd uitgeschakeld aan.
+- Twee decimalen instellen op `Totale ritkosten`, `Winst`, `Winst per km`,
+  `Starttarief effectief` en `Km-tarief effectief`.
 
 Let op bij een volgende opruimronde: `Automatisch totaal incl. BTW` is toen per
 ongeluk meeverwijderd en opnieuw aangemaakt. Velden met een `fx`-pictogram rekenen

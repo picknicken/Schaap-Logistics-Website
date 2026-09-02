@@ -30,15 +30,21 @@ die serveert `diensten/index.html` wel gewoon op `/diensten/`.
 | `aanvragen/index.html` | `/aanvragen/` | Aanvraagformulier in vijf stappen met live prijsindicatie |
 | `werkwijze/index.html` | `/werkwijze/` | Van aanvraag tot factuur in zeven stappen, plus "waarom" |
 | `contact/index.html` | `/contact/` | Contactgegevens en berichtformulier |
+| `factuur/index.html` | `/factuur/` | Factuur op papierformaat, gevuld vanuit de adresregel |
 | `404.html` | — | Wordt door GitHub Pages getoond bij een onbekend adres |
 
 ```
 assets/
-  site.css        alle opmaak, voor alle pagina's
-  site.js         tarieven, afstandsberekening, e-mail, menu — op elke pagina
-  calculator.js   de prijscalculator op de homepage
-  aanvraag.js     het aanvraagformulier
-  contact.js      het berichtformulier
+  site.css                alle opmaak, voor alle pagina's
+  site.js                 tarieven, afstandsberekening, e-mail, menu — op elke pagina
+  calculator.js           de prijscalculator op de homepage
+  aanvraag.js             het aanvraagformulier
+  contact.js              het berichtformulier
+  logo-sl-wit.png         beeldmerk, wit — in de donkere header en footer
+  logo-sl.png             beeldmerk, zwart
+  logo-volledig-wit.png   beeldmerk plus woordmerk, wit
+  logo-volledig.png       beeldmerk plus woordmerk, zwart — bovenaan de factuur
+  favicon.png             het tabbladpictogram
 worker/
   aanvragen.js    Cloudflare Worker die aanvragen in Airtable zet
   wrangler.toml   instellingen voor het uitrollen (zonder geheimen)
@@ -71,7 +77,8 @@ daadwerkelijk in de aanvraag komt.
 
 **Header en footer staan in elk HTML-bestand.** Platte HTML kent geen
 templating, dus een wijziging aan het menu of de footer moet in alle zeven
-bestanden. Dat is de prijs voor een site zonder build-stap.
+bestanden. Dat is de prijs voor een site zonder build-stap. `factuur/index.html`
+telt hier niet mee: dat is een losstaande printpagina met een eigen kop.
 
 De bedragen staan op twee plekken: in `CONFIG` (waar de calculator mee rekent) en
 als tekst in de tariefkaarten en tabellen op `/tarieven/`. Wijzig je een tarief,
@@ -90,8 +97,12 @@ in meerdere bestanden. Zoek op `PLACEHOLDER` om ze te vinden.
 
       ```sh
       grep -rl 'noindex,nofollow' --include='*.html' . \
+        | grep -v '^./factuur/' \
         | xargs sed -i 's/noindex,nofollow/index,follow/'
       ```
+
+      `factuur/index.html` blijft bewust op `noindex`: dat is een intern
+      hulpmiddel met klantgegevens in de adresregel en hoort niet in Google.
 
 - [ ] **Algemene voorwaarden en privacyverklaring.** De footer stelt nu dat er
       algemene voorwaarden van toepassing zijn, maar er staat nergens een link
@@ -126,6 +137,39 @@ in meerdere bestanden. Zoek op `PLACEHOLDER` om ze te vinden.
 
 Controleer na een `sed`-ronde met `grep -rn PLACEHOLDER .` of er niets is blijven
 staan.
+
+## De factuur
+
+`/factuur/` toont één factuur in de opmaak van de mal van Schaap Logistics, klaar
+om te printen of als PDF op te slaan. De pagina heeft geen database: alles komt
+uit de adresregel.
+
+```
+/factuur/?nr=SL-2026-0001&datum=2026-09-15&klant=Voorbeeld%20BV&km=109&kmtarief=2&start=75&toeslag=35
+```
+
+Zonder gegevens in de adresregel toont hij een voorbeeldfactuur, zodat je meteen
+ziet hoe het eruitziet.
+
+| Sleutel | Betekenis |
+| --- | --- |
+| `nr`, `datum`, `ritdatum` | Factuurnummer en de twee datums (`JJJJ-MM-DD`) |
+| `debiteur`, `klantbtw`, `ref` | Klantnummer, btw-nummer van de klant, hun eigen ordernummer |
+| `opdracht` | Het opdrachtnummer |
+| `klant`, `adres`, `plaats` | Het adresblok. Staat `plaats` er niet, dan wordt de laatste regel van `adres` de woonplaats |
+| `van`, `naar`, `oms` | Route en omschrijving van de opdracht |
+| `km`, `kmtarief` | Regel 10: kilometers maal tarief |
+| `start` | Regel 20: het starttarief |
+| `toeslag`, `toeslagoms` | Regel 30: een toeslag met omschrijving |
+| `termijn` | Betalingstermijn in dagen (standaard 14) |
+| `minimum` | Het minimum per opdracht (standaard 75) |
+
+De pagina rekent zelf de 21% btw en vult zo nodig aan tot het minimumtarief, als
+regel 40. Bedragen mogen met een punt of een komma.
+
+Je hoeft die adresregel nooit zelf te typen: in Airtable staat op elke factuur het
+veld `Factuurlink`, dat hem uit de gekoppelde rit, klant en opdracht opbouwt. Zie
+`AIRTABLE.md`.
 
 ## Formulieren versturen
 
