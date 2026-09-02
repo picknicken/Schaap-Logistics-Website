@@ -242,18 +242,17 @@ automatische herinneringen naar de klant. Allebei wachten op een e-mailadres.
 ### Wat alleen met de hand kan
 
 De koppeling waarmee ik de base bewerk kan velden aanmaken en aanpassen, maar niet
-verwijderen, en de opmaak van een veld niet instellen. Twee dingen blijven daarom
-liggen tot iemand ze in Airtable zelf doet:
+verwijderen, de opmaak van een veld niet instellen, en een automatisering niet
+aanzetten. Die drie zijn op 2 september met de hand gedaan:
 
-- **Verwijderen van de verouderde velden**: `Type rit (verouderd)` in `Ritten`,
-  `Opdrachten` en `Tarieven`, plus `Berekend totaal excl. BTW (dubbel, mag weg)`
-  in `Ritten`. Ze doen geen kwaad, ze staan alleen in de weg.
-- **De bedragen op twee decimalen zetten.** Airtable toont formule- en
-  rollupvelden standaard zonder decimalen, dus € 213,50 verschijnt als € 214.
-  Klik het veld aan, ga naar Formatting en zet het op 2 decimalen. Het gaat om
-  `Automatisch totaal excl. BTW`, `BTW bedrag`, `Automatisch totaal incl. BTW`,
-  `Betaald` en `Openstaand`.
+- De vijf berekende geldvelden staan op twee decimalen: `Automatisch totaal
+  excl. BTW`, `BTW bedrag`, `Automatisch totaal incl. BTW`, `Betaald` en
+  `Openstaand`. `Dagen te laat` blijft bewust op nul decimalen — dat zijn hele dagen.
+- De verouderde velden zijn weg uit `Ritten`, `Opdrachten` en `Tarieven`.
+- Beide automatiseringen staan aan.
 
-De berekening zelf rondt wel op centen af, dus de opgeslagen bedragen kloppen —
-alleen de weergave niet. Zonder die afronding leverde 21% btw over € 248,50 nog
-€ 52,184999999999995 op.
+Let op bij een volgende opruimronde: `Automatisch totaal incl. BTW` is toen per
+ongeluk meeverwijderd en opnieuw aangemaakt. Velden met een `fx`-pictogram rekenen
+iets uit; die met een `$` vul je zelf in. Alleen namen met `(verouderd)` of
+`(dubbel)` erin mochten weg.
+
