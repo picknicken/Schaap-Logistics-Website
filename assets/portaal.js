@@ -36,6 +36,10 @@
   var aanvragen = [];
   var opdrachten = [];
   var klanten = [];
+  /* Klant-ids waarvoor deze zitting een uitnodiging is aangevraagd. Airtable
+     zet het moment pas neer als de mail werkelijk weg is, en dat kan een
+     tel duren; zonder dit zou de knop meteen weer staan alsof je niets deed. */
+  var uitnodigingen = {};
   var tabblad = 'ritten';
   var klantVoor = null;
   var tekentVoor = null;
@@ -240,7 +244,14 @@
        rittenoproep niet. Dan houden we wat we al hadden. */
     if (data.aanvragen)  { aanvragen = data.aanvragen; }
     if (data.opdrachten) { opdrachten = data.opdrachten; }
-    if (data.klanten)    { klanten = data.klanten; }
+    if (data.klanten)    {
+      klanten = data.klanten;
+      /* Verse klantgegevens uit Airtable: daar staat nu in wanneer een
+         uitnodiging werkelijk verstuurd is. Ons eigen "zojuist aangevraagd"
+         heeft dan afgedaan en moet weg, anders blijft die melding staan bij
+         een klant die inmiddels gewoon een datum heeft. */
+      uitnodigingen = {};
+    }
     el('dag-naam').textContent = dagNaam(dag);
     el('dag-datum').textContent = datumLang(dag);
     tekenAlles();
@@ -743,6 +754,10 @@
       lijf.appendChild(koppel);
     }
 
+    if (o.heeftKlant && o.klantId) {
+      tekenUitnodiging(lijf, o.klantId);
+    }
+
     /* Datum vooraf gevuld met de gewenste datum van de klant, kilometers met
        de schatting van de website. Allebei negen van de tien keer goed, en
        allebei aanpasbaar voordat je op Inplannen tikt. */
@@ -792,6 +807,63 @@
 
     kaart.appendChild(lijf);
     return kaart;
+  }
+
+  /* Een vaste klant kan zijn eigen zendingen en facturen volgen op /klant/.
+     De mail met zijn persoonlijke link gaat niet vanaf deze telefoon de deur
+     uit: de Worker zet een vinkje om en Airtable verstuurt hem. Daardoor komt
+     de toegangscode van de klant hier nooit langs. */
+  function tekenUitnodiging(lijf, klantId) {
+    var klant = klanten.filter(function (k) { return k.id === klantId; })[0];
+
+    if (klant && !klant.email) {
+      var mist = maak('div', 'bewijs bewijs--mist');
+      var mt = maak('div');
+      mt.appendChild(maak('b', '', 'Geen e-mailadres'));
+      mt.appendChild(document.createTextNode(
+        'Zonder e-mailadres kan deze klant geen uitnodiging voor zijn eigen ' +
+        'overzicht krijgen. Vul het aan in Airtable bij de klant.'));
+      mist.appendChild(mt);
+      lijf.appendChild(mist);
+      return;
+    }
+
+    var net = uitnodigingen[klantId];
+    if (net) {
+      var goed = maak('div', 'bewijs');
+      var gt = maak('div');
+      gt.appendChild(maak('b', '', 'Uitnodiging verstuurd'));
+      gt.appendChild(document.createTextNode('De link met zijn eigen overzicht gaat naar ' + net + '.'));
+      goed.appendChild(gt);
+      lijf.appendChild(goed);
+    } else if (klant && klant.uitgenodigd) {
+      var eerder = maak('div', 'terzijde');
+      eerder.textContent = 'Al uitgenodigd op ' +
+        datumKort(String(klant.uitgenodigd).slice(0, 10)) +
+        ' om ' + klok(klant.uitgenodigd) + '.';
+      lijf.appendChild(eerder);
+    }
+
+    var knop = maak('button', 'knop knop--rand',
+      (net || (klant && klant.uitgenodigd))
+        ? 'Uitnodigingslink opnieuw sturen'
+        : 'Verstuur uitnodigingslink');
+    knop.type = 'button';
+    knop.addEventListener('click', function () {
+      bezig(knop, 'Versturen\u2026', function (klaar) {
+        verstuur('uitnodiging', { klantId: klantId }).then(function (data) {
+          if (data.klant) {
+            klanten = klanten.map(function (k) {
+              return k.id === data.klant.id ? data.klant : k;
+            });
+          }
+          uitnodigingen[klantId] = data.email || 'de klant';
+          meldApp('');
+          tekenPlanning();
+        }).catch(function (fout) { meldApp(fout.message); klaar(false); });
+      });
+    });
+    lijf.appendChild(knop);
   }
 
   function planIn(o, datumWaarde, kmWaarde, knop) {

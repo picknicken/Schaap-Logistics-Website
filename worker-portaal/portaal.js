@@ -98,7 +98,9 @@ const K = {
   telefoon:  'Telefoon',
   termijn:   'Betalingstermijn (dagen)',
   nummer:    'Klantnummer',
-  code:      'Portaalcode'
+  code:      'Portaalcode',
+  uitnodigen:'Uitnodiging versturen',
+  uitgenodigd:'Uitnodiging verstuurd op'
 };
 
 /* Precies de statussen die in Airtable bestaan. Een status die de telefoon
@@ -171,6 +173,7 @@ export default {
         case 'ritkm':        return await zetRitKm(env, body, origin);
         case 'koppelklant':  return await koppelKlant(env, body, origin);
         case 'nieuweklant':  return await nieuweKlant(env, body, origin);
+        case 'uitnodiging':  return await stuurUitnodiging(env, body, origin);
         default:
           return antwoord(400, { fout: 'Onbekende actie' }, origin, true);
       }
@@ -452,6 +455,33 @@ async function nieuweKlant(env, body, origin) {
   }
 
   return antwoord(200, { ok: true, klant, opdracht, rit }, origin, true);
+}
+
+/* Een klant uitnodigen voor zijn eigen portaal. De mail gaat niet vanaf hier
+   de deur uit: deze Worker zet alleen het vinkje om, en een automatisering in
+   Airtable verstuurt hem. Dat scheelt een verzenddienst en nog een sleutel, en
+   de portaalcode hoeft dan nergens langs de telefoon.
+
+   Een klant die nog geen code heeft krijgt er hier een. Anders zou de knop
+   voor iedereen van voor het klantportaal niets doen, en dat is precies de
+   groep die je wilt uitnodigen. */
+async function stuurUitnodiging(env, body, origin) {
+  const id = recordId(body.klantId);
+  if (!id) { return antwoord(400, { fout: 'Ongeldig klant-id' }, origin, true); }
+
+  const record = await airtable(env, `${env.AIRTABLE_KLANTEN}/${id}`);
+  const f = record.fields || {};
+  if (!f[K.email]) {
+    return antwoord(400, {
+      fout: 'Deze klant heeft geen e-mailadres. Vul dat eerst in bij de klant.'
+    }, origin, true);
+  }
+
+  const velden = { [K.uitnodigen]: true };
+  if (!f[K.code]) { velden[K.code] = verzinCode(); }
+
+  const klant = naarKlant(await patch(env, env.AIRTABLE_KLANTEN, id, velden));
+  return antwoord(200, { ok: true, klant, email: f[K.email] }, origin, true);
 }
 
 /* De werkelijk gereden kilometers. De schatting van de website komt van
@@ -753,6 +783,10 @@ function naarOpdracht(record) {
     naam:       f[O.opdracht] || '',
     klant:      eerste(f[O.klant]),
     heeftKlant: Array.isArray(f[O.klantlink]) && f[O.klantlink].length > 0,
+    /* Het id van de gekoppelde klant, zodat het portaal die klant kan
+       uitnodigen zonder hem eerst op naam te moeten terugzoeken. */
+    klantId:    (Array.isArray(f[O.klantlink]) && f[O.klantlink].length
+                  ? (f[O.klantlink][0].id || f[O.klantlink][0]) : ''),
     datum:      f[O.datum] || '',
     tijd:       f[O.tijd] || '',
     ophaal:     f[O.ophaal] || '',
@@ -806,7 +840,10 @@ function naarKlant(record) {
     email:    f[K.email] || '',
     telefoon: f[K.telefoon] || '',
     termijn:  f[K.termijn] || 0,
-    nummer:   f[K.nummer] || ''
+    nummer:   f[K.nummer] || '',
+    /* Wanneer deze klant voor het laatst een uitnodiging kreeg. De portaalcode
+       zelf blijft hier bewust buiten: die hoeft de telefoon niet te weten. */
+    uitgenodigd: f[K.uitgenodigd] || ''
   };
 }
 
