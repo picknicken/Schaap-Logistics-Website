@@ -26,6 +26,38 @@ const TOEGESTANE_VELDEN = [
 /* Zonder deze velden is een aanvraag niet op te volgen. */
 const VERPLICHT = ['Bedrijf', 'Contactpersoon', 'Telefoon', 'E-mail'];
 
+/* ---------------------------------------------------------------- de rem
+
+   Dit adres is openbaar: iedereen die het vindt kan het aanroepen. Zonder rem
+   kan één iemand duizend aanvragen per minuut insturen en loopt de tabel vol.
+
+   De teller staat in het geheugen van de Worker zelf. Dat is geen sluitende
+   bewaking — Cloudflare draait meerdere exemplaren naast elkaar en ruimt ze
+   tussendoor op, dus wie het echt wil kan eromheen. Maar het kost niets, het
+   vraagt geen enkele instelling en het stopt precies waar het om gaat: één
+   bron die doorratelt. Wil je het waterdicht, dan zet je er in Cloudflare een
+   Rate limiting rule voor in de plaats. */
+const REM_VENSTER = 60 * 1000;   /* per minuut */
+const REM_MAX     = 5;           /* zoveel aanvragen mag één adres */
+const remTeller   = new Map();
+
+function magDoor(ip) {
+  const nu = Date.now();
+
+  /* Oude regels opruimen. Zonder dit groeit de Map ongemerkt door. */
+  for (const [sleutel, rij] of remTeller) {
+    if (nu - rij.begin > REM_VENSTER) { remTeller.delete(sleutel); }
+  }
+
+  const rij = remTeller.get(ip);
+  if (!rij || nu - rij.begin > REM_VENSTER) {
+    remTeller.set(ip, { begin: nu, aantal: 1 });
+    return true;
+  }
+  rij.aantal += 1;
+  return rij.aantal <= REM_MAX;
+}
+
 const FOTOVELD    = "Foto's";
 const FOTONAMEN   = "Foto's meegestuurd";
 const MAX_FOTO_MB = 5;     /* limiet van het Airtable-uploadendpoint */
@@ -46,6 +78,15 @@ export default {
     }
     if (!toegestaan) {
       return antwoord(403, { fout: 'Onbekende herkomst' }, origin, false);
+    }
+
+    /* Pas remmen nadat de herkomst gecontroleerd is: anders vult een vreemde
+       site de teller voor een bezoeker die netjes op onze eigen site zit. */
+    const ip = verzoek.headers.get('CF-Connecting-IP') || 'onbekend';
+    if (!magDoor(ip)) {
+      return antwoord(429, {
+        fout: 'U heeft net al een aanvraag verstuurd. Wacht even, of bel ons.'
+      }, origin, true);
     }
 
     const lengte = Number(verzoek.headers.get('Content-Length') || 0);

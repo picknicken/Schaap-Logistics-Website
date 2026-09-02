@@ -469,6 +469,7 @@
     regel('Bezorgen', rit.aflever);
     if (rit.km) { regel('Afstand', Math.round(rit.km) + ' km'); }
     if (rit.tijd) { regel('Ophalen om', rit.tijd); }
+    if (rit.wachttijd) { regel('Wachttijd', rit.wachttijd + ' min'); }
     if (rit.tijdvak && rit.tijdvak !== 'Overdag') { regel('Tijdvak', rit.tijdvak); }
     if (rit.bedrag) { regel('Bedrag', euroCent.format(rit.bedrag) + ' excl. btw'); }
     if (rit.onderweg) { regel('Vertrokken', klok(rit.onderweg)); }
@@ -522,7 +523,20 @@
       var tvVeldRit = tijdvakVeld(rit.tijdvak);
       lijf.appendChild(tvVeldRit);
 
-      var kmKnop = maak('button', 'knop knop--rand', 'Afstand, stops en tijdvak opslaan');
+      /* Wachttijd en doorberekende kosten: wat er onderweg werkelijk gebeurd
+         is en wat de klant daarvoor betaalt. Beide gaan de factuur op. */
+      var extraRij = maak('div', 'velrij');
+      var wachtVeld = getalVeld('Wachttijd (min)', rit.wachttijd);
+      var doorVeld = euroVeld('Doorberekenen', rit.doorbereken);
+      extraRij.appendChild(wachtVeld);
+      extraRij.appendChild(doorVeld);
+      lijf.appendChild(extraRij);
+      lijf.appendChild(maak('div', 'terzijde',
+        'Eerste 15 minuten wachten inbegrepen, daarna € 15 per kwartier. ' +
+        'Onder Doorberekenen zet je tol of parkeren die de klant betaalt — ' +
+        'jouw eigen kosten horen hieronder.'));
+
+      var kmKnop = maak('button', 'knop knop--rand', 'Gegevens van de rit opslaan');
       kmKnop.type = 'button';
       kmKnop.addEventListener('click', function () {
         bezig(kmKnop, 'Opslaan…', function (klaar) {
@@ -530,7 +544,9 @@
             id: rit.id,
             km: kmVeldRit.invoer.value,
             stops: stopVeldRit.invoer.value,
-            tijdvak: tvVeldRit.invoer.value
+            tijdvak: tvVeldRit.invoer.value,
+            wachttijd: wachtVeld.invoer.value,
+            doorbereken: doorVeld.invoer.value
           }).then(function (data) {
             ververs(data.rit);
             meldApp('');

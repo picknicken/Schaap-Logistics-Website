@@ -338,6 +338,18 @@ footer a:hover{color:var(--amber)}
 }
 /* De ingang naar het chauffeursportaal. Die is voor onszelf, niet voor
    klanten, dus hij hoort niet in het menu maar helemaal onderaan. */
+/* Juridische pagina's: lopende tekst met koppen, geen kaarten. */
+.section h2{font-size:1.15rem;margin:32px 0 10px}
+.section h2:first-of-type{margin-top:26px}
+.melding-concept{
+  border-left:3px solid var(--amber-2);background:#fff8ea;
+  padding:14px 18px;border-radius:0 10px 10px 0;margin:22px 0 8px;
+  font-size:.92rem;line-height:1.6;
+}
+.voorwaarden-versie{
+  margin-top:34px;padding-top:18px;border-top:1px solid var(--line);
+  font-size:.85rem;color:var(--muted);
+}
 .footer__intern{color:rgba(255,255,255,.35);text-decoration:none}
 .footer__intern:hover{color:rgba(255,255,255,.7)}
 

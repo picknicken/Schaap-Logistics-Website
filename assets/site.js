@@ -29,6 +29,10 @@
     /* Toeslag per extra adres onderweg. Een stop is omrijden plus laden en
        lossen; dat zit niet in het kilometertarief. */
     stoptoeslag: 25,
+    /* Wachten bij laden of lossen. De eerste vijftien minuten zijn inbegrepen;
+       daarna per begonnen kwartier. Wordt niet vooraf geschat — je weet pas
+       achteraf hoe lang je stond — dus dit telt alleen mee op de factuur. */
+    wachttijd: { gratis: 15, blok: 15, tarief: 15 },
     /* Omrekenfactor van hemelsbrede afstand naar werkelijke rijafstand. */
     wegfactor: 1.25,
 

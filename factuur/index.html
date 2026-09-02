@@ -293,6 +293,8 @@ tbody tr.leeg td{color:var(--zacht)}
   var stoptarief= getal('stoptarief', 25);
   var tijdtoeslag = getal('tijdtoeslag', 0);
   var tijdvak     = lees('tijdvak', '');
+  var wacht       = Math.round(getal('wacht', 0));
+  var wachttoeslag= getal('wachttoeslag', 0);
   var van       = lees('van', '3011 AA 12, Rotterdam');
   var naar      = lees('naar', '5611 AB 5, Eindhoven');
 
@@ -380,6 +382,14 @@ tbody tr.leeg td{color:var(--zacht)}
       aantal: '1 rit',
       prijs: tijdtoeslag,
       bedrag: tijdtoeslag
+    });
+  }
+  if (wachttoeslag > 0) {
+    regels.push({
+      oms: 'Wachttijd' + (wacht ? ' (' + wacht + ' minuten, eerste 15 inbegrepen)' : ''),
+      aantal: Math.round(wachttoeslag / 15) + ' kwartier',
+      prijs: 15,
+      bedrag: wachttoeslag
     });
   }
   if (toeslag > 0) {

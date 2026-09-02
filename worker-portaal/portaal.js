@@ -46,6 +46,8 @@ const R = {
   kosten:     'Totale ritkosten',
   winst:      'Winst',
   bevestigd:  'Bevestiging verstuurd op',
+  wachttijd:  'Wachttijd (minuten)',
+  doorbereken:'Extra kosten',
   klant:      'Klantnaam',
   telefoon:   'Klant telefoon',
   opmerking:  'Opmerkingen',
@@ -122,6 +124,40 @@ const MAX_BODY_MB    = 4;    /* een handtekening is een paar kB; dit is ruim */
 const MAX_HANDTEK_KB = 800;
 const MAX_DAGEN      = 31;   /* hoeveel dagen je in één keer mag opvragen */
 
+/* ------------------------------------------------------------------ de rem
+
+   Achter dit adres zitten klantnamen, telefoonnummers, bedragen en de
+   handtekeningen. De codes zijn lang genoeg om niet te raden, maar zonder rem
+   mag iemand het wel eindeloos proberen. Een foute code kost nu een halve
+   seconde; vijftien foute codes achter elkaar kosten je vijf minuten.
+
+   Alleen mislukte pogingen tellen mee, zodat jij en je klanten er nooit last
+   van hebben. De teller staat in het geheugen van de Worker; dat is geen
+   sluitende bewaking (Cloudflare draait meerdere exemplaren naast elkaar),
+   maar het kost niets en het haalt de lucht uit een aanhoudende poging. */
+const REM_VENSTER = 5 * 60 * 1000;
+const REM_MAX     = 15;
+const remTeller   = new Map();
+
+function opWacht(ip) {
+  const nu = Date.now();
+  for (const [sleutel, rij] of remTeller) {
+    if (nu - rij.begin > REM_VENSTER) { remTeller.delete(sleutel); }
+  }
+  const rij = remTeller.get(ip);
+  return !!rij && rij.aantal > REM_MAX;
+}
+
+function telMislukking(ip) {
+  const nu = Date.now();
+  const rij = remTeller.get(ip);
+  if (!rij || nu - rij.begin > REM_VENSTER) {
+    remTeller.set(ip, { begin: nu, aantal: 1 });
+    return;
+  }
+  rij.aantal += 1;
+}
+
 export default {
   async fetch(verzoek, env) {
     const origin = verzoek.headers.get('Origin') || '';
@@ -145,6 +181,12 @@ export default {
     if (!env.PORTAAL_CODE) {
       return antwoord(500, { fout: 'PORTAAL_CODE ontbreekt in de Worker' }, origin, true);
     }
+    const ip = verzoek.headers.get('CF-Connecting-IP') || 'onbekend';
+    if (opWacht(ip)) {
+      return antwoord(429, {
+        fout: 'Te veel pogingen. Probeer het over een paar minuten opnieuw.'
+      }, origin, true);
+    }
     const code = verzoek.headers.get('X-Portaal-Code') || '';
 
     let body;
@@ -163,7 +205,9 @@ export default {
        ------------------------------------------------------------------ */
     if (!gelijk(code, env.PORTAAL_CODE)) {
       try {
-        return await klantPoort(env, code, body, origin);
+        const uit = await klantPoort(env, code, body, origin);
+        if (uit.status === 401) { telMislukking(ip); }
+        return uit;
       } catch (fout) {
         console.log('Klantportaal: ' + fout.message);
         return antwoord(502, { fout: fout.message }, origin, true);
@@ -556,6 +600,13 @@ async function zetRitKm(env, body, origin) {
   const tijdvak = tijdvakUit(body.tijdvak);
   if (tijdvak) { velden[R.tijdvak] = tijdvak; }
 
+  /* Wachttijd en wat je aan de klant doorberekent horen bij dezelfde vraag:
+     wat is er onderweg werkelijk gebeurd? Vandaar dezelfde knop. */
+  const wacht = heelGetal(body.wachttijd, 1440);   /* een hele dag wachten is de bovengrens */
+  if (wacht !== null) { velden[R.wachttijd] = wacht; }
+  const doorbereken = euroBedrag(body.doorbereken);
+  if (doorbereken !== null) { velden[R.doorbereken] = doorbereken; }
+
   const rit = naarRit(await patch(env, env.AIRTABLE_RITTEN, id, velden));
   return antwoord(200, { ok: true, rit }, origin, true);
 }
@@ -830,10 +881,10 @@ function klokTijd(w) {
 
 /* Een aantal dat je telt, geen bedrag: extra stops. Leeg blijft leeg, zodat
    "niets ingevuld" iets anders is dan "nul stops". */
-function heelGetal(w) {
+function heelGetal(w, maximum) {
   if (w === undefined || w === null || w === '') { return null; }
   const n = Number(String(w).trim());
-  if (!isFinite(n) || n < 0 || n > 50) { return null; }
+  if (!isFinite(n) || n < 0 || n > (maximum || 50)) { return null; }
   return Math.round(n);
 }
 
@@ -875,6 +926,8 @@ function naarRit(record) {
     kosten:     f[R.kosten] || 0,
     winst:      f[R.winst] || 0,
     bevestigd:  f[R.bevestigd] || '',
+    wachttijd:  f[R.wachttijd] || 0,
+    doorbereken:f[R.doorbereken] || 0,
     klant:      eerste(f[R.klant]),
     telefoon:   eerste(f[R.telefoon]),
     opmerking:  f[R.opmerking] || '',
