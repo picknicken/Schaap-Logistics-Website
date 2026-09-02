@@ -294,6 +294,62 @@ Airtable in de rit berekende.
 Nog niet automatisch: het aanmaken van de PDF zelf. Dat blijft één handeling per
 factuur.
 
+### Het chauffeursportaal
+
+`/portaal/` op de website leest en schrijft ritten. Dat gaat niet via de
+aanvraag-Worker maar via een tweede, `schaap-portaal` uit `worker-portaal/`.
+Bewust apart: de aanvraag-Worker draait en neemt bestellingen aan, en daar hoort
+geen nieuw werk doorheen te lopen.
+
+Het verschil met het aanvraagendpoint is belangrijk. Dat mag iedereen aanroepen,
+want het schrijft alleen en kan niets teruglezen. Het portaal leest klantnamen,
+telefoonnummers, adressen en bedragen — daar hoort een slot op. Dat slot is de
+secret `PORTAAL_CODE`: de telefoon stuurt hem mee als header, de Worker vergelijkt
+en weigert de rest.
+
+**Uitrollen:**
+
+```sh
+cd worker-portaal
+npx wrangler secret put AIRTABLE_TOKEN     # dezelfde token als schaap-aanvragen
+npx wrangler secret put PORTAAL_CODE       # je eigen code, lang en willekeurig
+npx wrangler deploy
+```
+
+De URL die `deploy` teruggeeft zet je in `assets/portaal.js` bij
+`CONFIG.portaalUrl`. Zolang die leeg is, zegt het portaal netjes dat het nog niet
+gekoppeld is in plaats van te blijven hangen.
+
+**Velden die hierbij horen**, allemaal in `Ritten`:
+
+| Veld | Wat het doet |
+| --- | --- |
+| `Handtekening` | De krabbel van de ontvanger, als afbeelding |
+| `Getekend door` | Wie er getekend heeft. Een krabbel zonder naam zegt weinig |
+| `Getekend op` | Het tijdstip. Wordt door het portaal gezet |
+| `Onderweg sinds` | Wanneer je vertrok. Samen met `Getekend op` de werkelijke ritduur |
+| `Afleverbewijs` | *Compleet*, of *Ontbreekt* bij een uitgevoerde rit zonder handtekening |
+| `Klantnaam`, `Klant telefoon` | Opzoekvelden; zonder deze ziet het portaal alleen een record-id |
+
+`Onderweg sinds` wordt alleen gezet als het veld nog leeg is, en dat kijkt de
+Worker zelf na — niet de telefoon. Twee keer op *Onderweg* drukken mag je
+vertrektijd niet verschuiven, en een telefoon met een oude lijst moet dat niet
+kunnen veroorzaken.
+
+**De volgorde bij het tekenen is met opzet.** Eerst naam, tijdstip en status
+wegschrijven, dan pas de afbeelding uploaden. Mislukt de upload, dan klopt de
+administratie nog steeds en meldt het portaal dat opnieuw getekend moet worden.
+Andersom zou een gelukte upload bij een mislukte update een handtekening
+opleveren die nergens bij hoort.
+
+Gecontroleerd met negentien tests op de Worker (vreemde herkomst, foute code,
+verzonnen status, rommel-id, een niet-afbeelding als handtekening, de
+vertrektijd die niet te vervalsen is, en dat de token nooit in een foutmelding
+belandt) en met het portaal zelf in een browser tegen een nagebootste Worker.
+Wat pas na het uitrollen te controleren is: of Airtable de handtekening
+werkelijk als bijlage aanneemt. Dat is hetzelfde uploadpad als de foto's bij een
+aanvraag, en dat is nog nooit met echte gegevens getest.
+
 ### Wat alleen met de hand kan
 
 De koppeling waarmee ik de base bewerk kan velden aanmaken en aanpassen, maar niet

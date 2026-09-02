@@ -1,0 +1,12 @@
+name = "schaap-portaal"
+main = "portaal.js"
+compatibility_date = "2026-09-02"
+
+# Geen geheimen in dit bestand — dat staat in git. Twee secrets zet je apart:
+#   wrangler secret put AIRTABLE_TOKEN     (dezelfde als bij schaap-aanvragen)
+#   wrangler secret put PORTAAL_CODE       (je eigen toegangscode)
+# of via het Cloudflare-dashboard onder Settings > Variables and Secrets.
+[vars]
+AIRTABLE_BASE = "appLUKMbBBkJUagFs"
+AIRTABLE_RITTEN = "tblNH4BAVu9uRHZIS"
+TOEGESTANE_ORIGIN = "https://picknicken.github.io"

@@ -31,6 +31,7 @@ die serveert `diensten/index.html` wel gewoon op `/diensten/`.
 | `werkwijze/index.html` | `/werkwijze/` | Van aanvraag tot factuur in zeven stappen, plus "waarom" |
 | `contact/index.html` | `/contact/` | Contactgegevens en berichtformulier |
 | `factuur/index.html` | `/factuur/` | Factuur op papierformaat, gevuld vanuit de adresregel |
+| `portaal/index.html` | `/portaal/` | Chauffeursportaal: ritten van de dag, statussen, handtekeningen |
 | `404.html` | — | Wordt door GitHub Pages getoond bij een onbekend adres |
 
 ```
@@ -40,6 +41,7 @@ assets/
   calculator.js           de prijscalculator op de homepage
   aanvraag.js             het aanvraagformulier
   contact.js              het berichtformulier
+  portaal.js              het chauffeursportaal
   logo-sl-wit.png         beeldmerk, wit — in de donkere header en footer
   logo-sl.png             beeldmerk, zwart
   logo-volledig-wit.png   beeldmerk plus woordmerk, wit
@@ -48,9 +50,16 @@ assets/
 worker/
   aanvragen.js    Cloudflare Worker die aanvragen in Airtable zet
   wrangler.toml   instellingen voor het uitrollen (zonder geheimen)
+worker-portaal/
+  portaal.js      tweede Worker, voor het chauffeursportaal
+  wrangler.toml   instellingen voor het uitrollen (zonder geheimen)
 ```
 
-`worker/` hoort niet bij de site; het is de tussenlaag die op Cloudflare draait.
+Twee Workers en niet één, met opzet: `schaap-aanvragen` draait en neemt aanvragen
+aan. Daar wil je niet in hoeven snijden om aan het portaal te werken, en een fout
+in het portaal mag nooit het aanvraagformulier meeslepen.
+
+De `worker`-mappen horen niet bij de site; het is de tussenlaag die op Cloudflare draait.
 GitHub Pages serveert de map wel mee, maar er staat niets gevoeligs in — de
 Airtable-token zit in de secrets van Cloudflare, niet in git.
 
@@ -97,12 +106,12 @@ in meerdere bestanden. Zoek op `PLACEHOLDER` om ze te vinden.
 
       ```sh
       grep -rl 'noindex,nofollow' --include='*.html' . \
-        | grep -v '^./factuur/' \
+        | grep -v -e '^./factuur/' -e '^./portaal/' \
         | xargs sed -i 's/noindex,nofollow/index,follow/'
       ```
 
-      `factuur/index.html` blijft bewust op `noindex`: dat is een intern
-      hulpmiddel met klantgegevens in de adresregel en hoort niet in Google.
+      `factuur/index.html` en `portaal/index.html` blijven bewust op `noindex`:
+      dat zijn interne hulpmiddelen met klantgegevens en die horen niet in Google.
 
 - [ ] **Algemene voorwaarden en privacyverklaring.** De footer stelt nu dat er
       algemene voorwaarden van toepassing zijn, maar er staat nergens een link
@@ -170,6 +179,43 @@ regel 40. Bedragen mogen met een punt of een komma.
 Je hoeft die adresregel nooit zelf te typen: in Airtable staat op elke factuur het
 veld `Factuurlink`, dat hem uit de gekoppelde rit, klant en opdracht opbouwt. Zie
 `AIRTABLE.md`.
+
+## Het chauffeursportaal
+
+`/portaal/` is de kant van de site die klanten nooit zien: de ritten van de dag op
+je telefoon, met knoppen om de status om te zetten, een route te starten en de
+ontvanger te laten tekenen. Nergens naartoe gelinkt vanaf de site — zet hem op je
+beginscherm als snelkoppeling.
+
+Wat het kan:
+
+- **De dag overzien.** Bovenaan het aantal ritten, hoeveel er nog openstaan, de
+  kilometers en de omzet van die dag. Met pijltjes blader je naar gisteren of morgen.
+- **Status omzetten.** *Onderweg* legt meteen het vertrektijdstip vast, zodat je
+  achteraf ziet hoe lang een rit werkelijk duurde.
+- **Route starten.** Bij een geplande rit wijst de knop naar het ophaaladres, bij
+  een rit die onderweg is naar het afleveradres. Opent Google Maps op de telefoon,
+  zonder sleutel of account.
+- **Laten tekenen.** De ontvanger zet zijn handtekening op je scherm en typt zijn
+  naam. Die gaan als afleverbewijs bij de rit in Airtable, en de rit springt op
+  *Uitgevoerd* — waarmee de conceptfactuur zichzelf aanmaakt.
+
+Twee dingen die bewust zo zijn:
+
+**De toegangscode is een gedeeld wachtwoord, geen account.** Het past bij één man
+met één telefoon. Wie de code heeft, ziet alle ritten en klantgegevens. Raakt je
+telefoon kwijt, wijzig dan `PORTAAL_CODE` in Cloudflare — dat apparaat is er dan
+meteen uit. Komt er ooit een tweede chauffeur bij, dan is dit het eerste wat moet
+veranderen.
+
+**Bij het tekenen gaat de administratie voor de krabbel.** Eerst de naam, het
+tijdstip en de status vastleggen, dan pas de afbeelding uploaden. Mislukt die
+upload, dan klopt de administratie nog steeds en zegt het portaal dat opnieuw
+getekend moet worden. In Airtable springt het veld `Afleverbewijs` dan op
+*Ontbreekt*, zodat het niet stilletjes wegzakt.
+
+Het portaal werkt niet offline. Val je onderweg uit bereik, dan zegt het dat er
+niets verstuurd is en probeer je het opnieuw zodra je weer bereik hebt.
 
 ## Formulieren versturen
 
