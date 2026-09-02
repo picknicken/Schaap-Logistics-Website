@@ -35,7 +35,9 @@
   var ritten = [];
   var aanvragen = [];
   var opdrachten = [];
+  var klanten = [];
   var tabblad = 'ritten';
+  var klantVoor = null;
   var tekentVoor = null;
 
   /* ------------------------------------------------------------- datums */
@@ -229,6 +231,7 @@
        rittenoproep niet. Dan houden we wat we al hadden. */
     if (data.aanvragen)  { aanvragen = data.aanvragen; }
     if (data.opdrachten) { opdrachten = data.opdrachten; }
+    if (data.klanten)    { klanten = data.klanten; }
     el('dag-naam').textContent = dagNaam(dag);
     el('dag-datum').textContent = datumLang(dag);
     tekenAlles();
@@ -652,10 +655,14 @@
       var t = maak('div');
       t.appendChild(maak('b', '', 'Nog geen klant gekoppeld'));
       t.appendChild(document.createTextNode(
-        'Je kunt hem wel inplannen, maar zonder klant kan er later geen ' +
-        'factuur uit. Koppel hem in Airtable bij de opdracht.'));
+        'Inplannen mag, maar zonder klant komt er later geen factuur uit.'));
       waarschuwing.appendChild(t);
       lijf.appendChild(waarschuwing);
+
+      var koppel = maak('button', 'knop knop--rand', 'Klant koppelen');
+      koppel.type = 'button';
+      koppel.addEventListener('click', function () { openKlantblad(o); });
+      lijf.appendChild(koppel);
     }
 
     /* Datum vooraf gevuld met de gewenste datum van de klant: negen van de
@@ -716,6 +723,101 @@
         knop.textContent = oud;
       }
     });
+  }
+
+  /* --------------------------------------------------------- klantblad */
+
+  function openKlantblad(o) {
+    klantVoor = o;
+    el('klant-opdracht').textContent = o.naam || 'Opdracht';
+    meldKlant('');
+
+    var keuze = el('klant-keuze');
+    keuze.innerHTML = '';
+    if (!klanten.length) {
+      keuze.appendChild(maak('option', '', 'Nog geen klanten'));
+      keuze.disabled = true;
+      el('klant-koppel').disabled = true;
+    } else {
+      keuze.disabled = false;
+      el('klant-koppel').disabled = false;
+      klanten.forEach(function (k) {
+        var optie = maak('option', '', k.naam || '(zonder naam)');
+        optie.value = k.id;
+        keuze.appendChild(optie);
+      });
+    }
+
+    /* Bedrijfsnaam uit de aanvraag vast invullen: negen van de tien keer is
+       dat de naam die de klant zelf gebruikt. */
+    el('klant-naam').value = o.klant || '';
+    ['klant-adres', 'klant-telefoon', 'klant-email', 'klant-termijn']
+      .forEach(function (id) { el(id).value = ''; });
+
+    el('klantdoek').hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+
+  function sluitKlantblad() {
+    el('klantdoek').hidden = true;
+    document.body.style.overflow = '';
+    klantVoor = null;
+  }
+
+  function meldKlant(tekst) {
+    var m = el('klant-melding');
+    m.textContent = tekst || '';
+    m.hidden = !tekst;
+  }
+
+  el('klant-terug').addEventListener('click', sluitKlantblad);
+
+  el('klant-koppel').addEventListener('click', function () {
+    if (!klantVoor) { return; }
+    var klantId = el('klant-keuze').value;
+    if (!klantId) { meldKlant('Kies eerst een klant.'); return; }
+    bezig(el('klant-koppel'), 'Koppelen…', function (klaar) {
+      verstuur('koppelklant', { id: klantVoor.id, klantId: klantId })
+        .then(function (data) {
+          klantGekoppeld(data.opdracht);
+          klaar(true);
+        })
+        .catch(function (fout) { meldKlant(fout.message); klaar(false); });
+    });
+  });
+
+  el('klant-nieuw').addEventListener('click', function () {
+    if (!klantVoor) { return; }
+    var naam = el('klant-naam').value.trim();
+    if (naam.length < 2) {
+      meldKlant('Vul een bedrijfsnaam in.');
+      el('klant-naam').focus();
+      return;
+    }
+    bezig(el('klant-nieuw'), 'Aanmaken…', function (klaar) {
+      verstuur('nieuweklant', {
+        opdrachtId: klantVoor.id,
+        naam: naam,
+        adres: el('klant-adres').value.trim(),
+        telefoon: el('klant-telefoon').value.trim(),
+        email: el('klant-email').value.trim(),
+        termijn: el('klant-termijn').value.trim()
+      }).then(function (data) {
+        if (data.klant) { klanten = klanten.concat([data.klant]); }
+        klantGekoppeld(data.opdracht);
+        klaar(true);
+      }).catch(function (fout) { meldKlant(fout.message); klaar(false); });
+    });
+  });
+
+  function klantGekoppeld(nieuweOpdracht) {
+    if (nieuweOpdracht) {
+      opdrachten = opdrachten.map(function (o) {
+        return o.id === nieuweOpdracht.id ? nieuweOpdracht : o;
+      });
+    }
+    sluitKlantblad();
+    tekenPlanning();
   }
 
   /* --------------------------------------------------------- tekenblad */

@@ -17,6 +17,7 @@
      AIRTABLE_RITTEN      tblNH4BAVu9uRHZIS
      AIRTABLE_OPDRACHTEN  tblMNRxxvlQ2ykGCb
      AIRTABLE_AANVRAGEN   tblhvOATDAfvBmabA
+     AIRTABLE_KLANTEN     tbluCJAsTFXdB2ZeR
      TOEGESTANE_ORIGIN    https://picknicken.github.io
 
    De token heeft data.records:read én data.records:write nodig. Alleen
@@ -88,6 +89,15 @@ const A = {
   binnen:     'Binnengekomen'
 };
 
+const K = {
+  naam:      'Klantnaam',
+  adres:     'Adres',
+  email:     'E-mail',
+  telefoon:  'Telefoon',
+  termijn:   'Betalingstermijn (dagen)',
+  nummer:    'Klantnummer'
+};
+
 /* Precies de statussen die in Airtable bestaan. Een status die de telefoon
    verzint mag nooit doorgeschreven worden. */
 const RIT_STATUSSEN = ['Gepland', 'Onderweg', 'Uitgevoerd', 'Geannuleerd'];
@@ -144,6 +154,8 @@ export default {
         case 'afwijzen':     return await wijsAanvraagAf(env, body, origin);
         case 'planrit':      return await planRit(env, body, origin);
         case 'ritdatum':     return await zetRitdatum(env, body, origin);
+        case 'koppelklant':  return await koppelKlant(env, body, origin);
+        case 'nieuweklant':  return await nieuweKlant(env, body, origin);
         default:
           return antwoord(400, { fout: 'Onbekende actie' }, origin, true);
       }
@@ -163,12 +175,14 @@ async function haalOverzicht(env, body, origin) {
   if (!dag) {
     return antwoord(400, { fout: 'Geef een datum als JJJJ-MM-DD' }, origin, true);
   }
-  const [ritten, aanvragen, opdrachten] = await Promise.all([
+  const [ritten, aanvragen, opdrachten, klanten] = await Promise.all([
     rittenOphalen(env, dag, dag),
     aanvragenOphalen(env),
-    opdrachtenOphalen(env)
+    opdrachtenOphalen(env),
+    klantenOphalen(env)
   ]);
-  return antwoord(200, { ok: true, dag, ritten, aanvragen, opdrachten }, origin, true);
+  return antwoord(200, { ok: true, dag, ritten, aanvragen, opdrachten, klanten },
+                  origin, true);
 }
 
 async function haalRitten(env, body, origin) {
@@ -345,6 +359,66 @@ async function zetRitdatum(env, body, origin) {
   return antwoord(200, { ok: true, rit }, origin, true);
 }
 
+/* Een klant aan een opdracht hangen. Ook aan de ritten die er al onder
+   hangen: anders staat de opdracht wel op naam en de rit niet, en dan komt
+   er straks een factuur zonder klant uit. */
+async function koppelKlant(env, body, origin) {
+  const id = recordId(body.id);
+  const klantId = recordId(body.klantId);
+  if (!id || !klantId) {
+    return antwoord(400, { fout: 'Ongeldig id' }, origin, true);
+  }
+  const opdracht = naarOpdracht(
+    await patch(env, env.AIRTABLE_OPDRACHTEN, id, { [O.klantlink]: [klantId] })
+  );
+  await koppelKlantAanRitten(env, id, klantId);
+  return antwoord(200, { ok: true, opdracht }, origin, true);
+}
+
+async function koppelKlantAanRitten(env, opdrachtId, klantId) {
+  try {
+    const ruw = await airtable(env, `${env.AIRTABLE_OPDRACHTEN}/${opdrachtId}`);
+    const ritten = (ruw.fields || {})[O.ritten] || [];
+    for (const r of ritten) {
+      const rid = (r && r.id) || r;
+      await patch(env, env.AIRTABLE_RITTEN, rid, { [R.klantlink]: [klantId] });
+    }
+  } catch (fout) {
+    console.log(`Klant niet doorgezet naar de ritten van ${opdrachtId}: ${fout.message}`);
+  }
+}
+
+/* Een nieuwe klant, en meteen aan de opdracht hangen. Adres hoort erbij:
+   zonder adres kun je later geen factuur versturen. */
+async function nieuweKlant(env, body, origin) {
+  const naam = String(body.naam || '').trim().slice(0, 200);
+  if (naam.length < 2) {
+    return antwoord(400, { fout: 'Vul een klantnaam in' }, origin, true);
+  }
+
+  const velden = { [K.naam]: naam };
+  if (body.adres)    { velden[K.adres]    = String(body.adres).slice(0, 500); }
+  if (body.email)    { velden[K.email]    = String(body.email).slice(0, 200); }
+  if (body.telefoon) { velden[K.telefoon] = String(body.telefoon).slice(0, 50); }
+  const termijn = Number(body.termijn);
+  if (isFinite(termijn) && termijn > 0) { velden[K.termijn] = Math.round(termijn); }
+
+  const klant = naarKlant(await maak(env, env.AIRTABLE_KLANTEN, velden));
+
+  /* Aan een opdracht koppelen mag, maar hoeft niet: je kunt ook gewoon een
+     klant vastleggen zonder dat er al werk voor is. */
+  let opdracht = null;
+  const id = recordId(body.opdrachtId);
+  if (id) {
+    opdracht = naarOpdracht(
+      await patch(env, env.AIRTABLE_OPDRACHTEN, id, { [O.klantlink]: [klant.id] })
+    );
+    await koppelKlantAanRitten(env, id, klant.id);
+  }
+
+  return antwoord(200, { ok: true, klant, opdracht }, origin, true);
+}
+
 /* ------------------------------------------------------------- ophalen */
 
 async function rittenOphalen(env, van, tot) {
@@ -389,6 +463,15 @@ async function opdrachtenOphalen(env) {
   zoek.append('sort[0][direction]', 'asc');
   const data = await airtable(env, `${env.AIRTABLE_OPDRACHTEN}?${zoek}`);
   return (data.records || []).map(naarOpdracht);
+}
+
+async function klantenOphalen(env) {
+  const zoek = new URLSearchParams();
+  zoek.set('pageSize', '100');
+  zoek.append('sort[0][field]', K.naam);
+  zoek.append('sort[0][direction]', 'asc');
+  const data = await airtable(env, `${env.AIRTABLE_KLANTEN}?${zoek}`);
+  return (data.records || []).map(naarKlant);
 }
 
 /* ------------------------------------------------------------- hulpmiddelen */
@@ -504,6 +587,19 @@ function naarAanvraag(record) {
     prijs:       f[A.prijs] || 0,
     binnen:      f[A.binnen] || '',
     omgezet:     Array.isArray(f[A.opdracht]) && f[A.opdracht].length > 0
+  };
+}
+
+function naarKlant(record) {
+  const f = record.fields || {};
+  return {
+    id:       record.id,
+    naam:     f[K.naam] || '',
+    adres:    f[K.adres] || '',
+    email:    f[K.email] || '',
+    telefoon: f[K.telefoon] || '',
+    termijn:  f[K.termijn] || 0,
+    nummer:   f[K.nummer] || ''
   };
 }
 

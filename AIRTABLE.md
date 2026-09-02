@@ -371,6 +371,27 @@ Wat pas na het uitrollen te controleren is: of Airtable de handtekening
 werkelijk als bijlage aanneemt. Dat is hetzelfde uploadpad als de foto's bij een
 aanvraag, en dat is nog nooit met echte gegevens getest.
 
+### De interface Administratie
+
+De tabellen zijn breed geworden: `Facturen` heeft er vierendertig, en vijftien
+daarvan bestaan alleen om de Factuurlink te vullen. Prima voor de machine,
+onwerkbaar voor een mens.
+
+Daarom staat er een interface **Administratie** (`pbdeBhgTbOrgyQynH`) op met vijf
+schermen die elk maar één ding tonen:
+
+| Scherm | Wat je ziet |
+| --- | --- |
+| Te factureren | Ritten op *Uitgevoerd*, met bedrag en of het afleverbewijs compleet is |
+| Facturen | Alle facturen met de Factuurlink; tabbladen Concept, Verzonden, Betaald |
+| Openstaand | Alleen facturen met een openstaand bedrag, de langst wachtende bovenaan |
+| Winst per rit | Kosten invullen en zien wat er onder de streep overblijft, per soort transport |
+| Klanten | Klantgegevens, zonder de koppelvelden ertussen |
+
+De tabellen zelf zijn niet aangepast; de interface is een andere bril op dezelfde
+gegevens. Verberg in de tabelweergaven zelf gerust de opzoekvelden die met `Rit `
+of `Klant ` beginnen — die vullen zichzelf.
+
 ### Wat alleen met de hand kan
 
 De koppeling waarmee ik de base bewerk kan velden aanmaken en aanpassen, maar niet

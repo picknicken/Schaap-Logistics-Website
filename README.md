@@ -217,8 +217,10 @@ Drie tabbladen, met een teller erop zodat je in één blik ziet waar iets ligt.
 
 - **Inplannen** maakt de rit, met de gewenste datum van de klant al ingevuld, en
   neemt klant, adressen, soort transport en opmerkingen over.
-- Een opdracht zonder gekoppelde klant wordt gemarkeerd: inplannen mag, maar
-  zonder klant komt er later geen factuur uit.
+- **Klant koppelen** bij een opdracht zonder klant: kies een bestaande, of maak
+  er een aan met naam, adres, telefoon, e-mail en betalingstermijn. De klant gaat
+  meteen mee naar de ritten die er al onder hangen — anders staat de opdracht wel
+  op naam en de rit niet, en komt er straks een factuur zonder klant uit.
 
 Dat inplannen was de ontbrekende schakel. Een aanvraag werd een opdracht, maar
 niets maakte daar een rit van — en het portaal toont ritten. Een aangenomen

@@ -232,6 +232,18 @@ input{font:inherit}
 .prijs b{font-size:1.05rem;color:var(--heading);font-variant-numeric:tabular-nums}
 
 .datumrij{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}
+.scheider{
+  display:flex;align-items:center;gap:12px;
+  font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;
+}
+.scheider::before,.scheider::after{
+  content:"";flex:1;height:1px;background:var(--line);
+}
+.veld select{
+  width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;
+  background:var(--paper);color:var(--heading);font:inherit;
+}
+
 .datumrij input{
   width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:10px;
   background:var(--paper);color:var(--heading);
@@ -347,6 +359,57 @@ input{font:inherit}
 
   <div id="paneel-planning" class="wrap" hidden>
     <div id="lijst-planning" class="lijst"></div>
+  </div>
+</div>
+
+<!-- =========================== klantblad =========================== -->
+<div class="doek" id="klantdoek" hidden>
+  <div class="blad" role="dialog" aria-modal="true" aria-labelledby="klant-titel">
+    <div>
+      <h2 id="klant-titel">Klant koppelen</h2>
+      <p class="blad__sub" id="klant-opdracht"></p>
+    </div>
+
+    <div id="klant-melding" class="melding" hidden></div>
+
+    <label class="veld" style="margin:0">
+      <span>Bestaande klant</span>
+      <select id="klant-keuze"></select>
+    </label>
+    <button class="knop knop--blauw" id="klant-koppel" type="button" style="width:100%">
+      Koppelen
+    </button>
+
+    <div class="scheider"><span>of maak een nieuwe</span></div>
+
+    <label class="veld" style="margin:0">
+      <span>Bedrijfsnaam</span>
+      <input type="text" id="klant-naam" autocomplete="organization">
+    </label>
+    <label class="veld" style="margin:0">
+      <span>Adres</span>
+      <input type="text" id="klant-adres" placeholder="Straat 1, 1234 AB Plaats">
+      <small>Zonder adres kun je later geen factuur versturen.</small>
+    </label>
+    <div class="knoppen knoppen--twee">
+      <label class="veld" style="margin:0">
+        <span>Telefoon</span>
+        <input type="tel" id="klant-telefoon" autocomplete="tel">
+      </label>
+      <label class="veld" style="margin:0">
+        <span>Termijn</span>
+        <input type="number" id="klant-termijn" placeholder="14" min="1" max="180">
+      </label>
+    </div>
+    <label class="veld" style="margin:0">
+      <span>E-mail</span>
+      <input type="email" id="klant-email" autocomplete="email">
+    </label>
+
+    <button class="knop knop--groen" id="klant-nieuw" type="button" style="width:100%">
+      Klant aanmaken en koppelen
+    </button>
+    <button class="knop knop--stil" id="klant-terug" type="button">Annuleren</button>
   </div>
 </div>
 
