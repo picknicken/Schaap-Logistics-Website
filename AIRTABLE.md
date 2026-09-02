@@ -1,8 +1,9 @@
 # Aanvragen naar Airtable
 
-De formulieren op de site werken standaard via `mailto:` — de aanvraag opent in
-het e-mailprogramma van de bezoeker. Deze notitie beschrijft hoe je in plaats
-daarvan de aanvragen automatisch in Airtable laat binnenkomen.
+**Deze koppeling staat live sinds 2 september 2026.** Een aanvraag via het
+formulier komt binnen in de tabel `Website-aanvragen`. Deze notitie beschrijft
+hoe het in elkaar zit en wat er bij het installeren misging, zodat je het kunt
+naslaan als er iets hapert.
 
 ## De hoofdregel
 
@@ -17,7 +18,8 @@ tussenlaag die de token bewaart:
 formulier op de site  ->  Cloudflare Worker  ->  Airtable API
 ```
 
-Die Worker staat in [`worker/aanvragen.js`](worker/aanvragen.js).
+Die Worker staat in [`worker/aanvragen.js`](worker/aanvragen.js) en draait op
+`https://schaap-aanvragen.rt5twh6n7h.workers.dev`.
 
 ## Wat er al klaar staat
 
@@ -139,6 +141,34 @@ laten belanden.
 - **Van aanvraag naar opdracht.** `Website-aanvragen` is een postbus, geen
   administratie. Accepteer je een aanvraag, zet hem dan om in een record in
   `Opdrachten` en leg de link vast in het veld *Opdracht*.
+
+## Wat er bij het installeren misging
+
+Twee dingen die je bij een volgende wijziging tijd besparen.
+
+**Een half geplakte Worker verliest stilletjes één veld.** Bovenin de Worker
+staat de lijst met kolommen die doorgelaten worden. Bij het plakken op een
+telefoon sneuvelde daar `'Afleverlocatie'` uit, en het gevolg was dat aanvragen
+gewoon binnenkwamen — alleen zonder afleveradres, terwijl de afleverpostcode er
+wel stond. Geen foutmelding, nergens. Wijzig je de Worker, plak dan altijd het
+hele bestand via de kopieerknop op GitHub, nooit met de hand geselecteerd, en
+controleer daarna één aanvraag veld voor veld.
+
+**`workers.dev` wordt op veel bedrijfsnetwerken geblokkeerd.** Dat domein wordt
+veel voor rommel gebruikt, dus filters gooien het er standaard uit. Op een
+werk-pc geeft het formulier dan "Versturen is niet gelukt (Failed to fetch)",
+terwijl er niets mis is. Dit raakt ook klanten: die zitten zelf ook achter zulke
+filters. De oplossing is de Worker op een eigen domeinnaam zetten
+(`aanvragen.schaaplogistics.nl`) zodra dat domein er is — zie hieronder.
+
+## Nog te doen
+
+- **Eigen domeinnaam.** Zet de Worker daarna op een subdomein in plaats van op
+  `workers.dev`, zodat bedrijfsnetwerken hem niet blokkeren. In het
+  Cloudflare-dashboard onder Domains & Routes.
+- **Bevestigingsmail** naar de aanvrager. Bij `mailto:` zag hij zijn eigen
+  bericht in verzonden items; via de Worker krijgt hij niets.
+- **Foto's** zijn nog niet met een echte aanvraag getest.
 
 ## Losse einden in de base
 
