@@ -166,8 +166,9 @@ filters. De oplossing is de Worker op een eigen domeinnaam zetten
 - **Eigen domeinnaam.** Zet de Worker daarna op een subdomein in plaats van op
   `workers.dev`, zodat bedrijfsnetwerken hem niet blokkeren. In het
   Cloudflare-dashboard onder Domains & Routes.
-- **Antwoordadres op de bevestigingsmail** (zie hieronder). Zonder dat komen
-  antwoorden van klanten bij niemand terecht.
+- **Een gelezen antwoordadres op de bevestigingsmail.** Nu is het een
+  noreply-bericht en lopen correcties via het contactformulier; dat is een
+  omweg voor een klant die haast heeft.
 - **Foto's** zijn nog niet met een echte aanvraag getest.
 
 ## De bevestigingsmail
@@ -184,10 +185,13 @@ verschijnen in plaats van als ruwe waarden.
 
 Twee dingen om te weten:
 
-- **Er staat nog geen antwoordadres in.** Antwoordt een klant op de bevestiging,
-  dan komt dat bij Airtable terecht en niet bij jou. Vul `replyTo` aan zodra het
-  zakelijke e-mailadres bekend is. Om dezelfde reden staat er nog geen
-  telefoonnummer in de afsluiting: liever geen contactgegevens dan verkeerde.
+- **Het is bewust een noreply-bericht.** Er staat geen antwoordadres in, dus
+  antwoorden komen bij Airtable terecht en worden niet gelezen. De mail zegt dat
+  zelf en verwijst voor correcties naar het contactformulier op de site. Een
+  eigen `noreply@`-adres heeft pas zin met een eigen domeinnaam; zonder dat zou
+  je verwijzen naar een domein dat je niet beheert. Er staat om dezelfde reden
+  nog geen telefoonnummer in de afsluiting: liever geen contactgegevens dan
+  verkeerde.
 - **Automatiseringen zijn op het gratis Airtable-plan begrensd** op honderd
   uitvoeringen per maand. Dat is één bevestiging per aanvraag; loop je daar
   tegenaan, dan is een betaald plan nodig.
