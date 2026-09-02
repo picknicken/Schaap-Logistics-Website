@@ -355,6 +355,32 @@
     return veld;
   }
 
+  /* Hetzelfde, maar met een keuzelijst. De drie tijdvakken staan hier bewust
+     letterlijk: het zijn dezelfde namen als in Airtable en op de website, en
+     aan elk hangt een bedrag. */
+  var TIJDVAKKEN = [
+    ['Overdag', 'Overdag — geen toeslag'],
+    ['Avondrit (18:00-23:00)', 'Avond 18:00-23:00 — + € 15'],
+    ['Nacht- of weekendrit', 'Nacht of weekend — + € 35']
+  ];
+
+  function tijdvakVeld(gekozen) {
+    var veld = maak('label', 'veld');
+    veld.style.margin = '0';
+    veld.appendChild(maak('span', '', 'Tijdvak'));
+    var keuze = document.createElement('select');
+    TIJDVAKKEN.forEach(function (t) {
+      var optie = document.createElement('option');
+      optie.value = t[0];
+      optie.textContent = t[1];
+      keuze.appendChild(optie);
+    });
+    keuze.value = gekozen || 'Overdag';
+    veld.appendChild(keuze);
+    veld.invoer = keuze;
+    return veld;
+  }
+
   /* Een tekstlink onder een invoerveld, voor iets wat je opzoekt en daarna
      zelf invult. */
   function afstandLink(van, naar) {
@@ -434,6 +460,7 @@
     regel('Ophalen', rit.ophaal);
     regel('Bezorgen', rit.aflever);
     if (rit.km) { regel('Afstand', Math.round(rit.km) + ' km'); }
+    if (rit.tijdvak && rit.tijdvak !== 'Overdag') { regel('Tijdvak', rit.tijdvak); }
     if (rit.bedrag) { regel('Bedrag', euroCent.format(rit.bedrag) + ' excl. btw'); }
     if (rit.onderweg) { regel('Vertrokken', klok(rit.onderweg)); }
     regel('Opmerking', rit.opmerking);
@@ -483,14 +510,18 @@
       var ritLink = afstandLink(rit.ophaal, rit.aflever);
       if (ritLink) { lijf.appendChild(ritLink); }
 
-      var kmKnop = maak('button', 'knop knop--rand', 'Afstand en stops opslaan');
+      var tvVeldRit = tijdvakVeld(rit.tijdvak);
+      lijf.appendChild(tvVeldRit);
+
+      var kmKnop = maak('button', 'knop knop--rand', 'Afstand, stops en tijdvak opslaan');
       kmKnop.type = 'button';
       kmKnop.addEventListener('click', function () {
         bezig(kmKnop, 'Opslaan…', function (klaar) {
           verstuur('ritkm', {
             id: rit.id,
             km: kmVeldRit.invoer.value,
-            stops: stopVeldRit.invoer.value
+            stops: stopVeldRit.invoer.value,
+            tijdvak: tvVeldRit.invoer.value
           }).then(function (data) {
             ververs(data.rit);
             meldApp('');
@@ -818,9 +849,12 @@
     var stopRij = maak('div', 'velrij');
     var stopVeld = getalVeld('Extra stops', o.stops);
     stopRij.appendChild(stopVeld);
-    stopRij.appendChild(maak('div', 'terzijde',
-      '€ 25 per extra adres onderweg, zoals de klant het op de site zag.'));
+    var tvVeld = tijdvakVeld(o.tijdvak);
+    stopRij.appendChild(tvVeld);
     lijf.appendChild(stopRij);
+    lijf.appendChild(maak('div', 'terzijde',
+      '€ 25 per extra adres onderweg. Avond + € 15, nacht of weekend + € 35. ' +
+      'Zo stond het in de prijs die de klant op de site zag.'));
 
     var opdrachtLink = afstandLink(o.ophaal, o.aflever);
     if (opdrachtLink) { lijf.appendChild(opdrachtLink); }
@@ -839,7 +873,8 @@
     var plan = maak('button', 'knop knop--blauw', 'Inplannen');
     plan.type = 'button';
     plan.addEventListener('click', function () {
-      planIn(o, invoer.value, kmInvoer.value, stopVeld.invoer.value, plan);
+      planIn(o, invoer.value, kmInvoer.value, stopVeld.invoer.value,
+             tvVeld.invoer.value, plan);
     });
     lijf.appendChild(plan);
 
@@ -904,13 +939,14 @@
     lijf.appendChild(knop);
   }
 
-  function planIn(o, datumWaarde, kmWaarde, stopWaarde, knop) {
+  function planIn(o, datumWaarde, kmWaarde, stopWaarde, tijdvakWaarde, knop) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(datumWaarde || '')) {
       meldApp('Kies eerst een datum om op te rijden.');
       return;
     }
     bezig(knop, 'Inplannen…', function (klaar) {
-      verstuur('planrit', { id: o.id, datum: datumWaarde, km: kmWaarde, stops: stopWaarde })
+      verstuur('planrit', { id: o.id, datum: datumWaarde, km: kmWaarde,
+                            stops: stopWaarde, tijdvak: tijdvakWaarde })
         .then(function (data) {
           opdrachten = opdrachten.filter(function (x) { return x.id !== o.id; });
           if (data.rit && data.rit.datum === dag) { ritten = ritten.concat([data.rit]); }

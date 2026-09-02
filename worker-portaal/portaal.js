@@ -38,6 +38,7 @@ const R = {
   aflever:    'Afleveradres',
   km:         'Kilometers',
   stops:      'Extra stops',
+  tijdvak:    'Tijdvak',
   klant:      'Klantnaam',
   telefoon:   'Klant telefoon',
   opmerking:  'Opmerkingen',
@@ -62,6 +63,7 @@ const O = {
   type:       'Type rit',
   km:         'Kilometers',
   stops:      'Extra stops',
+  tijdvak:    'Tijdvak',
   ritten:     'Ritten'
 };
 
@@ -358,6 +360,11 @@ async function planRit(env, body, origin) {
   const stops = heelGetal(body.stops !== undefined && body.stops !== '' ? body.stops : f[O.stops]);
   if (stops !== null) { velden[R.stops] = stops; }
 
+  /* En het tijdvak, want daar hangt de avond- of nachttoeslag aan. */
+  const tijdvak = tijdvakUit(body.tijdvak !== undefined && body.tijdvak !== ''
+    ? body.tijdvak : keuze(f[O.tijdvak]));
+  if (tijdvak) { velden[R.tijdvak] = tijdvak; }
+
   const rit = naarRit(await maak(env, env.AIRTABLE_RITTEN, velden));
 
   /* De opdracht staat nu ingepland; dat hoort ook in de opdrachtstatus. */
@@ -509,6 +516,9 @@ async function zetRitKm(env, body, origin) {
      werkelijk gereden? Laat je het veld leeg, dan blijft het zoals het was. */
   const stops = heelGetal(body.stops);
   if (stops !== null) { velden[R.stops] = stops; }
+
+  const tijdvak = tijdvakUit(body.tijdvak);
+  if (tijdvak) { velden[R.tijdvak] = tijdvak; }
 
   const rit = naarRit(await patch(env, env.AIRTABLE_RITTEN, id, velden));
   return antwoord(200, { ok: true, rit }, origin, true);
@@ -754,6 +764,14 @@ function kilometers(w) {
   return Math.round(km * 10) / 10;
 }
 
+/* Het tijdvak bepaalt de avond- of nachttoeslag, dus een verzonnen naam mag er
+   niet in: die zou in Airtable een nieuwe keuze aanmaken en stilletjes geen
+   toeslag opleveren. Alleen deze drie bestaan. */
+const TIJDVAKKEN = ['Overdag', 'Avondrit (18:00-23:00)', 'Nacht- of weekendrit'];
+function tijdvakUit(w) {
+  return TIJDVAKKEN.includes(String(w || '')) ? String(w) : null;
+}
+
 /* Een aantal dat je telt, geen bedrag: extra stops. Leeg blijft leeg, zodat
    "niets ingevuld" iets anders is dan "nul stops". */
 function heelGetal(w) {
@@ -791,6 +809,7 @@ function naarRit(record) {
     aflever:    f[R.aflever] || '',
     km:         f[R.km] || 0,
     stops:      f[R.stops] || 0,
+    tijdvak:    keuze(f[R.tijdvak]) || '',
     klant:      eerste(f[R.klant]),
     telefoon:   eerste(f[R.telefoon]),
     opmerking:  f[R.opmerking] || '',
@@ -823,6 +842,7 @@ function naarOpdracht(record) {
     type:       keuze(f[O.type]),
     km:         f[O.km] || 0,
     stops:      f[O.stops] || 0,
+    tijdvak:    keuze(f[O.tijdvak]) || '',
     ritten:     Array.isArray(f[O.ritten]) ? f[O.ritten].length : 0
   };
 }

@@ -93,6 +93,14 @@ header{
   border:1px solid rgba(255,176,32,.35);transition:background .15s;
 }
 .nav__phone:hover{background:rgba(255,176,32,.24)}
+/* De ingang naar het klantportaal. Een knop en geen menu-item: klanten zoeken
+   naar iets waar "inloggen" op staat, niet naar de zoveelste link in een rij.
+   Rustiger dan het telefoonnummer, want bellen blijft de hoofdweg. */
+.nav__links a.nav__login{
+  padding:8px 16px;border-radius:9px;border:1px solid rgba(255,255,255,.22);
+  color:#fff;font-weight:600;
+}
+.nav__links a.nav__login:hover{background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.4)}
 .nav__toggle{display:none;background:none;border:0;color:#fff;padding:8px;cursor:pointer}
 
 /* ---------- hero ---------- */
@@ -328,6 +336,10 @@ footer a:hover{color:var(--amber)}
   border-top:1px solid rgba(255,255,255,.08);padding-top:22px;
   display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:.82rem;
 }
+/* De ingang naar het chauffeursportaal. Die is voor onszelf, niet voor
+   klanten, dus hij hoort niet in het menu maar helemaal onderaan. */
+.footer__intern{color:rgba(255,255,255,.35);text-decoration:none}
+.footer__intern:hover{color:rgba(255,255,255,.7)}
 
 /* ---------- responsive ---------- */
 @media (max-width:940px){
@@ -347,6 +359,12 @@ footer a:hover{color:var(--amber)}
     background:var(--navy);border-bottom:1px solid var(--line-dark);padding:8px 24px 18px;
   }
   .nav__links.is-open a{padding:12px 0;border-bottom:1px solid var(--line-dark)}
+  /* In het uitgeklapte menu geen streep onder de knop: dan lijkt het weer een
+     gewoon menu-item. */
+  .nav__links.is-open a.nav__login{
+    margin-top:12px;padding:12px 16px;text-align:center;
+    border:1px solid rgba(255,255,255,.22);
+  }
   .nav__toggle{display:block;order:3}
 }
 @media (max-width:620px){

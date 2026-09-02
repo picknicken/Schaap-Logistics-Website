@@ -291,6 +291,8 @@ tbody tr.leeg td{color:var(--zacht)}
   var toeslagOms= lees('toeslagoms', '');
   var stops     = Math.round(getal('stops', 0));
   var stoptarief= getal('stoptarief', 25);
+  var tijdtoeslag = getal('tijdtoeslag', 0);
+  var tijdvak     = lees('tijdvak', '');
   var van       = lees('van', '3011 AA 12, Rotterdam');
   var naar      = lees('naar', '5611 AB 5, Eindhoven');
 
@@ -370,6 +372,14 @@ tbody tr.leeg td{color:var(--zacht)}
       aantal: stops + (stops === 1 ? ' stop' : ' stops'),
       prijs: stoptarief,
       bedrag: stops * stoptarief
+    });
+  }
+  if (tijdtoeslag > 0) {
+    regels.push({
+      oms: 'Toeslag ' + (tijdvak || 'buiten reguliere tijden').toLowerCase(),
+      aantal: '1 rit',
+      prijs: tijdtoeslag,
+      bedrag: tijdtoeslag
     });
   }
   if (toeslag > 0) {
