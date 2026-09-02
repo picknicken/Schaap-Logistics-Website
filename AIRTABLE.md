@@ -166,9 +166,31 @@ filters. De oplossing is de Worker op een eigen domeinnaam zetten
 - **Eigen domeinnaam.** Zet de Worker daarna op een subdomein in plaats van op
   `workers.dev`, zodat bedrijfsnetwerken hem niet blokkeren. In het
   Cloudflare-dashboard onder Domains & Routes.
-- **Bevestigingsmail** naar de aanvrager. Bij `mailto:` zag hij zijn eigen
-  bericht in verzonden items; via de Worker krijgt hij niets.
+- **Antwoordadres op de bevestigingsmail** (zie hieronder). Zonder dat komen
+  antwoorden van klanten bij niemand terecht.
 - **Foto's** zijn nog niet met een echte aanvraag getest.
+
+## De bevestigingsmail
+
+De aanvrager krijgt een ontvangstbevestiging. Dat gebeurt niet in de Worker maar
+met een automatisering in Airtable zelf: **Bevestigingsmail naar de aanvrager**
+(`wflExituB7crLEIYT`). Geen extra dienst, geen sleutels, en geen wijziging aan de
+Worker nodig.
+
+De automatisering start zodra er een rij in `Website-aanvragen` bijkomt, en stuurt
+naar het adres in het veld `E-mail`. De aanvraaggegevens worden door Airtable zelf
+opgemaakt, zodat bedragen als `€ 213,50` en datums in de Nederlandse notatie
+verschijnen in plaats van als ruwe waarden.
+
+Twee dingen om te weten:
+
+- **Er staat nog geen antwoordadres in.** Antwoordt een klant op de bevestiging,
+  dan komt dat bij Airtable terecht en niet bij jou. Vul `replyTo` aan zodra het
+  zakelijke e-mailadres bekend is. Om dezelfde reden staat er nog geen
+  telefoonnummer in de afsluiting: liever geen contactgegevens dan verkeerde.
+- **Automatiseringen zijn op het gratis Airtable-plan begrensd** op honderd
+  uitvoeringen per maand. Dat is één bevestiging per aanvraag; loop je daar
+  tegenaan, dan is een betaald plan nodig.
 
 ## Losse einden in de base
 
