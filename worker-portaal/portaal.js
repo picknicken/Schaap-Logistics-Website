@@ -59,6 +59,7 @@ const O = {
   status:     'Status',
   opmerking:  'Opmerkingen',
   type:       'Type rit',
+  km:         'Kilometers',
   ritten:     'Ritten'
 };
 
@@ -167,6 +168,7 @@ export default {
         case 'afwijzen':     return await wijsAanvraagAf(env, body, origin);
         case 'planrit':      return await planRit(env, body, origin);
         case 'ritdatum':     return await zetRitdatum(env, body, origin);
+        case 'ritkm':        return await zetRitKm(env, body, origin);
         case 'koppelklant':  return await koppelKlant(env, body, origin);
         case 'nieuweklant':  return await nieuweKlant(env, body, origin);
         default:
@@ -339,10 +341,11 @@ async function planRit(env, body, origin) {
   if (f[O.aflever])   { velden[R.aflever]   = f[O.aflever]; }
   if (f[O.opmerking]) { velden[R.opmerking] = f[O.opmerking]; }
   if (f[O.type])      { velden[R.type]      = keuze(f[O.type]); }
-  if (body.km) {
-    const km = Number(String(body.km).replace(',', '.'));
-    if (isFinite(km) && km > 0) { velden[R.km] = km; }
-  }
+  /* Kilometers: wat je in het portaal invult gaat voor, anders de schatting
+     die met de aanvraag is meegekomen. Zonder kilometers valt de factuur
+     terug op het minimumtarief, en dat merk je pas als de factuur er ligt. */
+  const km = kilometers(body.km !== undefined && body.km !== '' ? body.km : f[O.km]);
+  if (km !== null) { velden[R.km] = km; }
 
   const rit = naarRit(await maak(env, env.AIRTABLE_RITTEN, velden));
 
@@ -449,6 +452,20 @@ async function nieuweKlant(env, body, origin) {
   }
 
   return antwoord(200, { ok: true, klant, opdracht, rit }, origin, true);
+}
+
+/* De werkelijk gereden kilometers. De schatting van de website komt van
+   postcode naar postcode maal een wegfactor; wat er op de teller staat is iets
+   anders, en dat is wat op de factuur hoort. */
+async function zetRitKm(env, body, origin) {
+  const id = recordId(body.id);
+  if (!id) { return antwoord(400, { fout: 'Ongeldig rit-id' }, origin, true); }
+  const km = kilometers(body.km);
+  if (km === null) {
+    return antwoord(400, { fout: 'Vul een aantal kilometers in' }, origin, true);
+  }
+  const rit = naarRit(await patch(env, env.AIRTABLE_RITTEN, id, { [R.km]: km }));
+  return antwoord(200, { ok: true, rit }, origin, true);
 }
 
 /* ==========================================================================
@@ -682,6 +699,15 @@ function afstandInDagen(van, tot) {
   return Math.round((Date.parse(tot + 'T00:00:00Z') - Date.parse(van + 'T00:00:00Z')) / 86400000);
 }
 
+/* Een komma als decimaalteken is wat je op een Nederlandse telefoon typt.
+   Negatief of onzin wordt geweigerd; nul mag, dat betekent "nog niet bekend". */
+function kilometers(w) {
+  if (w === undefined || w === null || w === '') { return null; }
+  const km = Number(String(w).replace(',', '.'));
+  if (!isFinite(km) || km < 0 || km > 100000) { return null; }
+  return Math.round(km * 10) / 10;
+}
+
 function recordId(w) {
   return /^rec[A-Za-z0-9]{14}$/.test(String(w || '')) ? String(w) : null;
 }
@@ -735,6 +761,7 @@ function naarOpdracht(record) {
     status:     keuze(f[O.status]) || '',
     opmerking:  f[O.opmerking] || '',
     type:       keuze(f[O.type]),
+    km:         f[O.km] || 0,
     ritten:     Array.isArray(f[O.ritten]) ? f[O.ritten].length : 0
   };
 }

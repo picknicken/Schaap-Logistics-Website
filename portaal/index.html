@@ -231,7 +231,11 @@ input{font:inherit}
   letter-spacing:.04em;text-transform:uppercase}
 .prijs b{font-size:1.05rem;color:var(--heading);font-variant-numeric:tabular-nums}
 
-.datumrij{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}
+/* Twee velden naast elkaar (datum + kilometers), of een veld met een knop
+   ernaast. In beide gevallen moeten de onderkanten gelijk liggen: het label
+   boven het invoervak maakt die kolom hoger dan de knop. */
+.velrij{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end}
+.velrij--knop{grid-template-columns:1fr auto}
 .scheider{
   display:flex;align-items:center;gap:12px;
   font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;
@@ -244,7 +248,7 @@ input{font:inherit}
   background:var(--paper);color:var(--heading);font:inherit;
 }
 
-.datumrij input{
+.velrij input{
   width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:10px;
   background:var(--paper);color:var(--heading);
 }

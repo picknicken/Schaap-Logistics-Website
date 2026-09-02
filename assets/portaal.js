@@ -340,6 +340,7 @@
        aantonen — dus die kaart klapt open, ook als de rit al afgerond is.
        Een waarschuwing die je moet opendoen om te zien, zie je niet. */
     var aandacht = (!rit.klant && rit.status !== 'Geannuleerd') ||
+                   (!rit.km && rit.status !== 'Geannuleerd') ||
                    (rit.status === 'Uitgevoerd' && !rit.handtekening);
     var kaart = maak('details', 'rit' + (klaar && !aandacht ? ' rit--klaar' : ''));
     kaart.open = !klaar || aandacht;
@@ -406,6 +407,50 @@
       }
       bewijs.appendChild(tekst);
       lijf.appendChild(bewijs);
+    }
+
+    /* Zonder kilometers rekent de factuur alleen het starttarief en valt hij
+       terug op het minimum. Dat zie je pas als de factuur er ligt, en dan is
+       hij al de deur uit — dus hier, nu. */
+    if (!rit.km && rit.status !== 'Geannuleerd') {
+      var geenKm = maak('div', 'bewijs bewijs--mist');
+      var gkm = maak('div');
+      gkm.appendChild(maak('b', '', 'Geen kilometers'));
+      gkm.appendChild(document.createTextNode(
+        'De factuur rekent nu alleen het starttarief en vult aan tot ' +
+        '\u20ac 75. Vul de gereden kilometers in.'));
+      geenKm.appendChild(gkm);
+      lijf.appendChild(geenKm);
+    }
+
+    if (rit.status !== 'Geannuleerd') {
+      var kmRij = maak('div', 'velrij velrij--knop');
+      var kv = maak('label', 'veld');
+      kv.style.margin = '0';
+      kv.appendChild(maak('span', '', 'Gereden km'));
+      var ki = document.createElement('input');
+      ki.type = 'number';
+      ki.inputMode = 'decimal';
+      ki.min = '0';
+      ki.step = '1';
+      ki.value = rit.km || '';
+      ki.placeholder = '0';
+      kv.appendChild(ki);
+      kmRij.appendChild(kv);
+
+      var kmKnop = maak('button', 'knop knop--rand', 'Kilometers opslaan');
+      kmKnop.type = 'button';
+      kmKnop.addEventListener('click', function () {
+        bezig(kmKnop, 'Opslaan…', function (klaar) {
+          verstuur('ritkm', { id: rit.id, km: ki.value }).then(function (data) {
+            ververs(data.rit);
+            meldApp('');
+            klaar(true);
+          }).catch(function (fout) { meldApp(fout.message); klaar(false); });
+        });
+      });
+      kmRij.appendChild(kmKnop);
+      lijf.appendChild(kmRij);
     }
 
     /* Een rit zonder klant kun je rijden, maar niet factureren. Dat moet je
@@ -698,48 +743,76 @@
       lijf.appendChild(koppel);
     }
 
-    /* Datum vooraf gevuld met de gewenste datum van de klant: negen van de
-       tien keer is dat gewoon de goede. */
-    var rij = maak('div', 'datumrij');
-    var veld = maak('label', 'veld');
-    veld.style.margin = '0';
-    veld.appendChild(maak('span', '', 'Rijden op'));
+    /* Datum vooraf gevuld met de gewenste datum van de klant, kilometers met
+       de schatting van de website. Allebei negen van de tien keer goed, en
+       allebei aanpasbaar voordat je op Inplannen tikt. */
+    var rij = maak('div', 'velrij');
+
+    var datumVeld = maak('label', 'veld');
+    datumVeld.style.margin = '0';
+    datumVeld.appendChild(maak('span', '', 'Rijden op'));
     var invoer = document.createElement('input');
     invoer.type = 'date';
     invoer.value = o.datum || dag;
-    veld.appendChild(invoer);
-    rij.appendChild(veld);
+    datumVeld.appendChild(invoer);
+    rij.appendChild(datumVeld);
+
+    var kmVeld = maak('label', 'veld');
+    kmVeld.style.margin = '0';
+    kmVeld.appendChild(maak('span', '', 'Kilometers'));
+    var kmInvoer = document.createElement('input');
+    kmInvoer.type = 'number';
+    kmInvoer.inputMode = 'decimal';
+    kmInvoer.min = '0';
+    kmInvoer.step = '1';
+    kmInvoer.value = o.km || '';
+    kmInvoer.placeholder = '0';
+    kmVeld.appendChild(kmInvoer);
+    rij.appendChild(kmVeld);
+
+    lijf.appendChild(rij);
+
+    if (!o.km) {
+      var geenKm = maak('div', 'bewijs bewijs--mist');
+      var gkm = maak('div');
+      gkm.appendChild(maak('b', '', 'Geen kilometers bekend'));
+      gkm.appendChild(document.createTextNode(
+        'Vul ze hierboven in. Zonder kilometers rekent de factuur alleen het ' +
+        'starttarief en valt hij terug op het minimum van \u20ac 75.'));
+      geenKm.appendChild(gkm);
+      lijf.appendChild(geenKm);
+    }
 
     var plan = maak('button', 'knop knop--blauw', 'Inplannen');
     plan.type = 'button';
     plan.addEventListener('click', function () {
-      planIn(o, invoer.value, plan);
+      planIn(o, invoer.value, kmInvoer.value, plan);
     });
-    rij.appendChild(plan);
-    lijf.appendChild(rij);
+    lijf.appendChild(plan);
 
     kaart.appendChild(lijf);
     return kaart;
   }
 
-  function planIn(o, datumWaarde, knop) {
+  function planIn(o, datumWaarde, kmWaarde, knop) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(datumWaarde || '')) {
       meldApp('Kies eerst een datum om op te rijden.');
       return;
     }
     bezig(knop, 'Inplannen…', function (klaar) {
-      verstuur('planrit', { id: o.id, datum: datumWaarde }).then(function (data) {
-        opdrachten = opdrachten.filter(function (x) { return x.id !== o.id; });
-        if (data.rit && data.rit.datum === dag) { ritten = ritten.concat([data.rit]); }
-        tekenAlles();
-        meldApp('');
-        kiesTab('ritten');
-        if (data.rit && data.rit.datum !== dag) {
-          dag = data.rit.datum;
-          haalDag();
-        }
-        klaar(true);
-      }).catch(function (fout) { meldApp(fout.message); klaar(false); });
+      verstuur('planrit', { id: o.id, datum: datumWaarde, km: kmWaarde })
+        .then(function (data) {
+          opdrachten = opdrachten.filter(function (x) { return x.id !== o.id; });
+          if (data.rit && data.rit.datum === dag) { ritten = ritten.concat([data.rit]); }
+          tekenAlles();
+          meldApp('');
+          kiesTab('ritten');
+          if (data.rit && data.rit.datum !== dag) {
+            dag = data.rit.datum;
+            haalDag();
+          }
+          klaar(true);
+        }).catch(function (fout) { meldApp(fout.message); klaar(false); });
     });
   }
 
