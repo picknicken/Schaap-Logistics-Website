@@ -239,8 +239,21 @@ openstaat, en zet die op *Te laat*.
 Nog niet gebouwd: een seintje naar Schaap Logistics zelf wanneer dat gebeurt, en
 automatische herinneringen naar de klant. Allebei wachten op een e-mailadres.
 
-### Verouderde velden
+### Wat alleen met de hand kan
 
-`Type rit (verouderd)` in `Ritten`, `Opdrachten` en `Tarieven`, en
-`Berekend totaal excl. BTW (dubbel, mag weg)` in `Ritten`. Die zijn vervangen en
-mogen verwijderd worden; dat kan alleen met de hand in Airtable.
+De koppeling waarmee ik de base bewerk kan velden aanmaken en aanpassen, maar niet
+verwijderen, en de opmaak van een veld niet instellen. Twee dingen blijven daarom
+liggen tot iemand ze in Airtable zelf doet:
+
+- **Verwijderen van de verouderde velden**: `Type rit (verouderd)` in `Ritten`,
+  `Opdrachten` en `Tarieven`, plus `Berekend totaal excl. BTW (dubbel, mag weg)`
+  in `Ritten`. Ze doen geen kwaad, ze staan alleen in de weg.
+- **De bedragen op twee decimalen zetten.** Airtable toont formule- en
+  rollupvelden standaard zonder decimalen, dus € 213,50 verschijnt als € 214.
+  Klik het veld aan, ga naar Formatting en zet het op 2 decimalen. Het gaat om
+  `Automatisch totaal excl. BTW`, `BTW bedrag`, `Automatisch totaal incl. BTW`,
+  `Betaald` en `Openstaand`.
+
+De berekening zelf rondt wel op centen af, dus de opgeslagen bedragen kloppen —
+alleen de weergave niet. Zonder die afronding leverde 21% btw over € 248,50 nog
+€ 52,184999999999995 op.
