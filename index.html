@@ -1,0 +1,1854 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Schaap Logistics — zakelijk koeriers- en spoedtransport. Rechtstreeks van ophaaladres naar afleveradres, door heel Nederland en op aanvraag naar Belgie en Duitsland. Vooraf een vaste ritprijs.">
+<meta name="theme-color" content="#0b1526">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="nl_NL">
+<meta property="og:site_name" content="Schaap Logistics">
+<meta property="og:title" content="Schaap Logistics — spoedtransport en koeriersdiensten">
+<meta property="og:description" content="Snel, betrouwbaar en rechtstreeks geleverd. Zakelijk transport door heel Nederland, en op aanvraag naar Belgie en Duitsland.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%227%22%20fill%3D%22%230b1526%22%2F%3E%3Cpath%20d%3D%22M18%206%209%2017h6l-1%209%209-12h-6l1-8z%22%20fill%3D%22%23ffb020%22%2F%3E%3C%2Fsvg%3E">
+<title>Schaap Logistics</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --navy:#0b1526;
+  --navy-2:#111f36;
+  --navy-3:#1a2c47;
+  --amber:#ffb020;
+  --amber-2:#e08c00;
+  --urgent:#ff5a3c;
+  --paper:#ffffff;
+  --paper-2:#f4f6fa;
+  --heading:#0b1526;
+  --text:#414e68;
+  --muted:#6f7c94;
+  --line:#e2e7f0;
+  --line-dark:rgba(255,255,255,.13);
+  --ok:#12a15c;
+  --r:14px;
+  --maxw:1140px;
+  --shadow:0 1px 2px rgba(11,21,38,.06),0 8px 24px rgba(11,21,38,.07);
+  --shadow-lg:0 2px 4px rgba(11,21,38,.06),0 20px 50px rgba(11,21,38,.14);
+}
+
+html{scroll-behavior:smooth;scroll-padding-top:76px}
+body{
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:var(--paper);color:var(--text);
+  font-size:16px;line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{color:var(--heading);line-height:1.15;letter-spacing:-.02em;font-weight:700}
+a{color:inherit}
+img{max-width:100%;display:block}
+
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+.section{padding:88px 0}
+.section--tight{padding:64px 0}
+.section--paper2{background:var(--paper-2)}
+.section--dark{background:var(--navy);color:#b9c6dc}
+.section--dark h2,.section--dark h3,.section--dark h4{color:#fff}
+
+.eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:.75rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--amber-2);margin-bottom:14px;
+}
+.section--dark .eyebrow{color:var(--amber)}
+.eyebrow::before{content:"";width:22px;height:2px;background:currentColor;border-radius:2px}
+
+h2.title{font-size:clamp(1.7rem,3.4vw,2.45rem);margin-bottom:14px}
+.lede{font-size:1.05rem;max-width:64ch}
+.section--dark .lede{color:#9fb0c9}
+
+/* ---------- buttons ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  padding:13px 24px;border-radius:10px;border:1px solid transparent;
+  font-size:.95rem;font-weight:600;text-decoration:none;cursor:pointer;
+  transition:transform .12s ease,box-shadow .18s ease,background .18s ease,border-color .18s ease;
+  white-space:nowrap;font-family:inherit;
+}
+.btn:active{transform:translateY(1px)}
+.btn--primary{background:var(--amber);color:#22160a;box-shadow:0 6px 18px rgba(255,176,32,.32)}
+.btn--primary:hover{background:#ffbe42;box-shadow:0 8px 24px rgba(255,176,32,.42)}
+.btn--ghost{background:transparent;border-color:rgba(255,255,255,.28);color:#fff}
+.btn--ghost:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.5)}
+.btn--dark{background:var(--navy);color:#fff}
+.btn--dark:hover{background:var(--navy-2)}
+.btn--wide{width:100%}
+
+/* ---------- header ---------- */
+header{
+  position:sticky;top:0;z-index:60;
+  background:rgba(11,21,38,.92);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line-dark);
+}
+.nav{display:flex;align-items:center;gap:28px;height:72px}
+.brand{display:flex;align-items:center;gap:11px;text-decoration:none;margin-right:auto}
+.brand__mark{
+  width:36px;height:36px;border-radius:9px;flex:none;
+  background:linear-gradient(140deg,var(--amber),#ff8a00);
+  display:grid;place-items:center;color:#22160a;
+}
+.brand__name{color:#fff;font-weight:800;font-size:1.06rem;letter-spacing:-.02em;line-height:1.15}
+.brand__sub{color:#7f90aa;font-size:.68rem;font-weight:600;letter-spacing:.09em;text-transform:uppercase}
+.nav__links{display:flex;gap:26px;list-style:none}
+.nav__links a{
+  color:#c3cfe2;text-decoration:none;font-size:.92rem;font-weight:500;
+  padding:6px 0;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;
+}
+.nav__links a:hover{color:#fff;border-bottom-color:var(--amber)}
+.nav__phone{
+  display:inline-flex;align-items:center;gap:8px;text-decoration:none;
+  color:#fff;font-weight:700;font-size:.95rem;
+  padding:10px 18px;border-radius:9px;background:rgba(255,176,32,.14);
+  border:1px solid rgba(255,176,32,.35);transition:background .15s;
+}
+.nav__phone:hover{background:rgba(255,176,32,.24)}
+.nav__toggle{display:none;background:none;border:0;color:#fff;padding:8px;cursor:pointer}
+
+/* ---------- hero ---------- */
+.hero{
+  position:relative;overflow:hidden;
+  background:
+    radial-gradient(1100px 520px at 78% -8%,rgba(255,176,32,.16),transparent 62%),
+    radial-gradient(760px 460px at 8% 105%,rgba(46,102,190,.20),transparent 60%),
+    var(--navy);
+  color:#b9c6dc;padding:84px 0 76px;
+}
+.hero::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:repeating-linear-gradient(115deg,transparent 0 38px,rgba(255,255,255,.028) 38px 39px);
+}
+.hero .wrap{position:relative;z-index:1}
+.hero__grid{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center}
+.hero__badge{
+  display:inline-flex;align-items:center;gap:9px;
+  background:rgba(255,90,60,.14);border:1px solid rgba(255,90,60,.4);
+  color:#ffb3a3;font-size:.8rem;font-weight:600;
+  padding:7px 15px;border-radius:100px;margin-bottom:22px;
+}
+.hero__badge .dot{width:7px;height:7px;border-radius:50%;background:var(--urgent);animation:pulse 1.9s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.8)}}
+.hero h1{
+  color:#fff;font-size:clamp(2.1rem,4.6vw,3.35rem);font-weight:800;
+  letter-spacing:-.035em;margin-bottom:20px;
+}
+.hero h1 em{font-style:normal;color:var(--amber)}
+.hero__lede{font-size:1.13rem;color:#a8b8d0;max-width:52ch;margin-bottom:30px}
+.hero__cta{display:flex;gap:13px;flex-wrap:wrap;margin-bottom:34px}
+.hero__trust{display:flex;gap:26px;flex-wrap:wrap;list-style:none;font-size:.88rem;color:#93a4bf}
+.hero__trust li{display:flex;align-items:center;gap:8px}
+.hero__trust svg{color:var(--amber);flex:none}
+
+/* ---------- calculator ---------- */
+.calc{
+  background:#fff;border-radius:18px;padding:24px;
+  box-shadow:var(--shadow-lg);color:var(--text);
+}
+.calc__head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:20px}
+.calc__head h3{font-size:1.16rem}
+.calc__head span{font-size:.78rem;color:var(--muted);font-weight:500}
+.calc__label{
+  display:block;font-size:.75rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--muted);margin-bottom:8px;
+}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:5px;background:var(--paper-2);padding:4px;border-radius:11px;margin-bottom:16px}
+.seg button{
+  border:0;background:transparent;padding:9px 8px;border-radius:8px;cursor:pointer;
+  font-family:inherit;font-size:.9rem;font-weight:600;color:var(--muted);
+  transition:background .15s,color .15s,box-shadow .15s;line-height:1.3;
+}
+.seg--3{grid-template-columns:repeat(3,1fr)}
+.seg button[aria-pressed="true"]{background:#fff;color:var(--heading);box-shadow:var(--shadow)}
+.seg button small{display:block;font-size:.72rem;font-weight:500;opacity:.75;margin-top:1px}
+
+.calc__km{display:flex;align-items:baseline;gap:8px;margin-bottom:6px}
+.calc__km input[type=number]{
+  width:96px;font-family:inherit;font-size:1.5rem;font-weight:800;color:var(--heading);
+  border:0;border-bottom:2px solid var(--line);padding:2px 4px;letter-spacing:-.02em;
+  -moz-appearance:textfield;
+}
+.calc__km input::-webkit-outer-spin-button,
+.calc__km input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.calc__km input:focus{outline:0;border-bottom-color:var(--amber)}
+.calc__km span{font-size:1rem;font-weight:600;color:var(--muted)}
+
+input[type=range]{
+  -webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:99px;
+  background:var(--line);margin:10px 0 5px;cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--amber);
+  border:3px solid #fff;box-shadow:0 2px 8px rgba(11,21,38,.28);cursor:grab;
+}
+input[type=range]::-moz-range-thumb{
+  width:22px;height:22px;border-radius:50%;background:var(--amber);
+  border:3px solid #fff;box-shadow:0 2px 8px rgba(11,21,38,.28);cursor:grab;border-color:#fff;
+}
+input[type=range]:focus-visible{outline:2px solid var(--amber);outline-offset:4px}
+.calc__scale{display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);margin-bottom:16px}
+
+.calc__rows{border-top:1px solid var(--line);padding-top:16px;margin-bottom:4px}
+.calc__row{display:flex;justify-content:space-between;gap:12px;font-size:.9rem;padding:5px 0}
+.calc__row span:first-child{color:var(--muted)}
+.calc__row span:last-child{font-variant-numeric:tabular-nums;font-weight:600;color:var(--heading)}
+.calc__row--minimum span{color:var(--amber-2)!important}
+.calc__row--toeslag span:first-child{color:var(--text)}
+.calc__total{
+  display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  border-top:2px solid var(--heading);margin-top:12px;padding-top:14px;
+}
+.calc__total .lbl{font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--heading)}
+.calc__total .val{font-size:2.1rem;font-weight:800;color:var(--heading);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.calc__vat{text-align:right;font-size:.78rem;color:var(--muted);margin-top:-4px;margin-bottom:18px}
+.calc__note{font-size:.76rem;color:var(--muted);line-height:1.5;margin-top:14px;text-align:center}
+
+/* ---------- generic cards / grids ---------- */
+.grid{display:grid;gap:20px}
+.grid--3{grid-template-columns:repeat(3,1fr)}
+.grid--4{grid-template-columns:repeat(4,1fr)}
+.grid--2{grid-template-columns:repeat(2,1fr)}
+
+.card{
+  background:#fff;border:1px solid var(--line);border-radius:var(--r);
+  padding:26px;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+}
+.card:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:#cfd8e6}
+.card h3{font-size:1.05rem;margin-bottom:8px}
+.card p{font-size:.92rem;color:var(--text)}
+.card__icon{
+  width:42px;height:42px;border-radius:11px;display:grid;place-items:center;
+  background:rgba(255,176,32,.15);color:var(--amber-2);margin-bottom:16px;
+}
+.card--dark{background:var(--navy-2);border-color:var(--line-dark)}
+.card--dark:hover{border-color:rgba(255,176,32,.35);box-shadow:0 16px 40px rgba(0,0,0,.34)}
+.card--dark p{color:#9fb0c9}
+
+/* segment cards */
+.seg-card{display:flex;gap:16px;align-items:flex-start}
+.seg-card__body h3{font-size:1rem;margin-bottom:4px}
+.seg-card__body p{font-size:.88rem;color:var(--muted)}
+.pill{
+  display:inline-block;font-size:.68rem;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;padding:3px 9px;border-radius:99px;margin-top:10px;
+}
+.pill--high{background:rgba(255,90,60,.13);color:#d3381c}
+.pill--mid{background:rgba(255,176,32,.18);color:#9a6200}
+.pill--norm{background:rgba(46,102,190,.12);color:#28568f}
+
+/* ---------- pricing table ---------- */
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:#fff}
+table{width:100%;border-collapse:collapse;min-width:520px}
+th,td{padding:15px 20px;text-align:left;font-size:.93rem;border-bottom:1px solid var(--line)}
+th{
+  background:var(--paper-2);font-size:.72rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--muted);
+}
+td:not(:first-child){font-variant-numeric:tabular-nums}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:#fbfcfe}
+.td-strong{font-weight:600;color:var(--heading)}
+.td-price{font-weight:700;color:var(--heading)}
+.td-urgent{color:#c8351a;font-weight:700}
+
+/* price cards */
+.price-card{
+  background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:28px;position:relative;
+}
+.price-card--urgent{border-color:rgba(255,90,60,.45);box-shadow:0 12px 34px rgba(255,90,60,.12)}
+.price-card__tag{
+  position:absolute;top:-11px;right:22px;background:var(--urgent);color:#fff;
+  font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  padding:4px 12px;border-radius:99px;
+}
+.price-card h3{font-size:1.12rem;margin-bottom:4px}
+.price-card__sub{font-size:.86rem;color:var(--muted);margin-bottom:18px}
+.price-card__amount{display:flex;align-items:baseline;gap:6px;margin-bottom:2px}
+.price-card__amount b{font-size:2.4rem;font-weight:800;color:var(--heading);letter-spacing:-.03em}
+.price-card__amount span{font-size:.95rem;color:var(--muted);font-weight:500}
+.price-card__plus{font-size:.95rem;color:var(--text);margin-bottom:20px}
+.price-card__plus b{color:var(--heading);font-weight:700}
+.price-card ul{list-style:none;font-size:.9rem}
+.price-card li{display:flex;gap:9px;align-items:flex-start;padding:5px 0;color:var(--text)}
+.price-card li svg{color:var(--ok);flex:none;margin-top:4px}
+
+/* ---------- process steps ---------- */
+.steps{counter-reset:step;display:grid;gap:2px}
+.step{
+  display:grid;grid-template-columns:56px 1fr;gap:20px;align-items:flex-start;
+  padding:20px 0;border-bottom:1px solid var(--line-dark);
+}
+.step:last-child{border-bottom:0}
+.step__num{
+  width:44px;height:44px;border-radius:12px;display:grid;place-items:center;
+  background:rgba(255,176,32,.13);border:1px solid rgba(255,176,32,.3);
+  color:var(--amber);font-weight:800;font-size:1.02rem;
+}
+.step h3{font-size:1.02rem;margin-bottom:4px}
+.step p{font-size:.93rem;color:#9fb0c9;max-width:70ch}
+
+/* ---------- stats ---------- */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.stat{background:#fff;padding:24px 20px;text-align:center}
+.stat b{display:block;font-size:1.75rem;font-weight:800;color:var(--heading);letter-spacing:-.03em;line-height:1.2}
+.stat span{font-size:.82rem;color:var(--muted);font-weight:500}
+
+/* ---------- contact ---------- */
+.contact-grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:48px;align-items:start}
+.contact-list{list-style:none;display:grid;gap:16px;margin-top:26px}
+.contact-list li{display:flex;gap:14px;align-items:flex-start}
+.contact-list__ico{
+  width:40px;height:40px;border-radius:10px;flex:none;display:grid;place-items:center;
+  background:rgba(255,176,32,.14);color:var(--amber);
+}
+.contact-list b{display:block;color:#fff;font-size:.95rem;font-weight:600}
+.contact-list a{color:#a8b8d0;text-decoration:none;font-size:.92rem}
+.contact-list a:hover{color:var(--amber)}
+.contact-list small{color:#7f90aa;font-size:.82rem}
+
+form{background:#fff;border-radius:16px;padding:28px;box-shadow:var(--shadow-lg)}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:.82rem;font-weight:600;color:var(--heading);margin-bottom:6px}
+.field input,.field textarea,.field select{
+  width:100%;font-family:inherit;font-size:.94rem;color:var(--heading);
+  padding:11px 13px;border:1px solid var(--line);border-radius:9px;background:#fff;
+  transition:border-color .15s,box-shadow .15s;
+}
+.field input:focus,.field textarea:focus,.field select:focus{
+  outline:0;border-color:var(--amber);box-shadow:0 0 0 3px rgba(255,176,32,.18);
+}
+.field textarea{resize:vertical;min-height:96px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form__note{font-size:.78rem;color:var(--muted);margin-top:12px;text-align:center;line-height:1.5}
+
+/* ---------- footer ---------- */
+footer{background:#070e1a;color:#7f90aa;padding:56px 0 28px;font-size:.88rem}
+.footer__grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:40px;margin-bottom:36px}
+footer h4{color:#fff;font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px}
+footer ul{list-style:none;display:grid;gap:9px}
+footer a{color:#7f90aa;text-decoration:none}
+footer a:hover{color:var(--amber)}
+.footer__bottom{
+  border-top:1px solid rgba(255,255,255,.08);padding-top:22px;
+  display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:.82rem;
+}
+
+/* ---------- responsive ---------- */
+@media (max-width:940px){
+  .hero__grid,.contact-grid{grid-template-columns:1fr;gap:40px}
+  .grid--4{grid-template-columns:repeat(2,1fr)}
+  .grid--3{grid-template-columns:repeat(2,1fr)}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .footer__grid{grid-template-columns:1fr 1fr}
+  .nav__links{display:none}
+  .nav__links.is-open{
+    display:flex;position:absolute;top:72px;left:0;right:0;flex-direction:column;gap:0;
+    background:var(--navy);border-bottom:1px solid var(--line-dark);padding:8px 24px 18px;
+  }
+  .nav__links.is-open a{padding:12px 0;border-bottom:1px solid var(--line-dark)}
+  .nav__toggle{display:block;order:3}
+  .section{padding:64px 0}
+}
+@media (max-width:620px){
+  .grid--3,.grid--4,.grid--2,.field-row{grid-template-columns:1fr}
+  .footer__grid{grid-template-columns:1fr}
+  .brand__sub{display:none}
+  .nav__phone span{display:none}
+  .hero{padding:56px 0 52px}
+  .calc{padding:22px}
+  .step{grid-template-columns:44px 1fr;gap:14px}
+}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;transition-duration:.01ms!important}
+  html{scroll-behavior:auto}
+}
+
+.sr-only{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;
+}
+[data-placeholder]{
+  background:rgba(255,176,32,.16);color:var(--amber);
+  padding:1px 6px;border-radius:4px;font-size:.85em;
+}
+:focus-visible{outline:2px solid var(--amber);outline-offset:3px;border-radius:4px}
+
+/* ---------- postcodevelden in de calculator ---------- */
+.pc-row{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:end;margin-bottom:14px}
+.pc-row input{
+  width:100%;font-family:inherit;font-size:.95rem;font-weight:600;color:var(--heading);
+  padding:10px 12px;border:1px solid var(--line);border-radius:9px;text-transform:uppercase;
+}
+.pc-row input:focus{outline:0;border-color:var(--amber);box-shadow:0 0 0 3px rgba(255,176,32,.18)}
+.pc-row input::placeholder{font-weight:400;text-transform:none;color:var(--muted)}
+.pc-arrow{color:var(--muted);padding-bottom:11px}
+.pc-status{font-size:.78rem;line-height:1.4;margin:-6px 0 12px;min-height:1.1em}
+.pc-status--ok{color:var(--ok)}
+.pc-status--err{color:#c8351a}
+.pc-status--info{color:var(--muted)}
+.calc__divider{
+  display:flex;align-items:center;gap:12px;margin:2px 0 12px;
+  font-size:.72rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);
+}
+.calc__divider::before,.calc__divider::after{content:"";flex:1;height:1px;background:var(--line)}
+
+/* ---------- internationaal blok ---------- */
+.intl{
+  display:grid;grid-template-columns:1.25fr .75fr;gap:32px;align-items:center;
+  background:var(--navy-2);border-radius:var(--r);padding:34px;color:#a8b8d0;margin-top:32px;
+}
+.intl h3{color:#fff;font-size:1.25rem;margin-bottom:10px}
+.intl p{font-size:.95rem;max-width:56ch}
+.intl__price{text-align:right}
+.intl__price b{display:block;font-size:2.1rem;font-weight:800;color:#fff;letter-spacing:-.03em;line-height:1.1}
+.intl__price span{font-size:.85rem;color:#8fa2bd}
+
+/* ---------- aanvraagformulier in stappen ---------- */
+.aanvraag{display:grid;grid-template-columns:.8fr 1.2fr;gap:48px;align-items:start}
+.stap{border-top:1px solid var(--line);padding:24px 0}
+.stap:first-of-type{border-top:0;padding-top:4px}
+.stap__kop{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.stap__num{
+  width:30px;height:30px;border-radius:50%;flex:none;display:grid;place-items:center;
+  background:var(--navy);color:var(--amber);font-size:.85rem;font-weight:700;
+}
+.stap__kop h3{font-size:1rem}
+.stap__kop p{font-size:.82rem;color:var(--muted);margin-top:1px}
+
+.keuze{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.keuze label{
+  display:flex;gap:11px;align-items:flex-start;cursor:pointer;
+  border:1px solid var(--line);border-radius:11px;padding:13px 14px;
+  transition:border-color .15s,background .15s,box-shadow .15s;
+}
+.keuze label:hover{border-color:#c3cee0;background:#fbfcfe}
+.keuze input{margin-top:3px;accent-color:var(--amber);flex:none}
+.keuze input:checked + span{color:var(--heading)}
+.keuze label:has(input:checked){border-color:var(--amber);background:rgba(255,176,32,.07);box-shadow:0 0 0 1px var(--amber)}
+.keuze b{display:block;font-size:.92rem;color:var(--heading);font-weight:600}
+.keuze small{font-size:.8rem;color:var(--muted)}
+
+/* .field label zet vet + donker; die moet hier wijken voor de hulptekst. */
+.upload,.field label.upload{
+  display:block;border:1.5px dashed var(--line);border-radius:11px;padding:18px;
+  text-align:center;font-size:.86rem;font-weight:400;color:var(--muted);
+  cursor:pointer;transition:border-color .15s,background .15s;margin-bottom:0;
+}
+.upload:hover{border-color:var(--amber);background:rgba(255,176,32,.05)}
+.upload b{display:block;color:var(--heading);font-weight:600;margin-bottom:2px;font-size:.92rem}
+.field__label{display:block;font-size:.82rem;font-weight:600;color:var(--heading);margin-bottom:6px}
+.fotolijst{list-style:none;display:grid;gap:8px;margin-top:12px}
+.fotolijst:empty{margin-top:0}
+.fotolijst li{
+  display:flex;align-items:center;gap:11px;
+  border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:#fff;
+}
+.fotolijst img{width:38px;height:38px;object-fit:cover;border-radius:6px;flex:none;background:var(--paper-2)}
+.fotolijst .naam{flex:1;min-width:0;font-size:.86rem;color:var(--heading);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fotolijst .grootte{font-size:.78rem;color:var(--muted);flex:none;font-variant-numeric:tabular-nums}
+.fotolijst button{
+  border:0;background:transparent;color:var(--muted);cursor:pointer;padding:4px;
+  border-radius:6px;display:grid;place-items:center;flex:none;
+}
+.fotolijst button:hover{color:#c8351a;background:rgba(255,90,60,.1)}
+.fotonoot{font-size:.78rem;color:var(--muted);margin-top:10px;line-height:1.5}
+.fotonoot--err{color:#c8351a}
+
+.samenvatting{
+  position:sticky;top:92px;background:var(--navy);border-radius:16px;padding:26px;color:#a8b8d0;
+}
+.samenvatting h3{color:#fff;font-size:1.05rem;margin-bottom:4px}
+.samenvatting > p{font-size:.85rem;color:#8fa2bd;margin-bottom:18px}
+.sam__rij{display:flex;justify-content:space-between;gap:14px;padding:8px 0;font-size:.88rem;border-bottom:1px solid var(--line-dark)}
+.sam__rij:last-of-type{border-bottom:0}
+.sam__rij span:first-child{color:#8fa2bd;flex:none}
+.sam__rij span:last-child{color:#fff;font-weight:600;text-align:right;word-break:break-word}
+.sam__prijs{border-top:2px solid rgba(255,255,255,.2);margin-top:14px;padding-top:14px;display:flex;justify-content:space-between;align-items:baseline}
+.sam__prijs .lbl{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8fa2bd}
+.sam__prijs .val{font-size:1.6rem;font-weight:800;color:#fff;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+
+/* ---------- vertrouwenslijst ---------- */
+.waarom{display:grid;grid-template-columns:repeat(2,1fr);gap:2px 40px}
+.waarom__item{display:flex;gap:14px;align-items:flex-start;padding:18px 0;border-bottom:1px solid var(--line)}
+.waarom__vink{
+  width:26px;height:26px;border-radius:50%;flex:none;display:grid;place-items:center;
+  background:rgba(18,161,92,.12);color:var(--ok);margin-top:1px;
+}
+.waarom__item b{display:block;color:var(--heading);font-size:.98rem;margin-bottom:2px}
+.waarom__item p{font-size:.9rem;color:var(--muted)}
+
+/* ---------- zakelijke CTA-band ---------- */
+.zakelijk{
+  background:linear-gradient(135deg,var(--navy-2),var(--navy-3));
+  border:1px solid rgba(255,176,32,.28);border-radius:var(--r);
+  padding:36px 40px;display:grid;grid-template-columns:1fr auto;gap:32px;align-items:center;
+}
+.zakelijk h3{color:#fff;font-size:1.35rem;margin-bottom:8px}
+.zakelijk p{color:#a8b8d0;font-size:.95rem;max-width:60ch}
+
+@media (max-width:940px){
+  .aanvraag,.intl,.zakelijk{grid-template-columns:1fr;gap:28px}
+  .waarom{grid-template-columns:1fr}
+  .intl__price{text-align:left}
+  .samenvatting{position:static}
+}
+@media (max-width:620px){
+  .keuze{grid-template-columns:1fr}
+  .pc-row{grid-template-columns:1fr;gap:8px}
+  .pc-arrow{display:none}
+  .zakelijk{padding:26px}
+}
+</style>
+</head>
+<body>
+<!-- ============================================================
+     LET OP — vervang alle PLACEHOLDER-gegevens vóór livegang.
+     Zoek op "PLACEHOLDER" of zie README.md voor de checklist.
+     ============================================================ -->
+
+<header>
+  <div class="wrap">
+    <nav class="nav">
+      <a href="#top" class="brand">
+        <span class="brand__mark" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg>
+        </span>
+        <span>
+          <span class="brand__name">Schaap Logistics</span>
+          <span class="brand__sub">Spoedtransport</span>
+        </span>
+      </a>
+
+      <ul class="nav__links" id="navLinks">
+        <li><a href="#diensten">Diensten</a></li>
+        <li><a href="#tarieven">Tarieven</a></li>
+        <li><a href="#aanvragen">Rit aanvragen</a></li>
+        <li><a href="#werkwijze">Werkwijze</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+
+      <!-- PLACEHOLDER telefoonnummer -->
+      <a class="nav__phone" href="tel:+31612345678">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.4 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.4 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>
+        <span>06 - 12 34 56 78</span>
+      </a>
+
+      <button class="nav__toggle" id="navToggle" aria-label="Menu openen" aria-expanded="false" aria-controls="navLinks">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<!-- ===================== HERO ===================== -->
+<section class="hero" id="top">
+  <div class="wrap">
+    <div class="hero__grid">
+      <div>
+        <span class="hero__badge"><span class="dot"></span> Spoedrit nodig? Wij schakelen snel.</span>
+
+        <h1>Snel. Betrouwbaar.<br><em>Rechtstreeks geleverd.</em></h1>
+
+        <p class="hero__lede">
+          Professioneel koeriers- en transportvervoer voor bedrijven, vanuit Nederland
+          naar heel Nederland, België en Duitsland. Uw zending gaat direct van
+          ophaaladres naar afleveradres — zonder overslag, zonder depot.
+        </p>
+
+        <div class="hero__cta">
+          <a class="btn btn--primary" href="#aanvragen">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17h4V5H2v12h3M20 17h2v-6l-3-4h-5v10h2"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+            Rit aanvragen
+          </a>
+          <!-- PLACEHOLDER telefoonnummer -->
+          <a class="btn btn--ghost" href="tel:+31612345678">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.4 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.4 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>
+            Direct contact
+          </a>
+        </div>
+
+        <ul class="hero__trust">
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Vooraf een vaste ritprijs</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Bewijs van aflevering</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Eén aanspreekpunt</li>
+        </ul>
+      </div>
+
+      <!-- Prijscalculator -->
+      <div class="calc">
+        <div class="calc__head">
+          <h3>Wat kost mijn rit?</h3>
+          <span>Indicatie, excl. btw</span>
+        </div>
+
+        <span class="calc__label" id="pcLabel">Van postcode naar postcode</span>
+        <div class="pc-row" role="group" aria-labelledby="pcLabel">
+          <input type="text" id="pcVan" placeholder="3011" maxlength="7" autocomplete="off" inputmode="numeric" aria-label="Postcode ophaaladres">
+          <span class="pc-arrow" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </span>
+          <input type="text" id="pcNaar" placeholder="5611" maxlength="7" autocomplete="off" inputmode="numeric" aria-label="Postcode afleveradres">
+        </div>
+        <p class="pc-status pc-status--info" id="pcStatus" role="status">
+          Vul twee Nederlandse postcodes in voor een automatische schatting.
+        </p>
+
+        <div class="calc__divider">of vul de afstand zelf in</div>
+
+        <label class="calc__label" for="kmInput">Afstand van ophaal- naar afleveradres</label>
+        <div class="calc__km">
+          <input type="number" id="kmInput" value="50" min="1" max="500" step="1" aria-describedby="kmHint">
+          <span>kilometer</span>
+        </div>
+        <input type="range" id="kmRange" value="50" min="1" max="300" step="1" aria-label="Afstand in kilometer">
+        <div class="calc__scale"><span>1 km</span><span>150 km</span><span>300 km</span></div>
+
+        <span class="calc__label" id="typeLabel">Type rit</span>
+        <div class="seg seg--3" role="group" aria-labelledby="typeLabel">
+          <button type="button" id="btnStandaard" aria-pressed="true">Standaard<small>&euro;50 + &euro;1,50</small></button>
+          <button type="button" id="btnSpoed" aria-pressed="false">Spoed<small>&euro;75 + &euro;2,00</small></button>
+          <button type="button" id="btnDirect" aria-pressed="false">Direct<small>&euro;100 + &euro;2,50</small></button>
+        </div>
+
+        <span class="calc__label" id="tijdLabel">Tijdstip van de rit</span>
+        <div class="seg seg--3" role="group" aria-labelledby="tijdLabel">
+          <button type="button" id="btnDag" aria-pressed="true">Overdag<small>geen toeslag</small></button>
+          <button type="button" id="btnAvond" aria-pressed="false">Avond<small>+ &euro;15</small></button>
+          <button type="button" id="btnNacht" aria-pressed="false">Nacht/weekend<small>+ &euro;35</small></button>
+        </div>
+
+        <div class="calc__rows" id="calcRows"></div>
+
+        <div class="calc__total">
+          <span class="lbl">Totaal excl. btw</span>
+          <span class="val" id="rowTotal">&euro; 125,00</span>
+        </div>
+        <div class="calc__vat" id="rowVat">&euro; 151,25 incl. 21% btw</div>
+
+        <a class="btn btn--dark btn--wide" href="#aanvragen" id="calcCta">Deze rit aanvragen</a>
+
+        <p class="calc__note" id="kmHint">
+          Indicatieve prijs. De definitieve prijs wordt bevestigd na controle van de opdracht.
+          Wachttijd, extra stops en werkelijke tol- of parkeerkosten komen er alleen bij als
+          ze van toepassing zijn.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== DIENSTEN ===================== -->
+<section class="section" id="diensten">
+  <div class="wrap">
+    <span class="eyebrow">Diensten</span>
+    <h2 class="title">Kunnen wij het vervoeren?</h2>
+    <p class="lede" style="margin-bottom:40px">
+      Van één doos onderdelen tot een volle bestelbus. Vier vormen van transport,
+      alle vier rechtstreeks van ophaaladres naar afleveradres.
+    </p>
+
+    <div class="grid grid--4">
+      <div class="card">
+        <div class="card__icon">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17h4V5H2v12h3M20 17h2v-6l-3-4h-5v10h2"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+        </div>
+        <h3>Standaard transport</h3>
+        <p>Voor reguliere zakelijke transportopdrachten, ingepland of nog dezelfde dag.</p>
+        <p style="margin-top:12px"><a href="#aanvragen" style="color:var(--amber-2);font-weight:600;font-size:.9rem;text-decoration:none">Rit aanvragen →</a></p>
+      </div>
+
+      <div class="card">
+        <div class="card__icon">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg>
+        </div>
+        <h3>Spoedtransport</h3>
+        <p>Wanneer een zending sneller moet worden opgehaald of geleverd dan regulier haalbaar is.</p>
+        <p style="margin-top:12px"><a href="#aanvragen" style="color:var(--amber-2);font-weight:600;font-size:.9rem;text-decoration:none">Rit aanvragen →</a></p>
+      </div>
+
+      <div class="card">
+        <div class="card__icon" style="background:rgba(255,90,60,.14);color:#d3381c">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+        </div>
+        <h3>Directe spoed</h3>
+        <p>Voor opdrachten waarbij de chauffeur direct beschikbaar moet zijn en meteen vertrekt.</p>
+        <p style="margin-top:12px"><a href="#aanvragen" style="color:var(--amber-2);font-weight:600;font-size:.9rem;text-decoration:none">Rit aanvragen →</a></p>
+      </div>
+
+      <div class="card">
+        <div class="card__icon">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/></svg>
+        </div>
+        <h3>Internationaal transport</h3>
+        <p>Rechtstreeks naar België, Duitsland en andere Europese bestemmingen, op offerte.</p>
+        <p style="margin-top:12px"><a href="#aanvragen" style="color:var(--amber-2);font-weight:600;font-size:.9rem;text-decoration:none">Offerte aanvragen →</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== TARIEVEN ===================== -->
+<section class="section section--paper2" id="tarieven">
+  <div class="wrap">
+    <span class="eyebrow">Tarieven Nederland</span>
+    <h2 class="title">Wat kost het?</h2>
+    <p class="lede" style="margin-bottom:40px">
+      U kiest zelf hoe snel het moet. Elk tarief bestaat uit een starttarief plus een vaste
+      kilometerprijs — geen brandstoftoeslagen die pas op de factuur verschijnen.
+    </p>
+
+    <div class="grid grid--3" style="margin-bottom:36px">
+      <div class="price-card">
+        <h3>Standaard transport</h3>
+        <p class="price-card__sub">Reguliere zakelijke transportopdracht</p>
+        <div class="price-card__amount"><b>vanaf &euro;50</b></div>
+        <p class="price-card__plus">+ <b>&euro;1,50</b> per kilometer &middot; excl. btw</p>
+        <ul>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Direct transport zonder overslag</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Vooraf bevestigde ophaal- en aflevertijd</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Minimumtarief &euro;75 per opdracht</li>
+        </ul>
+      </div>
+
+      <div class="price-card">
+        <span class="price-card__tag" style="background:var(--amber);color:#22160a">Met prioriteit</span>
+        <h3>Spoedtransport</h3>
+        <p class="price-card__sub">Versnelde levering met voorrang</p>
+        <div class="price-card__amount"><b>vanaf &euro;75</b></div>
+        <p class="price-card__plus">+ <b>&euro;2,00</b> per kilometer &middot; excl. btw</p>
+        <ul>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Voorrang op geplande ritten</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Directe terugkoppeling onderweg</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Ook buiten kantooruren aan te vragen</li>
+        </ul>
+      </div>
+
+      <div class="price-card price-card--urgent">
+        <span class="price-card__tag">Snelst</span>
+        <h3>Directe spoed</h3>
+        <p class="price-card__sub">Direct beschikbaar, zo snel mogelijk vertrek</p>
+        <div class="price-card__amount"><b>vanaf &euro;100</b></div>
+        <p class="price-card__plus">+ <b>&euro;2,50</b> per kilometer &middot; excl. btw</p>
+        <ul>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Wij vertrekken zodra de zending klaarstaat</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Alles wijkt voor deze rit</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Voor stilstand die per uur geld kost</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 style="font-size:1.1rem;margin-bottom:14px">Rekenvoorbeelden</h3>
+    <div class="table-wrap" style="margin-bottom:10px">
+      <table>
+        <caption class="sr-only">Voorbeeldprijzen per afstand en type rit, exclusief btw en toeslagen</caption>
+        <thead>
+          <tr><th scope="col">Afstand</th><th scope="col">Standaard</th><th scope="col">Spoed</th><th scope="col">Directe spoed</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="td-strong">10 km</td><td class="td-price">&euro; 75,00 <span style="color:var(--amber-2)">*</span></td><td class="td-price">&euro; 95,00</td><td class="td-urgent">&euro; 125,00</td></tr>
+          <tr><td class="td-strong">25 km</td><td class="td-price">&euro; 87,50</td><td class="td-price">&euro; 125,00</td><td class="td-urgent">&euro; 162,50</td></tr>
+          <tr><td class="td-strong">50 km</td><td class="td-price">&euro; 125,00</td><td class="td-price">&euro; 175,00</td><td class="td-urgent">&euro; 225,00</td></tr>
+          <tr><td class="td-strong">100 km</td><td class="td-price">&euro; 200,00</td><td class="td-price">&euro; 275,00</td><td class="td-urgent">&euro; 350,00</td></tr>
+          <tr><td class="td-strong">200 km</td><td class="td-price">&euro; 350,00</td><td class="td-price">&euro; 475,00</td><td class="td-urgent">&euro; 600,00</td></tr>
+          <tr><td class="td-strong">300 km</td><td class="td-price">&euro; 500,00</td><td class="td-price">&euro; 675,00</td><td class="td-urgent">&euro; 850,00</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:28px">
+      <span style="color:var(--amber-2)">*</span> Hier valt de berekende ritprijs onder het
+      minimumtarief van &euro;75 voor een standaardrit, dus geldt het minimum.
+      Bedragen zijn exclusief btw en exclusief eventuele toeslagen.
+    </p>
+
+    <h3 style="font-size:1.1rem;margin-bottom:14px">Toeslagen en aanvullende kosten</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">Post</th><th scope="col">Tarief</th><th scope="col">Toelichting</th></tr></thead>
+        <tbody>
+          <tr><td class="td-strong">Avondrit</td><td class="td-price">+ &euro; 15,00</td><td>Rit tussen 18:00 en 23:00 uur</td></tr>
+          <tr><td class="td-strong">Nacht- of weekendrit</td><td class="td-price">+ &euro; 35,00</td><td>Rit buiten reguliere tijden</td></tr>
+          <tr><td class="td-strong">Extra stop</td><td class="td-price">&euro; 15,00 per stop</td><td>Per extra ophaal- of afleveradres</td></tr>
+          <tr><td class="td-strong">Wachttijd</td><td class="td-price">&euro; 15,00 per 15 min.</td><td>De eerste 15 minuten zijn inbegrepen</td></tr>
+          <tr><td class="td-strong">Tol en parkeren</td><td class="td-price">Werkelijke kosten</td><td>Worden doorberekend aan de opdrachtgever</td></tr>
+          <tr><td class="td-strong">Minimumtarief</td><td class="td-price">&euro; 75,00 per opdracht</td><td>Geldt wanneer de berekende ritprijs lager uitvalt</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Internationaal -->
+    <div class="intl">
+      <div>
+        <span class="eyebrow" style="color:var(--amber)">Internationaal</span>
+        <h3>België, Duitsland en overig Europa</h3>
+        <p>
+          Voor internationale ritten maken wij vooraf een duidelijke prijsopgave op basis
+          van de route, de rijtijd en eventuele tol. Zo weet u precies waar u aan toe bent,
+          of het nu Antwerpen of München is.
+        </p>
+      </div>
+      <div class="intl__price">
+        <b>vanaf &euro;1,50</b>
+        <span>per kilometer, excl. btw</span>
+        <a class="btn btn--primary" href="#aanvragen" style="margin-top:16px">Internationale rit aanvragen</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== RIT AANVRAGEN ===================== -->
+<section class="section" id="aanvragen">
+  <div class="wrap">
+    <span class="eyebrow">Rit aanvragen</span>
+    <h2 class="title">Hoe regel ik het?</h2>
+    <p class="lede" style="margin-bottom:40px">
+      Vijf korte stappen. U krijgt zo snel mogelijk een bevestiging met de prijs en de
+      ophaaltijd. Liever direct schakelen? Bel gerust —
+      <!-- PLACEHOLDER telefoonnummer -->
+      <a href="tel:+31612345678" style="color:var(--amber-2);font-weight:600">06 - 12 34 56 78</a>.
+    </p>
+
+    <div class="aanvraag">
+      <form id="ritForm" novalidate>
+
+        <div class="stap">
+          <div class="stap__kop">
+            <span class="stap__num">1</span>
+            <div><h3>Wat heeft u nodig?</h3><p>Bepaalt de urgentie en het tarief</p></div>
+          </div>
+          <div class="keuze">
+            <label>
+              <input type="radio" name="dienst" value="standaard" checked>
+              <span><b>Standaard transport</b><small>Regulier, ingepland of vandaag</small></span>
+            </label>
+            <label>
+              <input type="radio" name="dienst" value="spoed">
+              <span><b>Spoedtransport</b><small>Met voorrang</small></span>
+            </label>
+            <label>
+              <input type="radio" name="dienst" value="direct">
+              <span><b>Directe spoed</b><small>Direct vertrek</small></span>
+            </label>
+            <label>
+              <input type="radio" name="dienst" value="internationaal">
+              <span><b>Internationaal</b><small>BE, DE en overig Europa</small></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="stap">
+          <div class="stap__kop">
+            <span class="stap__num">2</span>
+            <div><h3>Waar moet het heen?</h3><p>Postcode en huisnummer is genoeg</p></div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="r-opPc">Ophaallocatie</label>
+              <input type="text" id="r-opPc" name="ophaal" placeholder="3011 AA 12, Rotterdam" required>
+            </div>
+            <div class="field">
+              <label for="r-afPc">Afleverlocatie</label>
+              <input type="text" id="r-afPc" name="aflever" placeholder="5611 AB 5, Eindhoven" required>
+            </div>
+          </div>
+        </div>
+
+        <div class="stap">
+          <div class="stap__kop">
+            <span class="stap__num">3</span>
+            <div><h3>Wanneer?</h3><p>Datum en gewenste ophaaltijd</p></div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="r-datum">Datum</label>
+              <input type="date" id="r-datum" name="datum">
+            </div>
+            <div class="field">
+              <label for="r-tijd">Gewenste ophaaltijd</label>
+              <input type="time" id="r-tijd" name="tijd">
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label for="r-tijdstip">Tijdvak</label>
+            <select id="r-tijdstip" name="tijdstip">
+              <option value="Overdag">Overdag — geen toeslag</option>
+              <option value="Avondrit (18:00-23:00)">Avond (18:00-23:00) — + €15</option>
+              <option value="Nacht- of weekendrit">Nacht of weekend — + €35</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="stap">
+          <div class="stap__kop">
+            <span class="stap__num">4</span>
+            <div><h3>Wat vervoeren we?</h3><p>Hoe concreter, hoe scherper de prijs</p></div>
+          </div>
+          <div class="field">
+            <label for="r-omschrijving">Omschrijving van de goederen</label>
+            <input type="text" id="r-omschrijving" name="omschrijving" placeholder="bijv. machineonderdelen in houten kist" required>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="r-colli">Aantal colli</label>
+              <input type="text" id="r-colli" name="colli" placeholder="2">
+            </div>
+            <div class="field">
+              <label for="r-gewicht">Gewicht</label>
+              <input type="text" id="r-gewicht" name="gewicht" placeholder="ca. 30 kg">
+            </div>
+          </div>
+          <div class="field">
+            <label for="r-afmetingen">Afmetingen</label>
+            <input type="text" id="r-afmetingen" name="afmetingen" placeholder="pallet 80 x 120 x 90 cm">
+          </div>
+          <div class="field">
+            <label for="r-stops">Extra stops onderweg</label>
+            <input type="text" id="r-stops" name="stops" placeholder="geen">
+          </div>
+
+          <div class="field" style="margin-bottom:0">
+            <span class="field__label">Foto's van de zending <span style="font-weight:400;color:var(--muted)">— optioneel</span></span>
+            <label class="upload" for="r-fotos">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 8px" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>
+              </svg>
+              <b>Foto's toevoegen</b>
+              Helpt ons de zending en de laadruimte goed in te schatten
+              <input type="file" id="r-fotos" name="fotos" accept="image/*" multiple hidden>
+            </label>
+            <ul class="fotolijst" id="fotoLijst"></ul>
+            <p class="fotonoot" id="fotoNoot"></p>
+          </div>
+        </div>
+
+        <div class="stap">
+          <div class="stap__kop">
+            <span class="stap__num">5</span>
+            <div><h3>Uw gegevens</h3><p>Zodat wij u kunnen bevestigen</p></div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="r-bedrijf">Bedrijfsnaam</label>
+              <input type="text" id="r-bedrijf" name="bedrijf" autocomplete="organization" required>
+            </div>
+            <div class="field">
+              <label for="r-naam">Contactpersoon</label>
+              <input type="text" id="r-naam" name="naam" autocomplete="name" required>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="r-tel">Telefoonnummer</label>
+              <input type="tel" id="r-tel" name="telefoon" autocomplete="tel" required>
+            </div>
+            <div class="field">
+              <label for="r-mail">E-mailadres</label>
+              <input type="email" id="r-mail" name="email" autocomplete="email" required>
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label for="r-opmerking">Opmerkingen</label>
+            <textarea id="r-opmerking" name="opmerking" placeholder="Bijzonderheden over laden, lossen of bereikbaarheid van de locatie."></textarea>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn--primary btn--wide" style="margin-top:22px">
+          Vraag een prijs aan
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+
+        <p class="form__note" id="ritNote">
+          De aanvraag opent in uw eigen e-mailprogramma met alles al ingevuld.
+          Foto's van de zending kunt u daar als bijlage aan toevoegen.
+        </p>
+      </form>
+
+      <aside class="samenvatting" aria-live="polite">
+        <h3>Uw aanvraag</h3>
+        <p>Wordt bijgewerkt terwijl u invult.</p>
+        <div id="samRijen">
+          <div class="sam__rij"><span>Dienst</span><span>Standaard transport</span></div>
+        </div>
+        <div class="sam__prijs">
+          <span class="lbl">Indicatie excl. btw</span>
+          <span class="val" id="samPrijs">—</span>
+        </div>
+        <p style="font-size:.78rem;color:#8fa2bd;margin-top:14px;line-height:1.5" id="samNoot">
+          Vul hierboven een ophaal- en afleverpostcode in voor een prijsindicatie.
+          De definitieve prijs wordt bevestigd na controle van de opdracht.
+        </p>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== WAAROM ===================== -->
+<section class="section section--paper2">
+  <div class="wrap">
+    <span class="eyebrow">Vertrouwen</span>
+    <h2 class="title">Waarom Schaap Logistics?</h2>
+    <p class="lede" style="margin-bottom:32px">
+      Geen loze beloftes over de beste service, maar afspraken die u kunt controleren.
+    </p>
+
+    <div class="waarom">
+      <div class="waarom__item">
+        <span class="waarom__vink"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+        <div><b>Rechtstreeks transport</b><p>Geen onnodige tussenstops of overslag. Uw zending gaat in de bus en komt er pas uit op het afleveradres.</p></div>
+      </div>
+      <div class="waarom__item">
+        <span class="waarom__vink"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+        <div><b>Persoonlijk contact</b><p>Eén aanspreekpunt voor uw transport. U spreekt de chauffeur die uw rit ook daadwerkelijk rijdt.</p></div>
+      </div>
+      <div class="waarom__item">
+        <span class="waarom__vink"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+        <div><b>Transparante tarieven</b><p>Vooraf duidelijkheid over de kosten. Alle toeslagen staan gewoon op deze site, niet verstopt in de kleine lettertjes.</p></div>
+      </div>
+      <div class="waarom__item">
+        <span class="waarom__vink"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+        <div><b>Flexibel inzetbaar</b><p>Ook voor spoed-, avond- en weekendritten. Storingen houden zich nu eenmaal niet aan kantooruren.</p></div>
+      </div>
+      <div class="waarom__item">
+        <span class="waarom__vink"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+        <div><b>Zakelijk en betrouwbaar</b><p>Duidelijke afspraken, bewijs van aflevering en een nette factuur met ritreferentie.</p></div>
+      </div>
+      <div class="waarom__item">
+        <span class="waarom__vink"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+        <div><b>Volledige dekking</b><p>Heel Nederland als werkgebied, en op aanvraag België, Duitsland en overig Europa.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== ZAKELIJKE KLANTEN ===================== -->
+<section class="section section--tight">
+  <div class="wrap">
+    <div class="zakelijk">
+      <div>
+        <h3>Regelmatig transport nodig?</h3>
+        <p>
+          Op zoek naar een vaste transportpartner? Voor terugkerende ritten, vaste routes of
+          een hoger volume maken wij een tariefafspraak op maat — met vaste bereikbaarheid,
+          zodat één telefoontje voldoende is.
+        </p>
+      </div>
+      <a class="btn btn--primary" href="#contact">
+        Vraag zakelijke tarieven aan
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== WERKWIJZE ===================== -->
+<section class="section section--dark" id="werkwijze">
+  <div class="wrap">
+    <div class="grid grid--2" style="gap:56px;align-items:start">
+      <div>
+        <span class="eyebrow">Werkwijze</span>
+        <h2 class="title">Van aanvraag tot factuur</h2>
+        <p class="lede">
+          Zodra uw aanvraag binnen is, verloopt het in vaste stappen. U weet steeds
+          waar uw zending is en wat de rit gaat kosten.
+        </p>
+        <div class="stats" style="margin-top:32px">
+          <div class="stat"><b>1</b><span>aanspreekpunt</span></div>
+          <div class="stat"><b>0</b><span>keer overslag</span></div>
+          <div class="stat"><b>NL</b><span>volledige dekking</span></div>
+          <div class="stat"><b>7</b><span>dagen bereikbaar</span></div>
+        </div>
+      </div>
+
+      <div class="steps">
+        <div class="step"><div class="step__num">1</div><div><h3>Aanvraag</h3><p>U vult het formulier in of belt met het ophaaladres, het afleveradres en wanneer het er moet zijn.</p></div></div>
+        <div class="step"><div class="step__num">2</div><div><h3>Prijs</h3><p>Wij bepalen de ritafstand, urgentie en eventuele toeslagen en geven u een vaste prijs.</p></div></div>
+        <div class="step"><div class="step__num">3</div><div><h3>Bevestiging</h3><p>U krijgt de prijs, de ophaaltijd en de verwachte aflevertijd schriftelijk bevestigd.</p></div></div>
+        <div class="step"><div class="step__num">4</div><div><h3>Ophalen</h3><p>Wij komen langs, controleren de zending en laden deze veilig en vastgezet in.</p></div></div>
+        <div class="step"><div class="step__num">5</div><div><h3>Onderweg</h3><p>Direct transport naar de afleverlocatie. Bij relevante vertraging hoort u dat van ons.</p></div></div>
+        <div class="step"><div class="step__num">6</div><div><h3>Aflevering</h3><p>Aflevering met handtekening of foto als bewijs, zodat u weet dat het er is.</p></div></div>
+        <div class="step"><div class="step__num">7</div><div><h3>Facturatie</h3><p>Eén nette factuur met ritreferentie en het vooraf afgesproken tarief.</p></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CONTACT ===================== -->
+<section class="section" id="contact" style="background:var(--navy-2)">
+  <div class="wrap">
+    <div class="contact-grid">
+      <div>
+        <span class="eyebrow">Contact</span>
+        <h2 class="title" style="color:#fff">Direct contact</h2>
+        <p class="lede" style="color:#9fb0c9">
+          Voor een spoedrit is bellen altijd het snelst — dan staat de bus vaak al klaar
+          terwijl we de details doornemen. Voor geplande ritten of een tariefafspraak
+          kunt u mailen of het aanvraagformulier gebruiken.
+        </p>
+
+        <ul class="contact-list">
+          <li>
+            <span class="contact-list__ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.4 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.4 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg></span>
+            <div>
+              <b>Telefoon</b>
+              <!-- PLACEHOLDER telefoonnummer -->
+              <a href="tel:+31612345678">06 - 12 34 56 78</a><br>
+              <small>Voor spoed: bel gerust direct, ook 's avonds en in het weekend</small>
+            </div>
+          </li>
+          <li>
+            <span class="contact-list__ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg></span>
+            <div>
+              <b>E-mail</b>
+              <!-- PLACEHOLDER e-mailadres -->
+              <a href="mailto:info@schaaplogistics.nl">info@schaaplogistics.nl</a><br>
+              <small>Reactie op werkdagen doorgaans binnen een uur</small>
+            </div>
+          </li>
+          <li>
+            <span class="contact-list__ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4.5 8-11a8 8 0 1 0-16 0c0 6.5 8 11 8 11z"/><circle cx="12" cy="11" r="3"/></svg></span>
+            <div>
+              <b>Werkgebied</b>
+              <span style="color:#a8b8d0;font-size:.92rem">Heel Nederland</span><br>
+              <small>Op aanvraag België, Duitsland en overig Europa</small>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <form id="contactForm" novalidate>
+        <h3 style="font-size:1.16rem;margin-bottom:6px">Stuur een bericht</h3>
+        <p style="font-size:.88rem;color:var(--muted);margin-bottom:20px">
+          Voor een vraag, een tariefafspraak of een aanvraag voor terugkerend vervoer.
+        </p>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="c-bedrijf">Bedrijfsnaam</label>
+            <input type="text" id="c-bedrijf" name="bedrijf" autocomplete="organization" required>
+          </div>
+          <div class="field">
+            <label for="c-naam">Contactpersoon</label>
+            <input type="text" id="c-naam" name="naam" autocomplete="name" required>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="c-tel">Telefoonnummer</label>
+            <input type="tel" id="c-tel" name="telefoon" autocomplete="tel" required>
+          </div>
+          <div class="field">
+            <label for="c-mail">E-mailadres</label>
+            <input type="email" id="c-mail" name="email" autocomplete="email" required>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="c-onderwerp">Onderwerp</label>
+          <select id="c-onderwerp" name="onderwerp">
+            <option value="Vraag over transport">Vraag over transport</option>
+            <option value="Zakelijke tarieven / vaste partner">Zakelijke tarieven of vaste partner</option>
+            <option value="Internationale rit">Internationale rit</option>
+            <option value="Overig">Overig</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="c-bericht">Uw bericht</label>
+          <textarea id="c-bericht" name="bericht" required></textarea>
+        </div>
+
+        <button type="submit" class="btn btn--primary btn--wide">
+          Bericht versturen
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+
+        <p class="form__note" id="contactNote">
+          Het bericht opent in uw eigen e-mailprogramma. Liever direct contact?
+          <!-- PLACEHOLDER telefoonnummer -->
+          Bel <a href="tel:+31612345678" style="color:var(--amber-2);font-weight:600">06 - 12 34 56 78</a>.
+        </p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FOOTER ===================== -->
+<footer>
+  <div class="wrap">
+    <div class="footer__grid">
+      <div>
+        <a href="#top" class="brand" style="margin-bottom:14px">
+          <span class="brand__mark" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg></span>
+          <span><span class="brand__name">Schaap Logistics</span><span class="brand__sub">Spoedtransport</span></span>
+        </a>
+        <p style="max-width:38ch">
+          Snel, betrouwbaar en rechtstreeks geleverd. Zakelijk koeriers- en transportvervoer
+          vanuit Nederland naar Nederland, België en Duitsland.
+        </p>
+      </div>
+
+      <div>
+        <h4>Diensten</h4>
+        <ul>
+          <li><a href="#diensten">Standaard transport</a></li>
+          <li><a href="#diensten">Spoedtransport</a></li>
+          <li><a href="#diensten">Directe spoed</a></li>
+          <li><a href="#diensten">Internationaal transport</a></li>
+          <li><a href="#tarieven">Tarieven</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4>Contact</h4>
+        <ul>
+          <!-- PLACEHOLDER contactgegevens -->
+          <li><a href="tel:+31612345678">06 - 12 34 56 78</a></li>
+          <li><a href="mailto:info@schaaplogistics.nl">info@schaaplogistics.nl</a></li>
+          <li>KvK-nummer: <span data-placeholder>nog invullen</span></li>
+          <li>Btw-nummer: <span data-placeholder>nog invullen</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer__bottom">
+      <span>&copy; <span id="jaar">2026</span> Schaap Logistics. Alle rechten voorbehouden.</span>
+      <span>Alle genoemde tarieven zijn exclusief btw. Op onze diensten zijn onze algemene voorwaarden van toepassing.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  /* =======================================================================
+     BEDRIJFSGEGEVENS EN TARIEVEN — hier aanpassen, niet verderop in de code.
+     Let op: de bedragen in de tariefkaarten en tabellen staan óók als tekst
+     in de HTML. Wijzig je hier iets, pas die dan ook aan.
+     ======================================================================= */
+  var CONFIG = {
+    email: 'info@schaaplogistics.nl',   /* PLACEHOLDER */
+    minimum: 75,                         /* minimumtarief per opdracht */
+    btw: 0.21,
+    ritten: {
+      standaard:     { naam: 'Standaard transport',    start: 50,  km: 1.50 },
+      spoed:         { naam: 'Spoedtransport',         start: 75,  km: 2.00 },
+      direct:        { naam: 'Directe spoed',          start: 100, km: 2.50 },
+      internationaal:{ naam: 'Internationaal transport', offerte: true }
+    },
+    tijden: {
+      dag:   { naam: 'Overdag',                toeslag: 0  },
+      avond: { naam: 'Avondrit (18:00-23:00)', toeslag: 15 },
+      nacht: { naam: 'Nacht- of weekendrit',   toeslag: 35 }
+    },
+    /* Omrekenfactor van hemelsbrede afstand naar werkelijke rijafstand. */
+    wegfactor: 1.25,
+
+    /* Hoe de aanvraag verstuurd wordt.
+       'mailto'  — opent het e-mailprogramma van de bezoeker (geen server nodig).
+       'webhook' — POST als JSON naar webhookUrl; zo gaat de aanvraag later
+                   rechtstreeks naar Airtable. Zie AIRTABLE.md.
+       Zet modus op 'webhook' en vul webhookUrl in zodra de koppeling er staat.
+       Let op: nooit een Airtable-sleutel in deze pagina zetten — die is voor
+       iedere bezoeker leesbaar. Wijs webhookUrl naar een eigen tussenlaag. */
+    verzending: {
+      modus: 'mailto',
+      webhookUrl: ''    /* PLACEHOLDER, bijv. https://.../ritaanvraag */
+    },
+
+    /* Grenzen voor de foto's bij een aanvraag. */
+    foto: {
+      maxAantal: 5,
+      maxMb: 10
+    }
+  };
+
+  /* Middelpunten van de Nederlandse postcoderegio's (eerste twee cijfers).
+     Genoeg voor een prijsindicatie; niet voor navigatie. */
+  var REGIO = {
+    10:[52.37,4.90], 11:[52.31,4.95], 12:[52.22,5.17], 13:[52.37,5.22], 14:[52.28,5.16],
+    15:[52.44,4.83], 16:[52.64,5.06], 17:[52.80,4.79], 18:[52.63,4.75], 19:[52.47,4.63],
+    20:[52.38,4.64], 21:[52.29,4.58], 22:[52.20,4.42], 23:[52.16,4.49], 24:[52.13,4.66],
+    25:[52.08,4.31], 26:[52.01,4.36], 27:[52.06,4.49], 28:[52.01,4.71], 29:[51.93,4.58],
+    30:[51.92,4.48], 31:[51.91,4.35], 32:[51.85,4.33], 33:[51.81,4.67], 34:[52.03,5.09],
+    35:[52.09,5.12], 36:[52.14,5.04], 37:[52.09,5.23], 38:[52.16,5.39], 39:[52.02,5.56],
+    40:[51.89,5.43], 41:[51.93,5.10], 42:[51.83,4.97], 43:[51.63,3.95], 44:[51.50,3.75],
+    45:[51.32,3.75], 46:[51.49,4.29], 47:[51.53,4.47], 48:[51.59,4.78], 49:[51.64,4.86],
+    50:[51.56,5.09], 51:[51.69,5.07], 52:[51.70,5.30], 53:[51.81,5.25], 54:[51.68,5.57],
+    55:[51.43,5.40], 56:[51.44,5.48], 57:[51.48,5.66], 58:[51.53,5.90], 59:[51.37,6.17],
+    60:[51.25,5.71], 61:[51.10,5.87], 62:[50.85,5.69], 63:[50.87,5.83], 64:[50.92,5.95],
+    65:[51.84,5.86], 66:[51.81,5.72], 67:[52.02,5.66], 68:[51.98,5.91], 69:[51.96,6.08],
+    70:[51.97,6.29], 71:[51.97,6.60], 72:[52.14,6.20], 73:[52.21,5.97], 74:[52.25,6.16],
+    75:[52.23,6.85], 76:[52.36,6.66], 77:[52.58,6.62], 78:[52.78,6.90], 79:[52.72,6.40],
+    80:[52.51,6.09], 81:[52.39,6.28], 82:[52.52,5.47], 83:[52.71,5.75], 84:[52.82,6.10],
+    85:[52.96,5.86], 86:[53.03,5.66], 87:[53.10,5.50], 88:[53.19,5.54], 89:[53.20,5.79],
+    90:[53.18,5.83], 91:[53.32,5.99], 92:[53.10,6.10], 93:[53.14,6.42], 94:[53.00,6.56],
+    95:[53.05,6.90], 96:[53.15,6.85], 97:[53.22,6.57], 98:[53.28,6.40], 99:[53.32,6.86]
+  };
+
+  var euro = new Intl.NumberFormat('nl-NL', {
+    style: 'currency', currency: 'EUR', minimumFractionDigits: 2
+  });
+
+  /* ===================== afstand op postcode ===================== */
+
+  /* Haalt de eerste 4 cijfers uit een ingevulde locatie ("3011 AA 12, Rotterdam"). */
+  function postcodeUit(tekst) {
+    var m = String(tekst || '').match(/\b(\d{4})\b/);
+    return m ? m[1] : null;
+  }
+
+  function regioVan(pc) {
+    return pc ? REGIO[parseInt(pc.slice(0, 2), 10)] : null;
+  }
+
+  function hemelsbreed(a, b) {
+    var R = 6371, rad = Math.PI / 180;
+    var dLat = (b[0] - a[0]) * rad;
+    var dLon = (b[1] - a[1]) * rad;
+    var h = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(a[0] * rad) * Math.cos(b[0] * rad) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    return 2 * R * Math.asin(Math.sqrt(h));
+  }
+
+  /* Schat de rijafstand tussen twee postcodes. null als er iets niet klopt. */
+  function schatAfstand(pcA, pcB) {
+    var a = regioVan(pcA), b = regioVan(pcB);
+    if (!a || !b) { return null; }
+    var km = Math.round(hemelsbreed(a, b) * CONFIG.wegfactor);
+    return Math.max(5, km);   /* binnen dezelfde regio blijft er altijd een rit over */
+  }
+
+  /* ===================== prijsberekening ===================== */
+
+  /* Ritprijs = starttarief + kilometers. Ligt die onder het minimumtarief,
+     dan geldt het minimum. Toeslagen komen daar bovenop. */
+  function bereken(soort, km, tijd) {
+    var r = CONFIG.ritten[soort];
+    if (!r || r.offerte) { return null; }
+    var t = CONFIG.tijden[tijd] || CONFIG.tijden.dag;
+    var kmSom = km * r.km;
+    var ritprijs = r.start + kmSom;
+    var correctie = Math.max(0, CONFIG.minimum - ritprijs);
+    return {
+      tarief: r, tijdstip: t, kmSom: kmSom, correctie: correctie,
+      totaal: ritprijs + correctie + t.toeslag
+    };
+  }
+
+  /* ===================== calculator ===================== */
+
+  var kmInput  = document.getElementById('kmInput');
+  var kmRange  = document.getElementById('kmRange');
+  var rowsBox  = document.getElementById('calcRows');
+  var rowTotal = document.getElementById('rowTotal');
+  var rowVat   = document.getElementById('rowVat');
+  var pcVan    = document.getElementById('pcVan');
+  var pcNaar   = document.getElementById('pcNaar');
+  var pcStatus = document.getElementById('pcStatus');
+
+  var ritKnop = {
+    standaard: document.getElementById('btnStandaard'),
+    spoed:     document.getElementById('btnSpoed'),
+    direct:    document.getElementById('btnDirect')
+  };
+  var tijdKnop = {
+    dag:   document.getElementById('btnDag'),
+    avond: document.getElementById('btnAvond'),
+    nacht: document.getElementById('btnNacht')
+  };
+
+  var soort = 'standaard';
+  var tijd  = 'dag';
+
+  function huidigeKm() {
+    var v = parseInt(kmInput.value, 10);
+    if (isNaN(v) || v < 1) { v = 1; }
+    if (v > 500) { v = 500; }
+    return v;
+  }
+
+  function regel(label, bedrag, extraClass) {
+    var d = document.createElement('div');
+    d.className = 'calc__row' + (extraClass ? ' ' + extraClass : '');
+    var a = document.createElement('span'); a.textContent = label;
+    var b = document.createElement('span'); b.textContent = euro.format(bedrag);
+    d.appendChild(a); d.appendChild(b);
+    return d;
+  }
+
+  function render() {
+    var km = huidigeKm();
+    var b  = bereken(soort, km, tijd);
+
+    rowsBox.innerHTML = '';
+    rowsBox.appendChild(regel('Starttarief', b.tarief.start));
+    rowsBox.appendChild(regel(km + ' km × ' + euro.format(b.tarief.km), b.kmSom));
+    if (b.correctie > 0) {
+      rowsBox.appendChild(regel('Aanvulling tot minimumtarief', b.correctie, 'calc__row--minimum'));
+    }
+    if (b.tijdstip.toeslag > 0) {
+      rowsBox.appendChild(regel(b.tijdstip.naam, b.tijdstip.toeslag, 'calc__row--toeslag'));
+    }
+
+    rowTotal.textContent = euro.format(b.totaal);
+    rowVat.textContent   = euro.format(b.totaal * (1 + CONFIG.btw)) + ' incl. 21% btw';
+
+    var k;
+    for (k in ritKnop)  { ritKnop[k].setAttribute('aria-pressed',  k === soort ? 'true' : 'false'); }
+    for (k in tijdKnop) { tijdKnop[k].setAttribute('aria-pressed', k === tijd  ? 'true' : 'false'); }
+  }
+
+  function zetKm(v, bron) {
+    v = Math.max(1, Math.min(500, v));
+    if (bron !== 'input') { kmInput.value = v; }
+    if (bron !== 'range') { kmRange.value = Math.min(v, parseInt(kmRange.max, 10)); }
+    render();
+  }
+
+  function meldPostcode(tekst, soortMelding) {
+    pcStatus.textContent = tekst;
+    pcStatus.className = 'pc-status pc-status--' + soortMelding;
+  }
+
+  function verwerkPostcodes() {
+    var a = postcodeUit(pcVan.value);
+    var b = postcodeUit(pcNaar.value);
+
+    if (!pcVan.value.trim() && !pcNaar.value.trim()) {
+      meldPostcode('Vul twee Nederlandse postcodes in voor een automatische schatting.', 'info');
+      return;
+    }
+    if (!a || !b) {
+      meldPostcode('Vul beide postcodes in als vier cijfers, bijvoorbeeld 3011 en 5611.', 'info');
+      return;
+    }
+    if (!regioVan(a) || !regioVan(b)) {
+      meldPostcode('Onbekende postcode. Voor buitenlandse adressen vragen wij een offerte aan.', 'err');
+      return;
+    }
+
+    var km = schatAfstand(a, b);
+    zetKm(km, 'postcode');
+    meldPostcode('Geschatte rijafstand: ongeveer ' + km + ' km. Klopt dat niet? Pas de kilometers hieronder aan.', 'ok');
+  }
+
+  kmRange.addEventListener('input', function () { zetKm(parseInt(kmRange.value, 10), 'range'); });
+  kmInput.addEventListener('input', function () {
+    if (kmInput.value === '') { return; }
+    zetKm(huidigeKm(), 'input');
+  });
+  kmInput.addEventListener('blur', function () { zetKm(huidigeKm(), 'blur'); });
+
+  pcVan.addEventListener('input', verwerkPostcodes);
+  pcNaar.addEventListener('input', verwerkPostcodes);
+
+  Object.keys(ritKnop).forEach(function (k) {
+    ritKnop[k].addEventListener('click', function () { soort = k; render(); });
+  });
+  Object.keys(tijdKnop).forEach(function (k) {
+    tijdKnop[k].addEventListener('click', function () { tijd = k; render(); });
+  });
+
+  render();
+
+  /* De calculatorkeuze meenemen naar het aanvraagformulier. */
+  document.getElementById('calcCta').addEventListener('click', function () {
+    var radio = document.querySelector('#ritForm input[name="dienst"][value="' + soort + '"]');
+    if (radio) { radio.checked = true; }
+    var tv = document.getElementById('r-tijdstip');
+    if (tv) { tv.value = CONFIG.tijden[tijd].naam; }
+    if (pcVan.value.trim() && !document.getElementById('r-opPc').value.trim()) {
+      document.getElementById('r-opPc').value = pcVan.value.trim();
+    }
+    if (pcNaar.value.trim() && !document.getElementById('r-afPc').value.trim()) {
+      document.getElementById('r-afPc').value = pcNaar.value.trim();
+    }
+    ververSamenvatting();
+  });
+
+  /* ===================== aanvraagformulier ===================== */
+
+  var ritForm  = document.getElementById('ritForm');
+  var samRijen = document.getElementById('samRijen');
+  var samPrijs = document.getElementById('samPrijs');
+  var samNoot  = document.getElementById('samNoot');
+
+  function veld(id) {
+    var el = document.getElementById(id);
+    return el && el.value.trim() ? el.value.trim() : '';
+  }
+
+  function gekozenDienst() {
+    var el = document.querySelector('#ritForm input[name="dienst"]:checked');
+    return el ? el.value : 'standaard';
+  }
+
+  function tijdSleutelUit(naam) {
+    var k;
+    for (k in CONFIG.tijden) {
+      if (CONFIG.tijden[k].naam === naam) { return k; }
+    }
+    return 'dag';
+  }
+
+  function samRij(label, waarde) {
+    var d = document.createElement('div');
+    d.className = 'sam__rij';
+    var a = document.createElement('span'); a.textContent = label;
+    var b = document.createElement('span'); b.textContent = waarde;
+    d.appendChild(a); d.appendChild(b);
+    return d;
+  }
+
+  function ververSamenvatting() {
+    var dienst = gekozenDienst();
+    var rit    = CONFIG.ritten[dienst];
+    var tKey   = tijdSleutelUit(veld('r-tijdstip'));
+    var op     = veld('r-opPc');
+    var af     = veld('r-afPc');
+
+    samRijen.innerHTML = '';
+    samRijen.appendChild(samRij('Dienst', rit.naam));
+    if (op) { samRijen.appendChild(samRij('Ophalen', op)); }
+    if (af) { samRijen.appendChild(samRij('Afleveren', af)); }
+    if (veld('r-datum')) { samRijen.appendChild(samRij('Datum', veld('r-datum'))); }
+    if (veld('r-tijd'))  { samRijen.appendChild(samRij('Ophaaltijd', veld('r-tijd'))); }
+    if (CONFIG.tijden[tKey].toeslag > 0) {
+      samRijen.appendChild(samRij('Tijdvak', CONFIG.tijden[tKey].naam));
+    }
+
+    if (rit.offerte) {
+      samPrijs.textContent = 'Op offerte';
+      samNoot.textContent  = 'Voor internationale ritten ontvangt u vooraf een prijsopgave ' +
+                             'op basis van route, rijtijd en eventuele tol.';
+      return;
+    }
+
+    var km = schatAfstand(postcodeUit(op), postcodeUit(af));
+    if (km === null) {
+      samPrijs.textContent = '—';
+      samNoot.textContent  = 'Vul hierboven een ophaal- en afleverpostcode in voor een ' +
+                             'prijsindicatie. De definitieve prijs wordt bevestigd na ' +
+                             'controle van de opdracht.';
+      return;
+    }
+
+    var b = bereken(dienst, km, tKey);
+    samRijen.appendChild(samRij('Geschatte afstand', km + ' km'));
+    samPrijs.textContent = euro.format(b.totaal);
+    samNoot.textContent  = 'Indicatie op basis van een geschatte rijafstand van ' + km +
+                           ' km, excl. btw. De definitieve prijs wordt bevestigd na ' +
+                           'controle van de opdracht.';
+  }
+
+  ritForm.addEventListener('input', ververSamenvatting);
+  ritForm.addEventListener('change', ververSamenvatting);
+  ververSamenvatting();
+
+  /* ===================== foto's bij de aanvraag ===================== */
+
+  var fotoInput = document.getElementById('r-fotos');
+  var fotoLijst = document.getElementById('fotoLijst');
+  var fotoNoot  = document.getElementById('fotoNoot');
+  var fotos     = [];   /* de daadwerkelijk gekozen bestanden */
+
+  function leesbareGrootte(bytes) {
+    if (bytes < 1024) { return bytes + ' B'; }
+    if (bytes < 1024 * 1024) { return Math.round(bytes / 1024) + ' kB'; }
+    return (bytes / 1024 / 1024).toFixed(1).replace('.', ',') + ' MB';
+  }
+
+  function meldFoto(tekst, fout) {
+    fotoNoot.textContent = tekst;
+    fotoNoot.className = 'fotonoot' + (fout ? ' fotonoot--err' : '');
+  }
+
+  function toonFotos() {
+    fotoLijst.innerHTML = '';
+
+    fotos.forEach(function (bestand, i) {
+      var li = document.createElement('li');
+
+      var img = document.createElement('img');
+      img.alt = '';
+      img.src = URL.createObjectURL(bestand);
+      img.addEventListener('load', function () { URL.revokeObjectURL(img.src); });
+
+      var naam = document.createElement('span');
+      naam.className = 'naam';
+      naam.textContent = bestand.name;
+
+      var grootte = document.createElement('span');
+      grootte.className = 'grootte';
+      grootte.textContent = leesbareGrootte(bestand.size);
+
+      var weg = document.createElement('button');
+      weg.type = 'button';
+      weg.setAttribute('aria-label', bestand.name + ' verwijderen');
+      weg.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" ' +
+        'stroke="currentColor" stroke-width="2.2" stroke-linecap="round">' +
+        '<path d="M18 6 6 18M6 6l12 12"/></svg>';
+      weg.addEventListener('click', function () {
+        fotos.splice(i, 1);
+        toonFotos();
+      });
+
+      li.appendChild(img); li.appendChild(naam);
+      li.appendChild(grootte); li.appendChild(weg);
+      fotoLijst.appendChild(li);
+    });
+
+    if (!fotos.length) {
+      meldFoto('', false);
+      return;
+    }
+    if (CONFIG.verzending.modus === 'mailto') {
+      meldFoto(fotos.length + (fotos.length === 1 ? ' foto gekozen. ' : " foto's gekozen. ") +
+               'Voeg ze straks als bijlage toe aan de e-mail die opent — een website ' +
+               'zonder server kan bestanden niet zelf versturen.', false);
+    } else {
+      meldFoto(fotos.length + (fotos.length === 1 ? ' foto' : " foto's") +
+               ' wordt meegestuurd met de aanvraag.', false);
+    }
+  }
+
+  fotoInput.addEventListener('change', function () {
+    var gekozen = Array.prototype.slice.call(fotoInput.files);
+    var geweigerd = [];
+
+    gekozen.forEach(function (bestand) {
+      if (fotos.length >= CONFIG.foto.maxAantal) {
+        geweigerd.push(bestand.name + ' (maximaal ' + CONFIG.foto.maxAantal + " foto's)");
+        return;
+      }
+      if (bestand.size > CONFIG.foto.maxMb * 1024 * 1024) {
+        geweigerd.push(bestand.name + ' (groter dan ' + CONFIG.foto.maxMb + ' MB)');
+        return;
+      }
+      if (bestand.type.indexOf('image/') !== 0) {
+        geweigerd.push(bestand.name + ' (geen afbeelding)');
+        return;
+      }
+      var dubbel = fotos.some(function (f) {
+        return f.name === bestand.name && f.size === bestand.size;
+      });
+      if (!dubbel) { fotos.push(bestand); }
+    });
+
+    fotoInput.value = '';   /* zodat hetzelfde bestand opnieuw gekozen kan worden */
+    toonFotos();
+
+    if (geweigerd.length) {
+      meldFoto('Niet toegevoegd: ' + geweigerd.join(', ') + '.', true);
+    }
+  });
+
+  /* ===================== aanvraag opbouwen en versturen ===================== */
+
+  /* Eén plek die bepaalt hoe een ritaanvraag eruitziet. De sleutels hieronder
+     zijn precies de kolomnamen in Airtable — zie AIRTABLE.md. Wijzig je hier
+     een naam, wijzig hem dan ook in de tabel. */
+  function bouwAanvraag() {
+    var dienst = gekozenDienst();
+    var rit    = CONFIG.ritten[dienst];
+    var op     = veld('r-opPc');
+    var af     = veld('r-afPc');
+    var tKey   = tijdSleutelUit(veld('r-tijdstip'));
+    var km     = rit.offerte ? null : schatAfstand(postcodeUit(op), postcodeUit(af));
+    var prijs  = km === null ? null : bereken(dienst, km, tKey).totaal;
+
+    return {
+      'Status':                   'Nieuw',
+      'Bron':                     'Website',
+      'Dienst':                   rit.naam,
+      'Tijdvak':                  CONFIG.tijden[tKey].naam,
+      'Ophaallocatie':            op,
+      'Ophaalpostcode':           postcodeUit(op) || '',
+      'Afleverlocatie':           af,
+      'Afleverpostcode':          postcodeUit(af) || '',
+      'Datum':                    veld('r-datum'),
+      'Ophaaltijd':               veld('r-tijd'),
+      'Extra stops':              veld('r-stops'),
+      'Omschrijving':             veld('r-omschrijving'),
+      'Aantal colli':             veld('r-colli'),
+      'Gewicht':                  veld('r-gewicht'),
+      'Afmetingen':               veld('r-afmetingen'),
+      'Bedrijf':                  veld('r-bedrijf'),
+      'Contactpersoon':           veld('r-naam'),
+      'Telefoon':                 veld('r-tel'),
+      'E-mail':                   veld('r-mail'),
+      'Opmerkingen':              veld('r-opmerking'),
+      'Geschatte afstand km':     km,
+      'Prijsindicatie excl btw':  prijs
+    };
+  }
+
+  /* Velden die alleen voor Airtable bedoeld zijn, of die onderaan in een eigen
+     blok komen te staan. Die horen niet in de opsomming van de e-mail. */
+  var NIET_IN_MAIL = ['Status', 'Bron', 'Omschrijving', 'Opmerkingen'];
+
+  /* Leesbare namen voor in de e-mail; de sleutels blijven de Airtable-kolommen. */
+  var MAIL_LABEL = {
+    'Geschatte afstand km':    'Geschatte afstand',
+    'Prijsindicatie excl btw': 'Prijsindicatie'
+  };
+
+  /* Zet een aanvraag om in leesbare regels voor de e-mail. */
+  function alsTekst(kop, data) {
+    var regels = [kop, ''];
+
+    Object.keys(data).forEach(function (sleutel) {
+      var w = data[sleutel];
+      if (w === null || w === '') { return; }
+      if (NIET_IN_MAIL.indexOf(sleutel) !== -1) { return; }
+      if (sleutel === 'Prijsindicatie excl btw') { w = euro.format(w) + ' excl. btw'; }
+      if (sleutel === 'Geschatte afstand km')    { w = w + ' km'; }
+      regels.push(((MAIL_LABEL[sleutel] || sleutel) + ':').padEnd(22) + w);
+    });
+
+    if (data['Omschrijving']) { regels.push('', 'Goederen:', data['Omschrijving']); }
+    if (data['Opmerkingen'])  { regels.push('', 'Opmerkingen:', data['Opmerkingen']); }
+    if (fotos.length) {
+      regels.push('', "Foto's (als bijlage toevoegen):");
+      fotos.forEach(function (f) { regels.push('  - ' + f.name); });
+    }
+    return regels;
+  }
+
+  /* Opent het e-mailprogramma met de aanvraag erin. */
+  function verstuurViaMail(onderwerp, regels, noot) {
+    window.location.href = 'mailto:' + CONFIG.email +
+      '?subject=' + encodeURIComponent(onderwerp) +
+      '&body='    + encodeURIComponent(regels.join('\n'));
+    noot.textContent = 'Uw e-mailprogramma wordt geopend met de aanvraag erin. ' +
+                       'Verstuur de mail om de aanvraag af te ronden.';
+    noot.style.color = '#12a15c';
+    noot.style.fontWeight = '600';
+  }
+
+  /* Leest een bestand in als data-URL, zodat het als JSON mee kan. */
+  function leesBestand(bestand) {
+    return new Promise(function (klaar, mislukt) {
+      var lezer = new FileReader();
+      lezer.onload  = function () { klaar({ naam: bestand.name, type: bestand.type, data: lezer.result }); };
+      lezer.onerror = function () { mislukt(new Error('Kan ' + bestand.name + ' niet lezen.')); };
+      lezer.readAsDataURL(bestand);
+    });
+  }
+
+  /* Stuurt de aanvraag als JSON naar de tussenlaag die naar Airtable schrijft.
+     Nog niet actief: zet CONFIG.verzending.modus op 'webhook' en vul de URL in. */
+  function verstuurViaWebhook(data, noot, knop) {
+    var oudeTekst = knop.textContent;
+    knop.disabled = true;
+    knop.textContent = 'Bezig met versturen…';
+    noot.style.color = '';
+    noot.style.fontWeight = '';
+    noot.textContent = 'Uw aanvraag wordt verstuurd…';
+
+    Promise.all(fotos.map(leesBestand))
+      .then(function (bijlagen) {
+        return fetch(CONFIG.verzending.webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ velden: data, fotos: bijlagen })
+        });
+      })
+      .then(function (res) {
+        if (!res.ok) { throw new Error('Server antwoordde met ' + res.status); }
+        noot.textContent = 'Uw aanvraag is verstuurd. U hoort zo snel mogelijk van ons ' +
+                           'met een prijs en een ophaaltijd.';
+        noot.style.color = '#12a15c';
+        noot.style.fontWeight = '600';
+        ritForm.reset();
+        fotos = [];
+        toonFotos();
+        ververSamenvatting();
+        knop.textContent = 'Aanvraag verstuurd';
+      })
+      .catch(function (fout) {
+        noot.textContent = 'Versturen is niet gelukt (' + fout.message + '). ' +
+                           'Belt u ons gerust even, dan regelen we het direct.';
+        noot.style.color = '#c8351a';
+        noot.style.fontWeight = '600';
+        knop.disabled = false;
+        knop.textContent = oudeTekst;
+      });
+  }
+
+  ritForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!ritForm.checkValidity()) { ritForm.reportValidity(); return; }
+
+    var data = bouwAanvraag();
+    var noot = document.getElementById('ritNote');
+
+    if (CONFIG.verzending.modus === 'webhook' && CONFIG.verzending.webhookUrl) {
+      verstuurViaWebhook(data, noot, ritForm.querySelector('button[type=submit]'));
+      return;
+    }
+
+    verstuurViaMail(
+      data['Dienst'] + ': ' + (data['Ophaallocatie'] || '?') + ' naar ' + (data['Afleverlocatie'] || '?'),
+      alsTekst('Ritaanvraag via de website', data),
+      noot
+    );
+  });
+
+  /* ===================== contactformulier ===================== */
+
+  var contactForm = document.getElementById('contactForm');
+
+  contactForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!contactForm.checkValidity()) { contactForm.reportValidity(); return; }
+    var d = function (id) { return veld(id) || '-'; };
+    verstuurViaMail('Bericht via de website: ' + d('c-onderwerp'), [
+      'Bericht via de website',
+      '',
+      'Onderwerp:       ' + d('c-onderwerp'),
+      'Bedrijf:         ' + d('c-bedrijf'),
+      'Contactpersoon:  ' + d('c-naam'),
+      'Telefoon:        ' + d('c-tel'),
+      'E-mail:          ' + d('c-mail'),
+      '',
+      d('c-bericht')
+    ], document.getElementById('contactNote'));
+  });
+
+  /* ===================== mobiel menu ===================== */
+
+  var toggle = document.getElementById('navToggle');
+  var links  = document.getElementById('navLinks');
+
+  toggle.addEventListener('click', function () {
+    var open = links.classList.toggle('is-open');
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    toggle.setAttribute('aria-label', open ? 'Menu sluiten' : 'Menu openen');
+  });
+
+  links.addEventListener('click', function (e) {
+    if (e.target.tagName === 'A') {
+      links.classList.remove('is-open');
+      toggle.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  document.getElementById('jaar').textContent = new Date().getFullYear();
+})();
+</script>
+
+</body>
+</html>
