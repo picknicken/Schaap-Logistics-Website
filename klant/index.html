@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0b1526">
+<title>Mijn zendingen — Schaap Logistics</title>
+<link rel="icon" href="../assets/favicon.png">
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --navy:#0b1526;
+  --navy-2:#111f36;
+  --amber:#ffb020;
+  --amber-2:#e08c00;
+  --urgent:#ff5a3c;
+  --paper:#ffffff;
+  --paper-2:#f4f6fa;
+  --heading:#0b1526;
+  --text:#414e68;
+  --muted:#6f7c94;
+  --line:#e2e7f0;
+  --ok:#12a15c;
+  --ok-vlak:#e6f5ed;
+  --onderweg:#0b6fd4;
+  --onderweg-vlak:#e6f0fb;
+  --r:14px;
+  --shadow:0 1px 2px rgba(11,21,38,.06),0 8px 24px rgba(11,21,38,.07);
+}
+
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:var(--paper-2);color:var(--text);
+  font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;
+  min-height:100vh;
+}
+h1,h2,h3{color:var(--heading);line-height:1.2;letter-spacing:-.02em;font-weight:700}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+input{font:inherit}
+:focus-visible{outline:2px solid var(--amber-2);outline-offset:2px;border-radius:6px}
+[hidden]{display:none!important}
+
+.wrap{max-width:680px;margin:0 auto;padding:0 16px}
+
+.kop{
+  background:var(--navy);color:#fff;
+  padding:calc(14px + env(safe-area-inset-top)) 0 14px;
+}
+.kop__rij{display:flex;align-items:center;gap:12px}
+.kop__logo{height:30px;width:auto;flex:none}
+.kop__titel{font-size:.95rem;font-weight:700;color:#fff;letter-spacing:-.01em}
+.kop__titel small{display:block;font-size:.72rem;font-weight:500;color:#8fa2be;letter-spacing:.04em}
+.kop__uit{
+  margin-left:auto;font-size:.78rem;color:#8fa2be;
+  border:1px solid rgba(255,255,255,.18);border-radius:99px;padding:5px 12px;
+}
+
+/* ---------------------------------------------------------------- slot */
+.slot{max-width:400px;margin:0 auto;padding:56px 16px}
+.slot h1{font-size:1.5rem;margin-bottom:8px}
+.slot p{font-size:.93rem;color:var(--muted);margin-bottom:22px}
+.veld{display:block;margin-bottom:14px}
+.veld span{
+  display:block;font-size:.75rem;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:6px;
+}
+.veld input{
+  width:100%;padding:13px 14px;border:1.5px solid var(--line);border-radius:10px;
+  background:var(--paper);color:var(--heading);
+}
+.veld input:focus{border-color:var(--amber-2);outline:none}
+.veld small{
+  display:block;margin-top:6px;font-size:.78rem;color:var(--muted);
+  text-transform:none;letter-spacing:0;font-weight:400;line-height:1.45;
+}
+
+.knop{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:13px 18px;border-radius:11px;font-weight:600;font-size:.95rem;
+  text-decoration:none;text-align:center;line-height:1.25;
+}
+.knop:active{opacity:.75}
+.knop--vol{background:var(--amber);color:var(--navy);width:100%}
+.knop--rand{background:var(--paper);color:var(--heading);border:1.5px solid var(--line)}
+.knop[disabled]{opacity:.5;pointer-events:none}
+
+.melding{
+  border-radius:10px;padding:11px 14px;font-size:.88rem;margin-bottom:14px;
+  border-left:3px solid var(--urgent);background:#fdecea;color:#8c2415;
+}
+
+/* ------------------------------------------------------------ tabbladen */
+.tabs{
+  display:grid;grid-template-columns:1fr 1fr;
+  background:var(--navy);border-top:1px solid rgba(255,255,255,.08);
+  position:sticky;top:0;z-index:19;
+}
+.tab{
+  padding:11px 6px 10px;color:#8fa2be;font-size:.85rem;font-weight:600;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  border-bottom:2.5px solid transparent;
+}
+.tab[aria-selected="true"]{color:#fff;border-bottom-color:var(--amber)}
+.tab__badge{
+  min-width:19px;height:19px;padding:0 5px;border-radius:99px;
+  background:rgba(255,255,255,.14);color:#fff;font-size:.68rem;font-weight:700;
+  display:grid;place-items:center;font-variant-numeric:tabular-nums;
+}
+.tab[aria-selected="true"] .tab__badge{background:var(--amber);color:var(--navy)}
+.tab__badge[hidden]{display:none!important}
+
+/* --------------------------------------------------------------- lijst */
+.lijst{padding:16px 0 40px;display:grid;gap:12px}
+
+.kaart{
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--r);
+  box-shadow:var(--shadow);overflow:hidden;
+}
+.kaart__kop{
+  display:flex;gap:12px;align-items:flex-start;padding:14px 16px;
+  list-style:none;cursor:pointer;
+}
+.kaart__kop::-webkit-details-marker{display:none}
+.merk{
+  font-size:.7rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  padding:4px 9px;border-radius:99px;flex:none;margin-top:2px;
+}
+.s-gepland{background:var(--paper-2);color:var(--muted);border:1px solid var(--line)}
+.s-onderweg{background:var(--onderweg-vlak);color:var(--onderweg);border:1px solid var(--onderweg)}
+.s-uitgevoerd{background:var(--ok-vlak);color:var(--ok);border:1px solid var(--ok)}
+.s-open{background:#fff4e0;color:#8a5a00;border:1px solid #e0a94a}
+.s-betaald{background:var(--ok-vlak);color:var(--ok);border:1px solid var(--ok)}
+.kaart__hoofd{flex:1;min-width:0}
+.kaart__titel{font-weight:700;color:var(--heading);font-size:.98rem}
+.kaart__regel{font-size:.85rem;color:var(--muted);margin-top:2px}
+.kaart__lijf{border-top:1px solid var(--line);padding:14px 16px;display:grid;gap:14px}
+
+.paar{display:grid;grid-template-columns:92px 1fr;gap:10px;font-size:.88rem}
+.paar dt{color:var(--muted);font-size:.8rem}
+.paar dd{color:var(--heading)}
+
+.bewijs{
+  display:flex;gap:10px;align-items:flex-start;
+  background:var(--ok-vlak);border:1px solid var(--ok);border-radius:10px;
+  padding:11px 14px;font-size:.86rem;color:#0a6b3e;
+}
+.bewijs b{display:block;color:#08512f}
+
+.bedrag{
+  display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  background:var(--paper-2);border-radius:10px;padding:10px 14px;
+}
+.bedrag span{font-size:.78rem;color:var(--muted);font-weight:600;
+  letter-spacing:.04em;text-transform:uppercase}
+.bedrag b{font-size:1.05rem;color:var(--heading);font-variant-numeric:tabular-nums}
+
+.knoppen{display:grid;gap:8px}
+
+.leeg{
+  text-align:center;padding:48px 20px;color:var(--muted);font-size:.93rem;
+  background:var(--paper);border:1px dashed var(--line);border-radius:var(--r);
+}
+
+.voet{
+  padding:24px 0 40px;font-size:.85rem;color:var(--muted);text-align:center;
+}
+</style>
+</head>
+<body>
+
+<!-- ============================ toegang ============================ -->
+<div id="slot" class="slot">
+  <h1>Mijn zendingen</h1>
+  <p>Bekijk de zendingen en facturen van uw bedrijf bij Schaap&nbsp;Logistics.</p>
+  <div id="slot-melding" class="melding" hidden></div>
+  <form id="slot-form">
+    <label class="veld">
+      <span>Toegangscode</span>
+      <input type="password" id="slot-code" autocomplete="current-password" required
+             autocapitalize="off" autocorrect="off" spellcheck="false">
+      <small>De code die u van Schaap Logistics heeft gekregen.</small>
+    </label>
+    <button class="knop knop--vol" type="submit">Openen</button>
+  </form>
+</div>
+
+<!-- ============================= portaal =========================== -->
+<div id="app" hidden>
+
+  <header class="kop">
+    <div class="wrap kop__rij">
+      <img class="kop__logo" src="../assets/logo-sl-wit.png" alt="" width="240" height="177">
+      <span class="kop__titel">Schaap Logistics<small id="kop-klant">MIJN ZENDINGEN</small></span>
+      <button class="kop__uit" id="uitloggen" type="button">Sluiten</button>
+    </div>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" id="tab-zendingen" role="tab" aria-selected="true" type="button">
+      Zendingen <span class="tab__badge" id="badge-zendingen" hidden>0</span>
+    </button>
+    <button class="tab" id="tab-facturen" role="tab" aria-selected="false" type="button">
+      Facturen <span class="tab__badge" id="badge-facturen" hidden>0</span>
+    </button>
+  </div>
+
+  <div class="wrap">
+    <div id="app-melding" class="melding" style="margin-top:16px" hidden></div>
+  </div>
+
+  <div id="paneel-zendingen" class="wrap">
+    <div id="lijst-zendingen" class="lijst"></div>
+  </div>
+
+  <div id="paneel-facturen" class="wrap" hidden>
+    <div id="lijst-facturen" class="lijst"></div>
+  </div>
+
+  <p class="voet wrap">
+    Klopt er iets niet? Neem contact op met Schaap&nbsp;Logistics.
+  </p>
+</div>
+
+<script src="../assets/klant.js"></script>
+</body>
+</html>

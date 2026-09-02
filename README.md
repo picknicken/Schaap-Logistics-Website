@@ -32,6 +32,7 @@ die serveert `diensten/index.html` wel gewoon op `/diensten/`.
 | `contact/index.html` | `/contact/` | Contactgegevens en berichtformulier |
 | `factuur/index.html` | `/factuur/` | Factuur op papierformaat, gevuld vanuit de adresregel |
 | `portaal/index.html` | `/portaal/` | Chauffeursportaal: ritten van de dag, statussen, handtekeningen |
+| `klant/index.html` | `/klant/` | Klantportaal: eigen zendingen en facturen, met een eigen code |
 | `404.html` | — | Wordt door GitHub Pages getoond bij een onbekend adres |
 
 ```
@@ -42,6 +43,7 @@ assets/
   aanvraag.js             het aanvraagformulier
   contact.js              het berichtformulier
   portaal.js              het chauffeursportaal
+  klant.js                het klantportaal
   logo-sl-wit.png         beeldmerk, wit — in de donkere header en footer
   logo-sl.png             beeldmerk, zwart
   logo-volledig-wit.png   beeldmerk plus woordmerk, wit
@@ -106,12 +108,12 @@ in meerdere bestanden. Zoek op `PLACEHOLDER` om ze te vinden.
 
       ```sh
       grep -rl 'noindex,nofollow' --include='*.html' . \
-        | grep -v -e '^./factuur/' -e '^./portaal/' \
+        | grep -v -e '^./factuur/' -e '^./portaal/' -e '^./klant/' \
         | xargs sed -i 's/noindex,nofollow/index,follow/'
       ```
 
-      `factuur/index.html` en `portaal/index.html` blijven bewust op `noindex`:
-      dat zijn interne hulpmiddelen met klantgegevens en die horen niet in Google.
+      `factuur/`, `portaal/` en `klant/` blijven bewust op `noindex`: dat zijn
+      besloten schermen met klantgegevens en die horen niet in Google.
 
 - [ ] **Algemene voorwaarden en privacyverklaring.** De footer stelt nu dat er
       algemene voorwaarden van toepassing zijn, maar er staat nergens een link
@@ -252,6 +254,42 @@ getekend moet worden. In Airtable springt het veld `Afleverbewijs` dan op
 
 Het portaal werkt niet offline. Val je onderweg uit bereik, dan zegt het dat er
 niets verstuurd is en probeer je het opnieuw zodra je weer bereik hebt.
+
+## Het klantportaal
+
+`/klant/` is de kant die je klanten zien. Elke klant krijgt een eigen code en
+ziet daarmee **alleen zijn eigen** zendingen en facturen: status, route, wie er
+getekend heeft en wanneer, wat het kost, wat er nog openstaat, en de PDF van de
+factuur.
+
+Dezelfde Worker bedient beide portalen. Welke van de twee je krijgt hangt af van
+de code die meekomt, en die splitsing zit helemaal bovenin: klantacties staan in
+een eigen functie met een eigen lijst, dus een klantcode kan een chauffeursactie
+niet eens bereiken. Dat is met opzet zo gebouwd en niet met een reeks controles
+per actie — dan vergeet je er een.
+
+**Wat een klant nooit te zien krijgt**, en dat wordt afgedwongen in de Worker en
+niet op het scherm: `Brandstofkosten`, `Tol en parkeren`, `Overige ritkosten`,
+`Totale ritkosten`, `Winst` en `Winst per km`. Die velden worden niet
+meegestuurd. Verbergen in de pagina zou niet genoeg zijn — wie het antwoord van
+de server bekijkt, ziet dan alsnog alles.
+
+Ook niet zichtbaar: interne ritnamen, opmerkingen bij een rit, telefoonnummers,
+record-ids, en uiteraard alles wat aan een andere klant hangt. Dat laatste zit
+structureel dicht: het portaal vraagt niet "geef alle ritten en filter" maar
+"geef de ritten die aan deze klant hangen".
+
+**Een code uitdelen.** Maak je een klant aan via het chauffeursportaal, dan komt
+er vanzelf een code op het veld `Portaalcode`. In de interface *Administratie* →
+*Klanten* staat daarnaast `Portaallink`: die link mag je doorsturen, de code zit
+erin en de klant hoeft niets over te typen. Behandel hem als een wachtwoord.
+
+Intrekken doe je door dat veld leeg te maken of te wijzigen; de oude code werkt
+dan meteen niet meer.
+
+Het portaal onthoudt de code op het apparaat van de klant, en haalt hem uit de
+adresbalk zodra de pagina open is — zodat hij niet in schermfoto's of in de
+geschiedenis van een gedeelde computer blijft staan.
 
 ## Formulieren versturen
 

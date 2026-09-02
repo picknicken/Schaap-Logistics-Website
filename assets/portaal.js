@@ -15,7 +15,7 @@
        inlogscherm er zelf om en onthoudt de telefoon het — dan hoef je na het
        uitrollen niets meer in de code te veranderen. Vul je het hier wel in,
        dan gaat dat voor en verdwijnt het veld. */
-    portaalUrl: '',
+    portaalUrl: 'https://schaap-portaal.rt5twh6n7h.workers.dev',
     sleutel: 'sl-portaal-code',
     sleutelAdres: 'sl-portaal-adres'
   };

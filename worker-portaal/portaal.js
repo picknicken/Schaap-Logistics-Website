@@ -18,6 +18,7 @@
      AIRTABLE_OPDRACHTEN  tblMNRxxvlQ2ykGCb
      AIRTABLE_AANVRAGEN   tblhvOATDAfvBmabA
      AIRTABLE_KLANTEN     tbluCJAsTFXdB2ZeR
+     AIRTABLE_FACTUREN    tblDA2m46PWhhiFnC
      TOEGESTANE_ORIGIN    https://picknicken.github.io
 
    De token heeft data.records:read én data.records:write nodig. Alleen
@@ -95,7 +96,8 @@ const K = {
   email:     'E-mail',
   telefoon:  'Telefoon',
   termijn:   'Betalingstermijn (dagen)',
-  nummer:    'Klantnummer'
+  nummer:    'Klantnummer',
+  code:      'Portaalcode'
 };
 
 /* Precies de statussen die in Airtable bestaan. Een status die de telefoon
@@ -130,17 +132,28 @@ export default {
       return antwoord(500, { fout: 'PORTAAL_CODE ontbreekt in de Worker' }, origin, true);
     }
     const code = verzoek.headers.get('X-Portaal-Code') || '';
-    if (!gelijk(code, env.PORTAAL_CODE)) {
-      /* Even wachten. Het maakt raden niet onmogelijk, maar wel traag. */
-      await new Promise((r) => setTimeout(r, 700));
-      return antwoord(401, { fout: 'Onjuiste toegangscode' }, origin, true);
-    }
 
     let body;
     try {
       body = await verzoek.json();
     } catch {
       return antwoord(400, { fout: 'Ongeldige JSON' }, origin, true);
+    }
+
+    /* ------------------------------------------------------------------
+       Hier splitst het. Boven de streep hoort de chauffeurscode, daaronder
+       een klantcode. Die twee komen elkaar nergens tegen: de klantacties
+       staan in een eigen functie met een eigen lijst, dus een klantcode kan
+       een chauffeursactie niet eens bereiken. Dat is met opzet zo gebouwd en
+       niet met een reeks controles per actie — dan vergeet je er een.
+       ------------------------------------------------------------------ */
+    if (!gelijk(code, env.PORTAAL_CODE)) {
+      try {
+        return await klantPoort(env, code, body, origin);
+      } catch (fout) {
+        console.log('Klantportaal: ' + fout.message);
+        return antwoord(502, { fout: fout.message }, origin, true);
+      }
     }
 
     try {
@@ -406,7 +419,7 @@ async function nieuweKlant(env, body, origin) {
     return antwoord(400, { fout: 'Vul een klantnaam in' }, origin, true);
   }
 
-  const velden = { [K.naam]: naam };
+  const velden = { [K.naam]: naam, [K.code]: verzinCode() };
   if (body.adres)    { velden[K.adres]    = String(body.adres).slice(0, 500); }
   if (body.email)    { velden[K.email]    = String(body.email).slice(0, 200); }
   if (body.telefoon) { velden[K.telefoon] = String(body.telefoon).slice(0, 50); }
@@ -436,6 +449,154 @@ async function nieuweKlant(env, body, origin) {
   }
 
   return antwoord(200, { ok: true, klant, opdracht, rit }, origin, true);
+}
+
+/* ==========================================================================
+   HET KLANTPORTAAL
+
+   Alles hieronder wordt bekeken door iemand buiten het bedrijf. Twee regels
+   gelden hier, en ze staan los van elkaar:
+
+   1. Een klant ziet alleen zijn eigen records. Dat wordt afgedwongen door de
+      zoekopdracht aan Airtable, niet door filteren achteraf.
+   2. Een klant ziet alleen velden die op de lijst hieronder staan. Wat er
+      niet op staat verlaat de server niet — dus ook niet verstopt in het
+      antwoord waar iemand het uit kan vissen. Je brandstof, tol, overige
+      kosten en je winst staan er bewust niet op.
+   ========================================================================== */
+
+/* Een klantcode gaat rechtstreeks een Airtable-formule in. Alles behalve
+   letters, cijfers en streepjes wordt geweigerd, zodat er nooit een
+   aanhalingsteken in kan staan waarmee je die formule kunt omschrijven. */
+function schoneCode(w) {
+  const c = String(w || '');
+  return /^[A-Za-z0-9-]{12,64}$/.test(c) ? c : null;
+}
+
+function verzinCode() {
+  const tekens = 'abcdefghijkmnopqrstuvwxyz23456789';
+  const ruw = new Uint8Array(24);
+  crypto.getRandomValues(ruw);
+  let uit = '';
+  for (let i = 0; i < ruw.length; i++) {
+    if (i > 0 && i % 6 === 0) { uit += '-'; }
+    uit += tekens[ruw[i] % tekens.length];
+  }
+  return uit;
+}
+
+const KLANT_ACTIES = ['klantoverzicht'];
+
+async function klantPoort(env, code, body, origin) {
+  const schoon = schoneCode(code);
+  if (!schoon || !KLANT_ACTIES.includes(body.actie)) {
+    await new Promise((r) => setTimeout(r, 700));
+    return antwoord(401, { fout: 'Onjuiste toegangscode' }, origin, true);
+  }
+
+  const klant = await klantBijCode(env, schoon);
+  if (!klant) {
+    await new Promise((r) => setTimeout(r, 700));
+    return antwoord(401, { fout: 'Onjuiste toegangscode' }, origin, true);
+  }
+
+  const [alleRitten, facturen] = await Promise.all([
+    klantRitten(env, klant.id),
+    klantFacturen(env, klant.id)
+  ]);
+  const ritten = alleRitten.filter((r) => r.status !== 'Geannuleerd');
+
+  return antwoord(200, {
+    ok: true,
+    klant: { naam: klant.naam, nummer: klant.nummer },
+    ritten,
+    facturen
+  }, origin, true);
+}
+
+async function klantBijCode(env, code) {
+  const zoek = new URLSearchParams();
+  zoek.set('filterByFormula', `{${K.code}} = '${code}'`);
+  zoek.set('pageSize', '2');
+  const data = await airtable(env, `${env.AIRTABLE_KLANTEN}?${zoek}`);
+  const gevonden = data.records || [];
+  /* Twee klanten met dezelfde code is een fout in de administratie. Dan
+     niemand binnenlaten in plaats van gokken wie het is. */
+  if (gevonden.length !== 1) { return null; }
+  return naarKlant(gevonden[0]);
+}
+
+/* Niet zoeken in alle ritten en dan filteren, maar de klant zelf vragen welke
+   ritten aan hem hangen en alleen die ophalen. Zo kan een fout in een filter
+   nooit een rit van iemand anders opleveren: die staat simpelweg niet in de
+   lijst waar we mee beginnen. */
+async function klantRecords(env, klantId, koppelveld, tabel, omzetter) {
+  const klant = await airtable(env, `${env.AIRTABLE_KLANTEN}/${klantId}`);
+  const ids = ((klant.fields || {})[koppelveld] || [])
+    .map((r) => (r && r.id) || r)
+    .filter((id) => /^rec[A-Za-z0-9]{14}$/.test(String(id)));
+  if (!ids.length) { return []; }
+
+  const uit = [];
+  for (const brok of inBrokken(ids, 20)) {
+    const q = new URLSearchParams();
+    q.set('filterByFormula',
+      'OR(' + brok.map((id) => `RECORD_ID() = '${id}'`).join(',') + ')');
+    q.set('pageSize', '100');
+    const data = await airtable(env, `${tabel}?${q}`);
+    (data.records || []).forEach((r) => uit.push(omzetter(r)));
+  }
+  uit.sort((a, b) => String(b.datum).localeCompare(String(a.datum)));
+  return uit;
+}
+
+function klantRitten(env, klantId) {
+  return klantRecords(env, klantId, 'Ritten', env.AIRTABLE_RITTEN, naarKlantRit);
+}
+
+function klantFacturen(env, klantId) {
+  return klantRecords(env, klantId, 'Facturen', env.AIRTABLE_FACTUREN, naarKlantFactuur);
+}
+
+function inBrokken(lijst, maat) {
+  const uit = [];
+  for (let i = 0; i < lijst.length; i += maat) { uit.push(lijst.slice(i, i + maat)); }
+  return uit;
+}
+
+/* Precies dit, en niets meer. Brandstof, tol, overige ritkosten, totale
+   ritkosten, winst en winst per km staan er bewust niet bij: dat is jouw
+   bedrijfsvoering en niet die van je klant. */
+function naarKlantRit(record) {
+  const f = record.fields || {};
+  return {
+    datum:      f[R.datum] || '',
+    type:       keuze(f[R.type]),
+    status:     keuze(f[R.status]) || 'Gepland',
+    ophaal:     f[R.ophaal] || '',
+    aflever:    f[R.aflever] || '',
+    km:         f[R.km] || 0,
+    bedrag:     f[R.totaal] || 0,
+    getekend:   f[R.getekendD] || '',
+    getekendOp: f[R.getekendO] || '',
+    afgeleverd: Array.isArray(f[R.handtek]) && f[R.handtek].length > 0
+  };
+}
+
+function naarKlantFactuur(record) {
+  const f = record.fields || {};
+  const pdf = Array.isArray(f['PDF']) && f['PDF'].length ? f['PDF'][0] : null;
+  return {
+    nummer:     f['Factuurnummer'] || '',
+    datum:      f['Factuurdatum'] || '',
+    vervalt:    f['Vervaldatum'] || f['Vervaldatum berekend'] || '',
+    totaal:     f['Totaal'] || 0,
+    betaald:    f['Betaald'] || 0,
+    openstaand: f['Openstaand'] || 0,
+    status:     keuze(f['Status']) || '',
+    link:       f['Factuurlink'] || '',
+    pdf:        pdf ? (pdf.url || '') : ''
+  };
 }
 
 /* ------------------------------------------------------------- ophalen */
