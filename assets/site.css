@@ -76,11 +76,8 @@ header{
 }
 .nav{display:flex;align-items:center;gap:28px;height:72px}
 .brand{display:flex;align-items:center;gap:11px;text-decoration:none;margin-right:auto}
-.brand__mark{
-  width:36px;height:36px;border-radius:9px;flex:none;
-  background:linear-gradient(140deg,var(--amber),#ff8a00);
-  display:grid;place-items:center;color:#22160a;
-}
+/* Het beeldmerk uit de huisstijl. Wit, want header en footer zijn donker. */
+.brand__mark{height:34px;width:auto;flex:none;display:block}
 .brand__name{color:#fff;font-weight:800;font-size:1.06rem;letter-spacing:-.02em;line-height:1.15}
 .brand__sub{color:#7f90aa;font-size:.68rem;font-weight:600;letter-spacing:.09em;text-transform:uppercase}
 .nav__links{display:flex;gap:26px;list-style:none}
