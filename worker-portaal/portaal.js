@@ -368,6 +368,16 @@ async function koppelKlant(env, body, origin) {
   if (!id || !klantId) {
     return antwoord(400, { fout: 'Ongeldig id' }, origin, true);
   }
+
+  /* Koppelen kan aan een opdracht of rechtstreeks aan een rit. Dat tweede is
+     nodig voor een rit die is ingepland voordat er een klant bij stond. */
+  if (body.soort === 'rit') {
+    const rit = naarRit(
+      await patch(env, env.AIRTABLE_RITTEN, id, { [R.klantlink]: [klantId] })
+    );
+    return antwoord(200, { ok: true, rit }, origin, true);
+  }
+
   const opdracht = naarOpdracht(
     await patch(env, env.AIRTABLE_OPDRACHTEN, id, { [O.klantlink]: [klantId] })
   );
@@ -405,18 +415,27 @@ async function nieuweKlant(env, body, origin) {
 
   const klant = naarKlant(await maak(env, env.AIRTABLE_KLANTEN, velden));
 
-  /* Aan een opdracht koppelen mag, maar hoeft niet: je kunt ook gewoon een
-     klant vastleggen zonder dat er al werk voor is. */
+  /* Aan een opdracht of rit koppelen mag, maar hoeft niet: je kunt ook gewoon
+     een klant vastleggen zonder dat er al werk voor is. */
   let opdracht = null;
-  const id = recordId(body.opdrachtId);
-  if (id) {
+  let rit = null;
+
+  const opdrachtId = recordId(body.opdrachtId);
+  if (opdrachtId) {
     opdracht = naarOpdracht(
-      await patch(env, env.AIRTABLE_OPDRACHTEN, id, { [O.klantlink]: [klant.id] })
+      await patch(env, env.AIRTABLE_OPDRACHTEN, opdrachtId, { [O.klantlink]: [klant.id] })
     );
-    await koppelKlantAanRitten(env, id, klant.id);
+    await koppelKlantAanRitten(env, opdrachtId, klant.id);
   }
 
-  return antwoord(200, { ok: true, klant, opdracht }, origin, true);
+  const ritId = recordId(body.ritId);
+  if (ritId) {
+    rit = naarRit(
+      await patch(env, env.AIRTABLE_RITTEN, ritId, { [R.klantlink]: [klant.id] })
+    );
+  }
+
+  return antwoord(200, { ok: true, klant, opdracht, rit }, origin, true);
 }
 
 /* ------------------------------------------------------------- ophalen */

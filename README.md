@@ -268,6 +268,29 @@ installeren ervan.
 > Zet nooit een Airtable-token in `assets/site.js`. Alles in dat bestand is
 > leesbaar voor iedere bezoeker; daarom staat de token in de Worker.
 
+## De Workers uitrollen
+
+`.github/workflows/worker-uitrollen.yml` rolt allebei de Workers uit zodra er op
+`main` iets aan verandert. Eenmalig instellen: GitHub → *Settings* → *Secrets and
+variables* → *Actions* → *New repository secret*, naam `CLOUDFLARE_API_TOKEN`,
+waarde een Cloudflare-sleutel met de template *Edit Cloudflare Workers*.
+
+Dat bestaat om één reden: uitrollen ging steeds mis op het met de hand plakken
+van die sleutel in een terminal. Eén spatie of regeleinde erin en wrangler krijgt
+een halve sleutel, met een foutmelding die daar niets over zegt. Nu staat hij
+eenmalig in de repository-instellingen en raakt niemand hem meer aan.
+
+Beide Workers worden uitgerold, ook als er maar één veranderd is. Uitrollen van
+ongewijzigde code doet niets, en zo staat wat er draait altijd gelijk aan wat er
+in git staat — precies wat er eerder misging toen er met de hand een regel uit de
+Worker sneuvelde.
+
+Met de hand kan ook, vanuit `worker/` of `worker-portaal/`:
+
+```sh
+npx wrangler deploy
+```
+
 ## Publiceren
 
 GitHub Pages staat op branch `main`, map `/` (root). `.nojekyll` zorgt dat de

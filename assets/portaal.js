@@ -99,6 +99,15 @@
           vergeetCode();
           throw new Error('Je toegangscode klopt niet meer. Voer hem opnieuw in.');
         }
+        /* Een Worker van voor deze versie kent de nieuwe opdrachten niet en
+           antwoordt met "Onbekende actie". Dat zegt niets over wat je moet
+           doen, dus vertalen we het naar de echte oorzaak. */
+        if (data.fout === 'Onbekende actie') {
+          throw new Error(
+            'Het tussenstukje bij Cloudflare is een oude versie en kent deze ' +
+            'knop nog niet. Rol de Worker opnieuw uit; daarna werkt dit scherm.'
+          );
+        }
         if (!res.ok || !data.ok) {
           throw new Error(data.fout || ('Er ging iets mis (' + res.status + ')'));
         }
@@ -325,8 +334,15 @@
 
   function tekenRit(rit) {
     var klaar = rit.status === 'Uitgevoerd' || rit.status === 'Geannuleerd';
-    var kaart = maak('details', 'rit' + (klaar ? ' rit--klaar' : ''));
-    kaart.open = !klaar;
+
+    /* Er is iets mis als een rit geen klant heeft, of uitgevoerd is zonder
+       handtekening. In beide gevallen kun je later niet factureren of niets
+       aantonen — dus die kaart klapt open, ook als de rit al afgerond is.
+       Een waarschuwing die je moet opendoen om te zien, zie je niet. */
+    var aandacht = (!rit.klant && rit.status !== 'Geannuleerd') ||
+                   (rit.status === 'Uitgevoerd' && !rit.handtekening);
+    var kaart = maak('details', 'rit' + (klaar && !aandacht ? ' rit--klaar' : ''));
+    kaart.open = !klaar || aandacht;
 
     /* --- kop --- */
     var kop = maak('summary', 'rit__kop');
@@ -390,6 +406,23 @@
       }
       bewijs.appendChild(tekst);
       lijf.appendChild(bewijs);
+    }
+
+    /* Een rit zonder klant kun je rijden, maar niet factureren. Dat moet je
+       zien voordat de rit voorbij is, niet als je de factuur wilt maken. */
+    if (!rit.klant && rit.status !== 'Geannuleerd') {
+      var geenKlant = maak('div', 'bewijs bewijs--mist');
+      var gk = maak('div');
+      gk.appendChild(maak('b', '', 'Geen klant aan deze rit'));
+      gk.appendChild(document.createTextNode(
+        'Rijden kan, factureren niet. Koppel er een klant aan.'));
+      geenKlant.appendChild(gk);
+      lijf.appendChild(geenKlant);
+
+      var koppelRit = maak('button', 'knop knop--rand', 'Klant koppelen');
+      koppelRit.type = 'button';
+      koppelRit.addEventListener('click', function () { openKlantblad(rit, 'rit'); });
+      lijf.appendChild(koppelRit);
     }
 
     /* --- knoppen --- */
@@ -727,9 +760,13 @@
 
   /* --------------------------------------------------------- klantblad */
 
-  function openKlantblad(o) {
+  var klantSoort = 'opdracht';
+
+  function openKlantblad(o, soort) {
     klantVoor = o;
-    el('klant-opdracht').textContent = o.naam || 'Opdracht';
+    klantSoort = soort || 'opdracht';
+    el('klant-opdracht').textContent =
+      (klantSoort === 'rit' ? 'Rit: ' : '') + (o.naam || 'Opdracht');
     meldKlant('');
 
     var keuze = el('klant-keuze');
@@ -777,9 +814,9 @@
     var klantId = el('klant-keuze').value;
     if (!klantId) { meldKlant('Kies eerst een klant.'); return; }
     bezig(el('klant-koppel'), 'Koppelen…', function (klaar) {
-      verstuur('koppelklant', { id: klantVoor.id, klantId: klantId })
+      verstuur('koppelklant', { id: klantVoor.id, klantId: klantId, soort: klantSoort })
         .then(function (data) {
-          klantGekoppeld(data.opdracht);
+          klantGekoppeld(data.opdracht, data.rit);
           klaar(true);
         })
         .catch(function (fout) { meldKlant(fout.message); klaar(false); });
@@ -796,7 +833,8 @@
     }
     bezig(el('klant-nieuw'), 'Aanmaken…', function (klaar) {
       verstuur('nieuweklant', {
-        opdrachtId: klantVoor.id,
+        opdrachtId: klantSoort === 'opdracht' ? klantVoor.id : '',
+        ritId:      klantSoort === 'rit' ? klantVoor.id : '',
         naam: naam,
         adres: el('klant-adres').value.trim(),
         telefoon: el('klant-telefoon').value.trim(),
@@ -804,20 +842,26 @@
         termijn: el('klant-termijn').value.trim()
       }).then(function (data) {
         if (data.klant) { klanten = klanten.concat([data.klant]); }
-        klantGekoppeld(data.opdracht);
+        klantGekoppeld(data.opdracht, data.rit);
         klaar(true);
       }).catch(function (fout) { meldKlant(fout.message); klaar(false); });
     });
   });
 
-  function klantGekoppeld(nieuweOpdracht) {
+  function klantGekoppeld(nieuweOpdracht, nieuweRit) {
     if (nieuweOpdracht) {
       opdrachten = opdrachten.map(function (o) {
         return o.id === nieuweOpdracht.id ? nieuweOpdracht : o;
       });
     }
+    if (nieuweRit) {
+      ritten = ritten.map(function (r) {
+        return r.id === nieuweRit.id ? nieuweRit : r;
+      });
+    }
     sluitKlantblad();
     tekenPlanning();
+    tekenLijst();
   }
 
   /* --------------------------------------------------------- tekenblad */

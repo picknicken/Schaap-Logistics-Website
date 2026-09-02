@@ -1,0 +1,61 @@
+# Rolt de twee Cloudflare Workers uit zodra er iets aan verandert op main.
+#
+# Waarom dit bestaat: uitrollen ging steeds mis op het handmatig plakken van
+# een Cloudflare-sleutel in een terminal. Een spatie of een regeleinde erin en
+# wrangler krijgt een halve sleutel, met een foutmelding die daar niets over
+# zegt. Hier staat de sleutel eenmalig in de repository-instellingen en raakt
+# niemand hem meer aan.
+#
+# Eenmalig instellen: GitHub -> Settings -> Secrets and variables -> Actions
+# -> New repository secret, naam CLOUDFLARE_API_TOKEN, waarde je Cloudflare
+# API-sleutel (die met de template "Edit Cloudflare Workers").
+#
+# Het accountnummer is geen geheim: het staat in de adresbalk van je eigen
+# Cloudflare-scherm en is zonder de sleutel nutteloos.
+
+name: Workers uitrollen
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'worker/**'
+      - 'worker-portaal/**'
+      - '.github/workflows/worker-uitrollen.yml'
+  workflow_dispatch:
+
+env:
+  CLOUDFLARE_ACCOUNT_ID: fe27fa3e7d63975e9e37f94fd3f6fab8
+
+jobs:
+  uitrollen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Stop als de sleutel ontbreekt
+        run: |
+          if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN ontbreekt. Zet hem onder Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+      # Allebei uitrollen, ook als er maar een veranderd is. Uitrollen van
+      # ongewijzigde code doet niets, en zo staat wat er draait altijd gelijk
+      # aan wat er in git staat — precies wat er eerder misging toen er met de
+      # hand een regel uit de Worker sneuvelde.
+      - name: Aanvraagformulier
+        working-directory: worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: npx --yes wrangler@4 deploy
+
+      - name: Chauffeursportaal
+        working-directory: worker-portaal
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: npx --yes wrangler@4 deploy
