@@ -1,0 +1,355 @@
+/* =========================================================================
+   Het aanvraagformulier op /aanvragen/: live samenvatting, foto's, versturen.
+   Doet niets op pagina's zonder dat formulier.
+   ========================================================================= */
+(function () {
+  'use strict';
+
+  var ritForm = document.getElementById('ritForm');
+  if (!ritForm) { return; }
+
+  var CONFIG = window.SL.CONFIG;
+  var euro   = window.SL.euro;
+
+  var samRijen = document.getElementById('samRijen');
+  var samPrijs = document.getElementById('samPrijs');
+  var samNoot  = document.getElementById('samNoot');
+
+  function veld(id) {
+    var el = document.getElementById(id);
+    return el && el.value.trim() ? el.value.trim() : '';
+  }
+
+  function gekozenDienst() {
+    var el = document.querySelector('#ritForm input[name="dienst"]:checked');
+    return el ? el.value : 'standaard';
+  }
+
+  function tijdSleutelUit(naam) {
+    var k;
+    for (k in CONFIG.tijden) {
+      if (CONFIG.tijden[k].naam === naam) { return k; }
+    }
+    return 'dag';
+  }
+
+  /* ===================== keuzes overnemen van de calculator ===================== */
+
+  /* De knop onder de calculator op de homepage linkt hierheen met de gemaakte
+     keuzes in de URL. Die vullen we alvast in. */
+  function neemKeuzesOver() {
+    var q = new URLSearchParams(window.location.search);
+    if (!q.toString()) { return; }
+
+    var dienst = q.get('dienst');
+    if (dienst) {
+      var radio = document.querySelector('#ritForm input[name="dienst"][value="' + dienst + '"]');
+      if (radio) { radio.checked = true; }
+    }
+
+    var tijd = q.get('tijd');
+    var tv   = document.getElementById('r-tijdstip');
+    if (tijd && tv && CONFIG.tijden[tijd]) { tv.value = CONFIG.tijden[tijd].naam; }
+
+    if (q.get('van'))  { document.getElementById('r-opPc').value = q.get('van'); }
+    if (q.get('naar')) { document.getElementById('r-afPc').value = q.get('naar'); }
+  }
+
+  /* ===================== samenvatting ===================== */
+
+  function samRij(label, waarde) {
+    var d = document.createElement('div');
+    d.className = 'sam__rij';
+    var a = document.createElement('span'); a.textContent = label;
+    var b = document.createElement('span'); b.textContent = waarde;
+    d.appendChild(a); d.appendChild(b);
+    return d;
+  }
+
+  function ververSamenvatting() {
+    var dienst = gekozenDienst();
+    var rit    = CONFIG.ritten[dienst];
+    var tKey   = tijdSleutelUit(veld('r-tijdstip'));
+    var op     = veld('r-opPc');
+    var af     = veld('r-afPc');
+
+    samRijen.innerHTML = '';
+    samRijen.appendChild(samRij('Dienst', rit.naam));
+    if (op) { samRijen.appendChild(samRij('Ophalen', op)); }
+    if (af) { samRijen.appendChild(samRij('Afleveren', af)); }
+    if (veld('r-datum')) { samRijen.appendChild(samRij('Datum', veld('r-datum'))); }
+    if (veld('r-tijd'))  { samRijen.appendChild(samRij('Ophaaltijd', veld('r-tijd'))); }
+    if (CONFIG.tijden[tKey].toeslag > 0) {
+      samRijen.appendChild(samRij('Tijdvak', CONFIG.tijden[tKey].naam));
+    }
+
+    if (rit.offerte) {
+      samPrijs.textContent = 'Op offerte';
+      samNoot.textContent  = 'Voor internationale ritten ontvangt u vooraf een prijsopgave ' +
+                             'op basis van route, rijtijd en eventuele tol.';
+      return;
+    }
+
+    var km = window.SL.schatAfstand(window.SL.postcodeUit(op), window.SL.postcodeUit(af));
+    if (km === null) {
+      samPrijs.textContent = '—';
+      samNoot.textContent  = 'Vul hierboven een ophaal- en afleverpostcode in voor een ' +
+                             'prijsindicatie. De definitieve prijs wordt bevestigd na ' +
+                             'controle van de opdracht.';
+      return;
+    }
+
+    var b = window.SL.bereken(dienst, km, tKey);
+    samRijen.appendChild(samRij('Geschatte afstand', km + ' km'));
+    samPrijs.textContent = euro.format(b.totaal);
+    samNoot.textContent  = 'Indicatie op basis van een geschatte rijafstand van ' + km +
+                           ' km, excl. btw. De definitieve prijs wordt bevestigd na ' +
+                           'controle van de opdracht.';
+  }
+
+  /* ===================== foto's bij de aanvraag ===================== */
+
+  var fotoInput = document.getElementById('r-fotos');
+  var fotoLijst = document.getElementById('fotoLijst');
+  var fotoNoot  = document.getElementById('fotoNoot');
+  var fotos     = [];   /* de daadwerkelijk gekozen bestanden */
+
+  function leesbareGrootte(bytes) {
+    if (bytes < 1024) { return bytes + ' B'; }
+    if (bytes < 1024 * 1024) { return Math.round(bytes / 1024) + ' kB'; }
+    return (bytes / 1024 / 1024).toFixed(1).replace('.', ',') + ' MB';
+  }
+
+  function meldFoto(tekst, fout) {
+    fotoNoot.textContent = tekst;
+    fotoNoot.className = 'fotonoot' + (fout ? ' fotonoot--err' : '');
+  }
+
+  function toonFotos() {
+    fotoLijst.innerHTML = '';
+
+    fotos.forEach(function (bestand, i) {
+      var li = document.createElement('li');
+
+      var img = document.createElement('img');
+      img.alt = '';
+      img.src = URL.createObjectURL(bestand);
+      img.addEventListener('load', function () { URL.revokeObjectURL(img.src); });
+
+      var naam = document.createElement('span');
+      naam.className = 'naam';
+      naam.textContent = bestand.name;
+
+      var grootte = document.createElement('span');
+      grootte.className = 'grootte';
+      grootte.textContent = leesbareGrootte(bestand.size);
+
+      var weg = document.createElement('button');
+      weg.type = 'button';
+      weg.setAttribute('aria-label', bestand.name + ' verwijderen');
+      weg.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" ' +
+        'stroke="currentColor" stroke-width="2.2" stroke-linecap="round">' +
+        '<path d="M18 6 6 18M6 6l12 12"/></svg>';
+      weg.addEventListener('click', function () {
+        fotos.splice(i, 1);
+        toonFotos();
+      });
+
+      li.appendChild(img); li.appendChild(naam);
+      li.appendChild(grootte); li.appendChild(weg);
+      fotoLijst.appendChild(li);
+    });
+
+    if (!fotos.length) {
+      meldFoto('', false);
+      return;
+    }
+    if (CONFIG.verzending.modus === 'mailto') {
+      meldFoto(fotos.length + (fotos.length === 1 ? ' foto gekozen. ' : " foto's gekozen. ") +
+               'Voeg ze straks als bijlage toe aan de e-mail die opent — een website ' +
+               'zonder server kan bestanden niet zelf versturen.', false);
+    } else {
+      meldFoto(fotos.length + (fotos.length === 1 ? ' foto' : " foto's") +
+               ' wordt meegestuurd met de aanvraag.', false);
+    }
+  }
+
+  fotoInput.addEventListener('change', function () {
+    var gekozen = Array.prototype.slice.call(fotoInput.files);
+    var geweigerd = [];
+
+    gekozen.forEach(function (bestand) {
+      if (fotos.length >= CONFIG.foto.maxAantal) {
+        geweigerd.push(bestand.name + ' (maximaal ' + CONFIG.foto.maxAantal + " foto's)");
+        return;
+      }
+      if (bestand.size > CONFIG.foto.maxMb * 1024 * 1024) {
+        geweigerd.push(bestand.name + ' (groter dan ' + CONFIG.foto.maxMb + ' MB)');
+        return;
+      }
+      if (bestand.type.indexOf('image/') !== 0) {
+        geweigerd.push(bestand.name + ' (geen afbeelding)');
+        return;
+      }
+      var dubbel = fotos.some(function (f) {
+        return f.name === bestand.name && f.size === bestand.size;
+      });
+      if (!dubbel) { fotos.push(bestand); }
+    });
+
+    fotoInput.value = '';   /* zodat hetzelfde bestand opnieuw gekozen kan worden */
+    toonFotos();
+
+    if (geweigerd.length) {
+      meldFoto('Niet toegevoegd: ' + geweigerd.join(', ') + '.', true);
+    }
+  });
+
+  /* ===================== aanvraag opbouwen en versturen ===================== */
+
+  /* Eén plek die bepaalt hoe een ritaanvraag eruitziet. De sleutels hieronder
+     zijn precies de kolomnamen in Airtable — zie AIRTABLE.md. Wijzig je hier
+     een naam, wijzig hem dan ook in de tabel. */
+  function bouwAanvraag() {
+    var dienst = gekozenDienst();
+    var rit    = CONFIG.ritten[dienst];
+    var op     = veld('r-opPc');
+    var af     = veld('r-afPc');
+    var tKey   = tijdSleutelUit(veld('r-tijdstip'));
+    var km     = rit.offerte ? null : window.SL.schatAfstand(window.SL.postcodeUit(op), window.SL.postcodeUit(af));
+    var prijs  = km === null ? null : window.SL.bereken(dienst, km, tKey).totaal;
+
+    return {
+      'Status':                   'Nieuw',
+      'Bron':                     'Website',
+      'Dienst':                   rit.naam,
+      'Tijdvak':                  CONFIG.tijden[tKey].naam,
+      'Ophaallocatie':            op,
+      'Ophaalpostcode':           window.SL.postcodeUit(op) || '',
+      'Afleverlocatie':           af,
+      'Afleverpostcode':          window.SL.postcodeUit(af) || '',
+      'Datum':                    veld('r-datum'),
+      'Ophaaltijd':               veld('r-tijd'),
+      'Extra stops':              veld('r-stops'),
+      'Omschrijving':             veld('r-omschrijving'),
+      'Aantal colli':             veld('r-colli'),
+      'Gewicht':                  veld('r-gewicht'),
+      'Afmetingen':               veld('r-afmetingen'),
+      'Bedrijf':                  veld('r-bedrijf'),
+      'Contactpersoon':           veld('r-naam'),
+      'Telefoon':                 veld('r-tel'),
+      'E-mail':                   veld('r-mail'),
+      'Opmerkingen':              veld('r-opmerking'),
+      'Geschatte afstand km':     km,
+      'Prijsindicatie excl btw':  prijs
+    };
+  }
+
+  /* Velden die alleen voor Airtable bedoeld zijn, of die onderaan in een eigen
+     blok komen te staan. Die horen niet in de opsomming van de e-mail. */
+  var NIET_IN_MAIL = ['Status', 'Bron', 'Omschrijving', 'Opmerkingen'];
+
+  /* Leesbare namen voor in de e-mail; de sleutels blijven de Airtable-kolommen. */
+  var MAIL_LABEL = {
+    'Geschatte afstand km':    'Geschatte afstand',
+    'Prijsindicatie excl btw': 'Prijsindicatie'
+  };
+
+  /* Zet een aanvraag om in leesbare regels voor de e-mail. */
+  function alsTekst(kop, data) {
+    var regels = [kop, ''];
+
+    Object.keys(data).forEach(function (sleutel) {
+      var w = data[sleutel];
+      if (w === null || w === '') { return; }
+      if (NIET_IN_MAIL.indexOf(sleutel) !== -1) { return; }
+      if (sleutel === 'Prijsindicatie excl btw') { w = euro.format(w) + ' excl. btw'; }
+      if (sleutel === 'Geschatte afstand km')    { w = w + ' km'; }
+      regels.push(((MAIL_LABEL[sleutel] || sleutel) + ':').padEnd(22) + w);
+    });
+
+    if (data['Omschrijving']) { regels.push('', 'Goederen:', data['Omschrijving']); }
+    if (data['Opmerkingen'])  { regels.push('', 'Opmerkingen:', data['Opmerkingen']); }
+    if (fotos.length) {
+      regels.push('', "Foto's (als bijlage toevoegen):");
+      fotos.forEach(function (f) { regels.push('  - ' + f.name); });
+    }
+    return regels;
+  }
+
+  /* Leest een bestand in als data-URL, zodat het als JSON mee kan. */
+  function leesBestand(bestand) {
+    return new Promise(function (klaar, mislukt) {
+      var lezer = new FileReader();
+      lezer.onload  = function () { klaar({ naam: bestand.name, type: bestand.type, data: lezer.result }); };
+      lezer.onerror = function () { mislukt(new Error('Kan ' + bestand.name + ' niet lezen.')); };
+      lezer.readAsDataURL(bestand);
+    });
+  }
+
+  /* Stuurt de aanvraag als JSON naar de tussenlaag die naar Airtable schrijft.
+     Nog niet actief: zet CONFIG.verzending.modus op 'webhook' en vul de URL in. */
+  function verstuurViaWebhook(data, noot, knop) {
+    var oudeTekst = knop.textContent;
+    knop.disabled = true;
+    knop.textContent = 'Bezig met versturen…';
+    noot.style.color = '';
+    noot.style.fontWeight = '';
+    noot.textContent = 'Uw aanvraag wordt verstuurd…';
+
+    Promise.all(fotos.map(leesBestand))
+      .then(function (bijlagen) {
+        return fetch(CONFIG.verzending.webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ velden: data, fotos: bijlagen })
+        });
+      })
+      .then(function (res) {
+        if (!res.ok) { throw new Error('Server antwoordde met ' + res.status); }
+        noot.textContent = 'Uw aanvraag is verstuurd. U hoort zo snel mogelijk van ons ' +
+                           'met een prijs en een ophaaltijd.';
+        noot.style.color = '#12a15c';
+        noot.style.fontWeight = '600';
+        ritForm.reset();
+        fotos = [];
+        toonFotos();
+        ververSamenvatting();
+        knop.textContent = 'Aanvraag verstuurd';
+      })
+      .catch(function (fout) {
+        noot.textContent = 'Versturen is niet gelukt (' + fout.message + '). ' +
+                           'Belt u ons gerust even, dan regelen we het direct.';
+        noot.style.color = '#c8351a';
+        noot.style.fontWeight = '600';
+        knop.disabled = false;
+        knop.textContent = oudeTekst;
+      });
+  }
+
+  ritForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!ritForm.checkValidity()) { ritForm.reportValidity(); return; }
+
+    var data = bouwAanvraag();
+    var noot = document.getElementById('ritNote');
+
+    if (CONFIG.verzending.modus === 'webhook' && CONFIG.verzending.webhookUrl) {
+      verstuurViaWebhook(data, noot, ritForm.querySelector('button[type=submit]'));
+      return;
+    }
+
+    window.SL.verstuurViaMail(
+      data['Dienst'] + ': ' + (data['Ophaallocatie'] || '?') + ' naar ' + (data['Afleverlocatie'] || '?'),
+      alsTekst('Ritaanvraag via de website', data),
+      noot,
+      'de aanvraag'
+    );
+  });
+
+  ritForm.addEventListener('input', ververSamenvatting);
+  ritForm.addEventListener('change', ververSamenvatting);
+
+  neemKeuzesOver();
+  ververSamenvatting();
+})();

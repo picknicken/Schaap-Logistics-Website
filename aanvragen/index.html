@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rit aanvragen — Schaap Logistics</title>
+<meta name="description" content="Vraag in vijf korte stappen een rit aan. U ziet de prijsindicatie meelopen terwijl u invult en krijgt zo snel mogelijk een bevestiging met prijs en ophaaltijd.">
+<meta name="theme-color" content="#0b1526">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="nl_NL">
+<meta property="og:site_name" content="Schaap Logistics">
+<meta property="og:title" content="Rit aanvragen — Schaap Logistics">
+<meta property="og:description" content="Vraag in vijf korte stappen een rit aan. U ziet de prijsindicatie meelopen terwijl u invult en krijgt zo snel mogelijk een bevestiging met prijs en ophaaltijd.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%227%22%20fill%3D%22%230b1526%22%2F%3E%3Cpath%20d%3D%22M18%206%209%2017h6l-1%209%209-12h-6l1-8z%22%20fill%3D%22%23ffb020%22%2F%3E%3C%2Fsvg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <nav class="nav">
+      <a href="../" class="brand">
+        <span class="brand__mark" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg>
+        </span>
+        <span>
+          <span class="brand__name">Schaap Logistics</span>
+          <span class="brand__sub">Spoedtransport</span>
+        </span>
+      </a>
+
+      <ul class="nav__links" id="navLinks">
+        <li><a href="../diensten/">Diensten</a></li>
+        <li><a href="../tarieven/">Tarieven</a></li>
+        <li><a href="../aanvragen/" aria-current="page">Rit aanvragen</a></li>
+        <li><a href="../werkwijze/">Werkwijze</a></li>
+        <li><a href="../contact/">Contact</a></li>
+      </ul>
+
+      <!-- PLACEHOLDER telefoonnummer -->
+      <a class="nav__phone" href="tel:+31612345678">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.4 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.4 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>
+        <span>06 - 12 34 56 78</span>
+      </a>
+
+      <button class="nav__toggle" id="navToggle" aria-label="Menu openen" aria-expanded="false" aria-controls="navLinks">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+    </nav>
+  </div>
+</header>
+<section class="section" id="aanvragen">
+  <div class="wrap">
+    <span class="eyebrow">Rit aanvragen</span>
+    <h1 class="title">Hoe regel ik het?</h1>
+    <p class="lede" style="margin-bottom:40px">
+      Vijf korte stappen. U krijgt zo snel mogelijk een bevestiging met de prijs en de
+      ophaaltijd. Liever direct schakelen? Bel gerust —
+      <!-- PLACEHOLDER telefoonnummer -->
+      <a href="tel:+31612345678" style="color:var(--amber-2);font-weight:600">06 - 12 34 56 78</a>.
+    </p>
+
+    <div class="aanvraag">
+      <form id="ritForm" novalidate>
+
+        <div class="stap">
+          <div class="stap__kop">
+            <span class="stap__num">1</span>
+            <div><h3>Wat heeft u nodig?</h3><p>Bepaalt de urgentie en het tarief</p></div>
+          </div>
+          <div class="keuze">
+            <label>
+              <input type="radio" name="dienst" value="standaard" checked>
+              <span><b>Standaard transport</b><small>Regulier, ingepland of vandaag</small></span>
+            </label>
+            <label>
+              <input type="radio" name="dienst" value="spoed">
+              <span><b>Spoedtransport</b><small>Met voorrang</small></span>
+            </label>
+            <label>
+              <input type="radio" name="dienst" value="direct">
+              <span><b>Directe spoed</b><small>Direct vertrek</small></span>
+            </label>
+            <label>
+              <input type="radio" name="dienst" value="internationaal">
+              <span><b>Internationaal</b><small>BE, DE en overig Europa</small></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="stap">
+          <div class="stap__kop">
+            <span class="stap__num">2</span>
+            <div><h3>Waar moet het heen?</h3><p>Postcode en huisnummer is genoeg</p></div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="r-opPc">Ophaallocatie</label>
+              <input type="text" id="r-opPc" name="ophaal" placeholder="3011 AA 12, Rotterdam" required>
+            </div>
+            <div class="field">
+              <label for="r-afPc">Afleverlocatie</label>
+              <input type="text" id="r-afPc" name="aflever" placeholder="5611 AB 5, Eindhoven" required>
+            </div>
+          </div>
+        </div>
+
+        <div class="stap">
+          <div class="stap__kop">
+            <span class="stap__num">3</span>
+            <div><h3>Wanneer?</h3><p>Datum en gewenste ophaaltijd</p></div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="r-datum">Datum</label>
+              <input type="date" id="r-datum" name="datum">
+            </div>
+            <div class="field">
+              <label for="r-tijd">Gewenste ophaaltijd</label>
+              <input type="time" id="r-tijd" name="tijd">
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label for="r-tijdstip">Tijdvak</label>
+            <select id="r-tijdstip" name="tijdstip">
+              <option value="Overdag">Overdag — geen toeslag</option>
+              <option value="Avondrit (18:00-23:00)">Avond (18:00-23:00) — + €15</option>
+              <option value="Nacht- of weekendrit">Nacht of weekend — + €35</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="stap">
+          <div class="stap__kop">
+            <span class="stap__num">4</span>
+            <div><h3>Wat vervoeren we?</h3><p>Hoe concreter, hoe scherper de prijs</p></div>
+          </div>
+          <div class="field">
+            <label for="r-omschrijving">Omschrijving van de goederen</label>
+            <input type="text" id="r-omschrijving" name="omschrijving" placeholder="bijv. machineonderdelen in houten kist" required>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="r-colli">Aantal colli</label>
+              <input type="text" id="r-colli" name="colli" placeholder="2">
+            </div>
+            <div class="field">
+              <label for="r-gewicht">Gewicht</label>
+              <input type="text" id="r-gewicht" name="gewicht" placeholder="ca. 30 kg">
+            </div>
+          </div>
+          <div class="field">
+            <label for="r-afmetingen">Afmetingen</label>
+            <input type="text" id="r-afmetingen" name="afmetingen" placeholder="pallet 80 x 120 x 90 cm">
+          </div>
+          <div class="field">
+            <label for="r-stops">Extra stops onderweg</label>
+            <input type="text" id="r-stops" name="stops" placeholder="geen">
+          </div>
+
+          <div class="field" style="margin-bottom:0">
+            <span class="field__label">Foto's van de zending <span style="font-weight:400;color:var(--muted)">— optioneel</span></span>
+            <label class="upload" for="r-fotos">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 8px" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>
+              </svg>
+              <b>Foto's toevoegen</b>
+              Helpt ons de zending en de laadruimte goed in te schatten
+              <input type="file" id="r-fotos" name="fotos" accept="image/*" multiple hidden>
+            </label>
+            <ul class="fotolijst" id="fotoLijst"></ul>
+            <p class="fotonoot" id="fotoNoot"></p>
+          </div>
+        </div>
+
+        <div class="stap">
+          <div class="stap__kop">
+            <span class="stap__num">5</span>
+            <div><h3>Uw gegevens</h3><p>Zodat wij u kunnen bevestigen</p></div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="r-bedrijf">Bedrijfsnaam</label>
+              <input type="text" id="r-bedrijf" name="bedrijf" autocomplete="organization" required>
+            </div>
+            <div class="field">
+              <label for="r-naam">Contactpersoon</label>
+              <input type="text" id="r-naam" name="naam" autocomplete="name" required>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="r-tel">Telefoonnummer</label>
+              <input type="tel" id="r-tel" name="telefoon" autocomplete="tel" required>
+            </div>
+            <div class="field">
+              <label for="r-mail">E-mailadres</label>
+              <input type="email" id="r-mail" name="email" autocomplete="email" required>
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label for="r-opmerking">Opmerkingen</label>
+            <textarea id="r-opmerking" name="opmerking" placeholder="Bijzonderheden over laden, lossen of bereikbaarheid van de locatie."></textarea>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn--primary btn--wide" style="margin-top:22px">
+          Vraag een prijs aan
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+
+        <p class="form__note" id="ritNote">
+          De aanvraag opent in uw eigen e-mailprogramma met alles al ingevuld.
+          Foto's van de zending kunt u daar als bijlage aan toevoegen.
+        </p>
+      </form>
+
+      <aside class="samenvatting" aria-live="polite">
+        <h3>Uw aanvraag</h3>
+        <p>Wordt bijgewerkt terwijl u invult.</p>
+        <div id="samRijen">
+          <div class="sam__rij"><span>Dienst</span><span>Standaard transport</span></div>
+        </div>
+        <div class="sam__prijs">
+          <span class="lbl">Indicatie excl. btw</span>
+          <span class="val" id="samPrijs">—</span>
+        </div>
+        <p style="font-size:.78rem;color:#8fa2bd;margin-top:14px;line-height:1.5" id="samNoot">
+          Vul hierboven een ophaal- en afleverpostcode in voor een prijsindicatie.
+          De definitieve prijs wordt bevestigd na controle van de opdracht.
+        </p>
+      </aside>
+    </div>
+  </div>
+</section>
+<footer>
+  <div class="wrap">
+    <div class="footer__grid">
+      <div>
+        <a href="../" class="brand" style="margin-bottom:14px">
+          <span class="brand__mark" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg></span>
+          <span><span class="brand__name">Schaap Logistics</span><span class="brand__sub">Spoedtransport</span></span>
+        </a>
+        <p style="max-width:38ch">
+          Snel, betrouwbaar en rechtstreeks geleverd. Zakelijk koeriers- en transportvervoer
+          vanuit Nederland naar Nederland, België en Duitsland.
+        </p>
+      </div>
+
+      <div>
+        <h4>Diensten</h4>
+        <ul>
+          <li><a href="../diensten/">Standaard transport</a></li>
+          <li><a href="../diensten/">Spoedtransport</a></li>
+          <li><a href="../diensten/">Directe spoed</a></li>
+          <li><a href="../diensten/">Internationaal transport</a></li>
+          <li><a href="../tarieven/">Tarieven</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4>Contact</h4>
+        <ul>
+          <!-- PLACEHOLDER contactgegevens -->
+          <li><a href="tel:+31612345678">06 - 12 34 56 78</a></li>
+          <li><a href="mailto:info@schaaplogistics.nl">info@schaaplogistics.nl</a></li>
+          <li>KvK-nummer: <span data-placeholder>nog invullen</span></li>
+          <li>Btw-nummer: <span data-placeholder>nog invullen</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer__bottom">
+      <span>&copy; <span id="jaar">2026</span> Schaap Logistics. Alle rechten voorbehouden.</span>
+      <span>Alle genoemde tarieven zijn exclusief btw. Op onze diensten zijn onze algemene voorwaarden van toepassing.</span>
+    </div>
+  </div>
+</footer>
+
+<script src="../assets/site.js"></script>
+<script src="../assets/aanvraag.js"></script>
+
+</body>
+</html>
