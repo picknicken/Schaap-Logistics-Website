@@ -37,7 +37,7 @@
                   zie AIRTABLE.md voor het installeren ervan.
        Zet hier nooit een Airtable-sleutel neer: alles in dit bestand is voor
        iedere bezoeker leesbaar. Daarom staat de sleutel in de Worker. */
-    webhookUrl: '',   /* bijv. https://aanvragen.jouwnaam.workers.dev */
+    webhookUrl: 'https://schaap-aanvragen.rt5twh6n7h.workers.dev',
 
     /* Grenzen voor de foto's bij een aanvraag. */
     foto: {
