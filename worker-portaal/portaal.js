@@ -39,6 +39,13 @@ const R = {
   km:         'Kilometers',
   stops:      'Extra stops',
   tijdvak:    'Tijdvak',
+  tijd:       'Ophaaltijd',
+  brandstof:  'Brandstofkosten',
+  tol:        'Tol en parkeren',
+  overig:     'Overige ritkosten',
+  kosten:     'Totale ritkosten',
+  winst:      'Winst',
+  bevestigd:  'Bevestiging verstuurd op',
   klant:      'Klantnaam',
   telefoon:   'Klant telefoon',
   opmerking:  'Opmerkingen',
@@ -175,6 +182,7 @@ export default {
         case 'planrit':      return await planRit(env, body, origin);
         case 'ritdatum':     return await zetRitdatum(env, body, origin);
         case 'ritkm':        return await zetRitKm(env, body, origin);
+        case 'ritkosten':    return await zetRitKosten(env, body, origin);
         case 'koppelklant':  return await koppelKlant(env, body, origin);
         case 'nieuweklant':  return await nieuweKlant(env, body, origin);
         case 'uitnodiging':  return await stuurUitnodiging(env, body, origin);
@@ -365,6 +373,12 @@ async function planRit(env, body, origin) {
     ? body.tijdvak : keuze(f[O.tijdvak]));
   if (tijdvak) { velden[R.tijdvak] = tijdvak; }
 
+  /* Hoe laat je er bent. Bij spoed is dat het enige wat de klant wil weten, en
+     het gaat in de bevestigingsmail die Airtable stuurt zodra deze rit bestaat.
+     Zonder eigen opgave nemen we de gewenste tijd van de klant over. */
+  const tijd = klokTijd(body.tijd !== undefined && body.tijd !== '' ? body.tijd : f[O.tijd]);
+  if (tijd) { velden[R.tijd] = tijd; }
+
   const rit = naarRit(await maak(env, env.AIRTABLE_RITTEN, velden));
 
   /* De opdracht staat nu ingepland; dat hoort ook in de opdrachtstatus. */
@@ -470,6 +484,28 @@ async function nieuweKlant(env, body, origin) {
   }
 
   return antwoord(200, { ok: true, klant, opdracht, rit }, origin, true);
+}
+
+/* Wat de rit jou heeft gekost. Airtable rekent daar Totale ritkosten, Winst en
+   Winst per km uit, maar tot nu toe kon je die bedragen alleen achter een
+   laptop invullen — en dus bleef het staan, en bleef je winstcijfer leeg.
+   Dit hoort op de telefoon, meteen na de rit, met de bon nog in je hand. */
+async function zetRitKosten(env, body, origin) {
+  const id = recordId(body.id);
+  if (!id) { return antwoord(400, { fout: 'Ongeldig rit-id' }, origin, true); }
+
+  const velden = {};
+  const posten = [['brandstof', R.brandstof], ['tol', R.tol], ['overig', R.overig]];
+  for (const [naam, veld] of posten) {
+    const bedrag = euroBedrag(body[naam]);
+    if (bedrag !== null) { velden[veld] = bedrag; }
+  }
+  if (Object.keys(velden).length === 0) {
+    return antwoord(400, { fout: 'Vul minstens een bedrag in' }, origin, true);
+  }
+
+  const rit = naarRit(await patch(env, env.AIRTABLE_RITTEN, id, velden));
+  return antwoord(200, { ok: true, rit }, origin, true);
 }
 
 /* Een klant uitnodigen voor zijn eigen portaal. De mail gaat niet vanaf hier
@@ -772,6 +808,26 @@ function tijdvakUit(w) {
   return TIJDVAKKEN.includes(String(w || '')) ? String(w) : null;
 }
 
+/* Een bedrag in euro's. Nul is een geldig antwoord — "deze rit kostte niets
+   aan tol" is iets anders dan "nog niet ingevuld" — dus leeg blijft leeg. */
+function euroBedrag(w) {
+  if (w === undefined || w === null || w === '') { return null; }
+  const n = Number(String(w).replace(',', '.'));
+  if (!isFinite(n) || n < 0 || n > 100000) { return null; }
+  return Math.round(n * 100) / 100;
+}
+
+/* Een tijd zoals 14:30. Wat de telefoon uit een tijdveld geeft is al zo, maar
+   wat uit Airtable komt is vrije tekst en kan van alles zijn. */
+function klokTijd(w) {
+  const m = /^\s*(\d{1,2}):(\d{2})\s*$/.exec(String(w || ''));
+  if (!m) { return null; }
+  const uur = Number(m[1]);
+  const min = Number(m[2]);
+  if (uur > 23 || min > 59) { return null; }
+  return String(uur).padStart(2, '0') + ':' + m[2];
+}
+
 /* Een aantal dat je telt, geen bedrag: extra stops. Leeg blijft leeg, zodat
    "niets ingevuld" iets anders is dan "nul stops". */
 function heelGetal(w) {
@@ -810,6 +866,15 @@ function naarRit(record) {
     km:         f[R.km] || 0,
     stops:      f[R.stops] || 0,
     tijdvak:    keuze(f[R.tijdvak]) || '',
+    tijd:       f[R.tijd] || '',
+    /* De kosten en de winst zijn alleen voor deze kant. Het klantportaal heeft
+       een eigen lijst met velden en die staan daar niet op. */
+    brandstof:  f[R.brandstof] || 0,
+    tol:        f[R.tol] || 0,
+    overig:     f[R.overig] || 0,
+    kosten:     f[R.kosten] || 0,
+    winst:      f[R.winst] || 0,
+    bevestigd:  f[R.bevestigd] || '',
     klant:      eerste(f[R.klant]),
     telefoon:   eerste(f[R.telefoon]),
     opmerking:  f[R.opmerking] || '',

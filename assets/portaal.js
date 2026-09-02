@@ -355,6 +355,14 @@
     return veld;
   }
 
+  /* Een bedrag in euro's. Twee decimalen, want je typt een bonnetje over. */
+  function euroVeld(naam, waarde) {
+    var veld = getalVeld(naam, waarde);
+    veld.invoer.step = '0.01';
+    veld.invoer.placeholder = '0,00';
+    return veld;
+  }
+
   /* Hetzelfde, maar met een keuzelijst. De drie tijdvakken staan hier bewust
      letterlijk: het zijn dezelfde namen als in Airtable en op de website, en
      aan elk hangt een bedrag. */
@@ -460,6 +468,7 @@
     regel('Ophalen', rit.ophaal);
     regel('Bezorgen', rit.aflever);
     if (rit.km) { regel('Afstand', Math.round(rit.km) + ' km'); }
+    if (rit.tijd) { regel('Ophalen om', rit.tijd); }
     if (rit.tijdvak && rit.tijdvak !== 'Overdag') { regel('Tijdvak', rit.tijdvak); }
     if (rit.bedrag) { regel('Bedrag', euroCent.format(rit.bedrag) + ' excl. btw'); }
     if (rit.onderweg) { regel('Vertrokken', klok(rit.onderweg)); }
@@ -530,6 +539,8 @@
         });
       });
       lijf.appendChild(kmKnop);
+
+      lijf.appendChild(kostenBlok(rit));
     }
 
     /* Een rit zonder klant kun je rijden, maar niet factureren. Dat moet je
@@ -778,6 +789,63 @@
     opdrachten.forEach(function (o) { lijst.appendChild(tekenOpdracht(o)); });
   }
 
+  /* Wat de rit jou kostte. Ingeklapt, want het hoeft niet in de weg te staan
+     tijdens het rijden — maar wel bij de hand als je met de bon in je hand
+     naast de bus staat. Vul je het niet in, dan blijft je winstcijfer leeg en
+     weet je aan het eind van de maand niet wat een rit werkelijk opleverde. */
+  function kostenBlok(rit) {
+    var blok = maak('details', 'kosten');
+    blok.open = false;
+
+    var kop = maak('summary', 'kosten__kop');
+    kop.appendChild(maak('span', '', 'Kosten van deze rit'));
+    kop.appendChild(maak('b', '', rit.kosten
+      ? euroCent.format(rit.kosten)
+      : 'nog niet ingevuld'));
+    blok.appendChild(kop);
+
+    var lijf = maak('div', 'kosten__lijf');
+
+    var rij1 = maak('div', 'velrij');
+    var brandstof = euroVeld('Brandstof', rit.brandstof);
+    var tol = euroVeld('Tol en parkeren', rit.tol);
+    rij1.appendChild(brandstof);
+    rij1.appendChild(tol);
+    lijf.appendChild(rij1);
+
+    var rij2 = maak('div', 'velrij');
+    var overig = euroVeld('Overig', rit.overig);
+    rij2.appendChild(overig);
+    if (rit.winst) {
+      var winstVak = maak('div', 'winst');
+      winstVak.appendChild(maak('span', '', 'Winst'));
+      winstVak.appendChild(maak('b', '', euroCent.format(rit.winst)));
+      rij2.appendChild(winstVak);
+    }
+    lijf.appendChild(rij2);
+
+    var knop = maak('button', 'knop knop--rand', 'Kosten opslaan');
+    knop.type = 'button';
+    knop.addEventListener('click', function () {
+      bezig(knop, 'Opslaan…', function (klaar) {
+        verstuur('ritkosten', {
+          id: rit.id,
+          brandstof: brandstof.invoer.value,
+          tol: tol.invoer.value,
+          overig: overig.invoer.value
+        }).then(function (data) {
+          ververs(data.rit);
+          meldApp('');
+          klaar(true);
+        }).catch(function (fout) { meldApp(fout.message); klaar(false); });
+      });
+    });
+    lijf.appendChild(knop);
+
+    blok.appendChild(lijf);
+    return blok;
+  }
+
   function tekenOpdracht(o) {
     var kaart = maak('details', 'kaart');
     kaart.open = true;
@@ -846,6 +914,15 @@
 
     lijf.appendChild(rij);
 
+    var tijdVeld = maak('label', 'veld');
+    tijdVeld.style.margin = '0';
+    tijdVeld.appendChild(maak('span', '', 'Hoe laat ben je er?'));
+    var tijdInvoer = document.createElement('input');
+    tijdInvoer.type = 'time';
+    tijdInvoer.value = o.tijd || '';
+    tijdVeld.appendChild(tijdInvoer);
+    rij.appendChild(tijdVeld);
+
     var stopRij = maak('div', 'velrij');
     var stopVeld = getalVeld('Extra stops', o.stops);
     stopRij.appendChild(stopVeld);
@@ -873,8 +950,13 @@
     var plan = maak('button', 'knop knop--blauw', 'Inplannen');
     plan.type = 'button';
     plan.addEventListener('click', function () {
-      planIn(o, invoer.value, kmInvoer.value, stopVeld.invoer.value,
-             tvVeld.invoer.value, plan);
+      planIn(o, {
+        datum: invoer.value,
+        km: kmInvoer.value,
+        stops: stopVeld.invoer.value,
+        tijdvak: tvVeld.invoer.value,
+        tijd: tijdInvoer.value
+      }, plan);
     });
     lijf.appendChild(plan);
 
@@ -939,14 +1021,16 @@
     lijf.appendChild(knop);
   }
 
-  function planIn(o, datumWaarde, kmWaarde, stopWaarde, tijdvakWaarde, knop) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(datumWaarde || '')) {
+  function planIn(o, gegevens, knop) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(gegevens.datum || '')) {
       meldApp('Kies eerst een datum om op te rijden.');
       return;
     }
     bezig(knop, 'Inplannen…', function (klaar) {
-      verstuur('planrit', { id: o.id, datum: datumWaarde, km: kmWaarde,
-                            stops: stopWaarde, tijdvak: tijdvakWaarde })
+      verstuur('planrit', {
+        id: o.id, datum: gegevens.datum, km: gegevens.km,
+        stops: gegevens.stops, tijdvak: gegevens.tijdvak, tijd: gegevens.tijd
+      })
         .then(function (data) {
           opdrachten = opdrachten.filter(function (x) { return x.id !== o.id; });
           if (data.rit && data.rit.datum === dag) { ritten = ritten.concat([data.rit]); }
