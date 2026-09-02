@@ -9,4 +9,6 @@ compatibility_date = "2026-09-02"
 [vars]
 AIRTABLE_BASE = "appLUKMbBBkJUagFs"
 AIRTABLE_RITTEN = "tblNH4BAVu9uRHZIS"
+AIRTABLE_OPDRACHTEN = "tblMNRxxvlQ2ykGCb"
+AIRTABLE_AANVRAGEN = "tblhvOATDAfvBmabA"
 TOEGESTANE_ORIGIN = "https://picknicken.github.io"

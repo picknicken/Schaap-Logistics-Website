@@ -33,6 +33,9 @@
   var adres = '';
   var dag = vandaag();
   var ritten = [];
+  var aanvragen = [];
+  var opdrachten = [];
+  var tabblad = 'ritten';
   var tekentVoor = null;
 
   /* ------------------------------------------------------------- datums */
@@ -60,6 +63,11 @@
   function datumLang(datum) {
     return new Date(datum + 'T12:00:00')
       .toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+  function datumKort(iso) {
+    if (!iso) { return ''; }
+    return new Date(iso + 'T12:00:00')
+      .toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' });
   }
   function klok(iso) {
     if (!iso) { return ''; }
@@ -170,7 +178,7 @@
     code = ingetypteCode;
     adres = ingetyptAdres;
 
-    verstuur('ritten', { dag: dag }).then(function (data) {
+    verstuur('overzicht', { dag: dag }).then(function (data) {
       onthoud(ingetypteCode, ingetyptAdres);
       meldSlot('');
       el('slot').hidden = true;
@@ -205,9 +213,9 @@
   function haalDag() {
     el('dag-naam').textContent = dagNaam(dag);
     el('dag-datum').textContent = datumLang(dag);
-    el('lijst').innerHTML = '<div class="leeg">Ritten ophalen…</div>';
+    el('lijst').innerHTML = '<div class="leeg">Ophalen…</div>';
     meldApp('');
-    verstuur('ritten', { dag: dag })
+    verstuur('overzicht', { dag: dag })
       .then(toon)
       .catch(function (fout) {
         meldApp(fout.message);
@@ -217,11 +225,52 @@
 
   function toon(data) {
     ritten = data.ritten || [];
+    /* Bij een dagwissel komen aanvragen en opdrachten mee; bij een losse
+       rittenoproep niet. Dan houden we wat we al hadden. */
+    if (data.aanvragen)  { aanvragen = data.aanvragen; }
+    if (data.opdrachten) { opdrachten = data.opdrachten; }
     el('dag-naam').textContent = dagNaam(dag);
     el('dag-datum').textContent = datumLang(dag);
+    tekenAlles();
+  }
+
+  function tekenAlles() {
     tekenTegels();
     tekenLijst();
+    tekenAanvragen();
+    tekenPlanning();
+    tekenBadges();
   }
+
+  /* -------------------------------------------------------- tabbladen */
+
+  function tekenBadges() {
+    var open = ritten.filter(function (r) {
+      return r.status === 'Gepland' || r.status === 'Onderweg';
+    }).length;
+    badge('badge-ritten', open);
+    badge('badge-aanvragen', aanvragen.length);
+    badge('badge-planning', opdrachten.length);
+  }
+
+  function badge(id, aantal) {
+    var b = el(id);
+    b.textContent = aantal;
+    b.hidden = !aantal;
+  }
+
+  function kiesTab(naam) {
+    tabblad = naam;
+    ['ritten', 'aanvragen', 'planning'].forEach(function (t) {
+      el('tab-' + t).setAttribute('aria-selected', String(t === naam));
+      el('paneel-' + t).hidden = (t !== naam);
+    });
+    window.scrollTo(0, 0);
+  }
+
+  ['ritten', 'aanvragen', 'planning'].forEach(function (t) {
+    el('tab-' + t).addEventListener('click', function () { kiesTab(t); });
+  });
 
   function tekenTegels() {
     var open = ritten.filter(function (r) {
@@ -400,6 +449,7 @@
     ritten = ritten.map(function (r) { return r.id === nieuw.id ? nieuw : r; });
     tekenTegels();
     tekenLijst();
+    tekenBadges();
   }
 
   function wijzigStatus(rit, status, knop) {
@@ -414,6 +464,258 @@
         knop.disabled = false;
         knop.textContent = oud;
       });
+  }
+
+  /* ------------------------------------------------------- aanvragen */
+
+  /* Het soort transport bepaalt de kleur van het label. Een directe spoed
+     hoort er tussen twintig regels uit te springen. */
+  function merkKlasse(soort) {
+    if (/directe/i.test(soort))       { return ' m-direct'; }
+    if (/spoed/i.test(soort))         { return ' m-spoed'; }
+    if (/internationaal/i.test(soort)){ return ' m-intl'; }
+    return '';
+  }
+
+  function kort(soort) {
+    if (/directe/i.test(soort))        { return 'Direct'; }
+    if (/spoed/i.test(soort))          { return 'Spoed'; }
+    if (/internationaal/i.test(soort)) { return 'Intl'; }
+    if (/standaard/i.test(soort))      { return 'Standaard'; }
+    return soort || '—';
+  }
+
+  function paarLijst(rijen) {
+    var dl = maak('dl', 'paar');
+    rijen.forEach(function (r) {
+      if (!r[1] && r[1] !== 0) { return; }
+      dl.appendChild(maak('dt', '', r[0]));
+      dl.appendChild(maak('dd', '', r[1]));
+    });
+    return dl.children.length ? dl : null;
+  }
+
+  function tekenAanvragen() {
+    var lijst = el('lijst-aanvragen');
+    lijst.innerHTML = '';
+
+    if (!aanvragen.length) {
+      lijst.appendChild(maak('div', 'leeg',
+        'Geen openstaande aanvragen. Alles is afgehandeld.'));
+      return;
+    }
+    aanvragen.forEach(function (a) { lijst.appendChild(tekenAanvraag(a)); });
+  }
+
+  function tekenAanvraag(a) {
+    var kaart = maak('details', 'kaart');
+    var kop = maak('summary', 'kaart__kop');
+    kop.appendChild(maak('span', 'kaart__merk' + merkKlasse(a.dienst), kort(a.dienst)));
+
+    var hoofd = maak('div', 'kaart__hoofd');
+    hoofd.appendChild(maak('div', 'kaart__titel', a.bedrijf || a.contact || 'Aanvraag'));
+    hoofd.appendChild(maak('div', 'kaart__regel',
+      (a.ophaal || a.ophaalpc || '?') + '  \u2192  ' + (a.aflever || a.afleverpc || '?')));
+    if (a.datum) {
+      hoofd.appendChild(maak('div', 'kaart__regel',
+        'Gewenst: ' + datumKort(a.datum) + (a.tijd ? ' om ' + a.tijd : '')));
+    }
+    kop.appendChild(hoofd);
+    kaart.appendChild(kop);
+
+    var lijf = maak('div', 'kaart__lijf');
+
+    if (a.prijs) {
+      var p = maak('div', 'prijs');
+      p.appendChild(maak('span', '', 'Indicatie'));
+      p.appendChild(maak('b', '', euroCent.format(a.prijs) + ' excl. btw'));
+      lijf.appendChild(p);
+    }
+
+    var dl = paarLijst([
+      ['Contact', a.contact],
+      ['Tijdvak', a.tijdvak],
+      ['Ophalen', a.ophaal],
+      ['Bezorgen', a.aflever],
+      ['Stops', a.stops],
+      ['Afstand', a.afstand ? Math.round(a.afstand) + ' km' : ''],
+      ['Zending', a.omschrijving],
+      ['Colli', a.colli],
+      ['Gewicht', a.gewicht],
+      ['Afmeting', a.afmetingen],
+      ['Opmerking', a.opmerking]
+    ]);
+    if (dl) { lijf.appendChild(dl); }
+
+    var knoppen = maak('div', 'knoppen');
+
+    if (a.telefoon) {
+      var bel = maak('a', 'knop knop--rand', 'Bel ' + (a.contact || a.bedrijf || 'de klant'));
+      bel.href = 'tel:' + String(a.telefoon).replace(/[^\d+]/g, '');
+      knoppen.appendChild(bel);
+    }
+    if (a.email) {
+      var mail = maak('a', 'knop knop--rand', 'Mail');
+      mail.href = 'mailto:' + a.email;
+      knoppen.appendChild(mail);
+    }
+
+    var ja = maak('button', 'knop knop--groen', 'Aannemen');
+    ja.type = 'button';
+    ja.addEventListener('click', function () { accepteer(a, ja); });
+    knoppen.appendChild(ja);
+
+    var nee = maak('button', 'knop knop--stil', 'Afwijzen');
+    nee.type = 'button';
+    nee.addEventListener('click', function () {
+      if (window.confirm('Deze aanvraag afwijzen?')) { wijsAf(a, nee); }
+    });
+    knoppen.appendChild(nee);
+
+    lijf.appendChild(knoppen);
+    kaart.appendChild(lijf);
+    return kaart;
+  }
+
+  /* Aannemen zet alleen het vinkje om; de automatisering in Airtable maakt
+     de opdracht. Die verschijnt daarna in Planning — niet altijd meteen,
+     want Airtable heeft er een paar seconden voor nodig. */
+  function accepteer(a, knop) {
+    bezig(knop, 'Aannemen…', function (klaar) {
+      verstuur('accepteer', { id: a.id }).then(function () {
+        aanvragen = aanvragen.filter(function (x) { return x.id !== a.id; });
+        tekenAanvragen();
+        tekenBadges();
+        meldApp('Aangenomen. De opdracht verschijnt zo bij Planning — ' +
+                'ververs even als je hem nog niet ziet.');
+        klaar(true);
+      }).catch(function (fout) { meldApp(fout.message); klaar(false); });
+    });
+  }
+
+  function wijsAf(a, knop) {
+    bezig(knop, 'Bezig…', function (klaar) {
+      verstuur('afwijzen', { id: a.id }).then(function () {
+        aanvragen = aanvragen.filter(function (x) { return x.id !== a.id; });
+        tekenAanvragen();
+        tekenBadges();
+        klaar(true);
+      }).catch(function (fout) { meldApp(fout.message); klaar(false); });
+    });
+  }
+
+  /* -------------------------------------------------------- planning */
+
+  function tekenPlanning() {
+    var lijst = el('lijst-planning');
+    lijst.innerHTML = '';
+
+    if (!opdrachten.length) {
+      lijst.appendChild(maak('div', 'leeg',
+        'Niets in te plannen. Elke opdracht heeft een rit.'));
+      return;
+    }
+    opdrachten.forEach(function (o) { lijst.appendChild(tekenOpdracht(o)); });
+  }
+
+  function tekenOpdracht(o) {
+    var kaart = maak('details', 'kaart');
+    kaart.open = true;
+
+    var kop = maak('summary', 'kaart__kop');
+    kop.appendChild(maak('span', 'kaart__merk' + merkKlasse(o.type), kort(o.type)));
+
+    var hoofd = maak('div', 'kaart__hoofd');
+    hoofd.appendChild(maak('div', 'kaart__titel', o.klant || o.naam || 'Opdracht'));
+    hoofd.appendChild(maak('div', 'kaart__regel',
+      (o.ophaal || '?') + '  \u2192  ' + (o.aflever || '?')));
+    if (o.datum) {
+      hoofd.appendChild(maak('div', 'kaart__regel',
+        'Gewenst: ' + datumKort(o.datum) + (o.tijd ? ' om ' + o.tijd : '')));
+    }
+    kop.appendChild(hoofd);
+    kaart.appendChild(kop);
+
+    var lijf = maak('div', 'kaart__lijf');
+
+    var dl = paarLijst([
+      ['Opdracht', o.naam],
+      ['Referentie', o.referentie],
+      ['Ophalen', o.ophaal],
+      ['Bezorgen', o.aflever],
+      ['Opmerking', o.opmerking]
+    ]);
+    if (dl) { lijf.appendChild(dl); }
+
+    if (!o.heeftKlant) {
+      var waarschuwing = maak('div', 'bewijs bewijs--mist');
+      var t = maak('div');
+      t.appendChild(maak('b', '', 'Nog geen klant gekoppeld'));
+      t.appendChild(document.createTextNode(
+        'Je kunt hem wel inplannen, maar zonder klant kan er later geen ' +
+        'factuur uit. Koppel hem in Airtable bij de opdracht.'));
+      waarschuwing.appendChild(t);
+      lijf.appendChild(waarschuwing);
+    }
+
+    /* Datum vooraf gevuld met de gewenste datum van de klant: negen van de
+       tien keer is dat gewoon de goede. */
+    var rij = maak('div', 'datumrij');
+    var veld = maak('label', 'veld');
+    veld.style.margin = '0';
+    veld.appendChild(maak('span', '', 'Rijden op'));
+    var invoer = document.createElement('input');
+    invoer.type = 'date';
+    invoer.value = o.datum || dag;
+    veld.appendChild(invoer);
+    rij.appendChild(veld);
+
+    var plan = maak('button', 'knop knop--blauw', 'Inplannen');
+    plan.type = 'button';
+    plan.addEventListener('click', function () {
+      planIn(o, invoer.value, plan);
+    });
+    rij.appendChild(plan);
+    lijf.appendChild(rij);
+
+    kaart.appendChild(lijf);
+    return kaart;
+  }
+
+  function planIn(o, datumWaarde, knop) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(datumWaarde || '')) {
+      meldApp('Kies eerst een datum om op te rijden.');
+      return;
+    }
+    bezig(knop, 'Inplannen…', function (klaar) {
+      verstuur('planrit', { id: o.id, datum: datumWaarde }).then(function (data) {
+        opdrachten = opdrachten.filter(function (x) { return x.id !== o.id; });
+        if (data.rit && data.rit.datum === dag) { ritten = ritten.concat([data.rit]); }
+        tekenAlles();
+        meldApp('');
+        kiesTab('ritten');
+        if (data.rit && data.rit.datum !== dag) {
+          dag = data.rit.datum;
+          haalDag();
+        }
+        klaar(true);
+      }).catch(function (fout) { meldApp(fout.message); klaar(false); });
+    });
+  }
+
+  /* Eén plek voor "knop uit, tekst wijzigen, daarna weer aan". Zonder dit
+     kun je onderweg twee keer op dezelfde knop drukken en krijg je twee
+     ritten of twee opdrachten. */
+  function bezig(knop, tekst, werk) {
+    var oud = knop.textContent;
+    knop.disabled = true;
+    knop.textContent = tekst;
+    werk(function (gelukt) {
+      if (!gelukt) {
+        knop.disabled = false;
+        knop.textContent = oud;
+      }
+    });
   }
 
   /* --------------------------------------------------------- tekenblad */

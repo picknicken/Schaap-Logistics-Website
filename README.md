@@ -187,10 +187,12 @@ je telefoon, met knoppen om de status om te zetten, een route te starten en de
 ontvanger te laten tekenen. Nergens naartoe gelinkt vanaf de site — zet hem op je
 beginscherm als snelkoppeling.
 
-Wat het kan:
+Drie tabbladen, met een teller erop zodat je in één blik ziet waar iets ligt.
 
-- **De dag overzien.** Bovenaan het aantal ritten, hoeveel er nog openstaan, de
-  kilometers en de omzet van die dag. Met pijltjes blader je naar gisteren of morgen.
+**Ritten** — de dag die je rijdt.
+
+- Bovenaan het aantal ritten, hoeveel er nog openstaan, de kilometers en de omzet
+  van die dag. Met pijltjes blader je naar gisteren of morgen.
 - **Status omzetten.** *Onderweg* legt meteen het vertrektijdstip vast, zodat je
   achteraf ziet hoe lang een rit werkelijk duurde.
 - **Route starten.** Bij een geplande rit wijst de knop naar het ophaaladres, bij
@@ -199,6 +201,28 @@ Wat het kan:
 - **Laten tekenen.** De ontvanger zet zijn handtekening op je scherm en typt zijn
   naam. Die gaan als afleverbewijs bij de rit in Airtable, en de rit springt op
   *Uitgevoerd* — waarmee de conceptfactuur zichzelf aanmaakt.
+
+**Aanvragen** — wat er via de site binnenkomt en nog niet is afgehandeld.
+
+- Alles wat de bezoeker invulde: route, zending, colli, gewicht, de
+  prijsindicatie die hij te zien kreeg.
+- **Aannemen** zet het vinkje *Omzetten naar opdracht* om; de automatisering in
+  Airtable maakt de opdracht. Het portaal doet dat werk bewust niet zelf over —
+  twee plekken die hetzelfde doen lopen vroeg of laat uiteen.
+- **Afwijzen**, en knoppen om te bellen of te mailen.
+- Het soort transport heeft een eigen kleur, zodat een directe spoed tussen
+  twintig regels uitspringt.
+
+**Planning** — opdrachten waar nog geen rit bij staat.
+
+- **Inplannen** maakt de rit, met de gewenste datum van de klant al ingevuld, en
+  neemt klant, adressen, soort transport en opmerkingen over.
+- Een opdracht zonder gekoppelde klant wordt gemarkeerd: inplannen mag, maar
+  zonder klant komt er later geen factuur uit.
+
+Dat inplannen was de ontbrekende schakel. Een aanvraag werd een opdracht, maar
+niets maakte daar een rit van — en het portaal toont ritten. Een aangenomen
+aanvraag leek daardoor te verdwijnen.
 
 Twee dingen die bewust zo zijn:
 

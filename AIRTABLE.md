@@ -344,10 +344,29 @@ administratie nog steeds en meldt het portaal dat opnieuw getekend moet worden.
 Andersom zou een gelukte upload bij een mislukte update een handtekening
 opleveren die nergens bij hoort.
 
-Gecontroleerd met negentien tests op de Worker (vreemde herkomst, foute code,
-verzonnen status, rommel-id, een niet-afbeelding als handtekening, de
-vertrektijd die niet te vervalsen is, en dat de token nooit in een foutmelding
-belandt) en met het portaal zelf in een browser tegen een nagebootste Worker.
+**De keten in het portaal:**
+
+```
+Website-aanvragen  --Aannemen-->  Opdrachten  --Inplannen-->  Ritten  --Uitgevoerd-->  Facturen
+     (tabblad            (automatisering        (portaal          (portaal,        (automatisering
+      Aanvragen)          in Airtable)           maakt de rit)     handtekening)     in Airtable)
+```
+
+Het portaal schrijft nergens iets weg wat een automatisering al doet. *Aannemen*
+zet alleen het vinkje `Omzetten naar opdracht` om; de opdracht wordt in Airtable
+gemaakt. Zo staat de logica op één plek in plaats van twee die uiteen kunnen lopen.
+
+*Inplannen* is wel nieuw werk: dat maakt een record in `Ritten` uit een opdracht,
+met de klantkoppeling, de adressen, het soort transport en de opmerkingen erbij.
+Staat er al een rit bij die opdracht, dan weigert de Worker met een 409 tenzij je
+bevestigt — anders levert twee keer tikken twee ritten en straks twee facturen op.
+
+Gecontroleerd met zevenentwintig tests op de Worker (vreemde herkomst, foute
+code, verzonnen status, rommel-id, een niet-afbeelding als handtekening, de
+vertrektijd die niet te vervalsen is, dat *Aannemen* precies één veld aanraakt,
+dat een tweede rit op dezelfde opdracht geweigerd wordt, en dat de token nooit in
+een foutmelding belandt) en met achtendertig schermtests op het portaal zelf,
+tegen een nagebootste Worker.
 Wat pas na het uitrollen te controleren is: of Airtable de handtekening
 werkelijk als bijlage aanneemt. Dat is hetzelfde uploadpad als de foto's bij een
 aanvraag, en dat is nog nooit met echte gegevens getest.
