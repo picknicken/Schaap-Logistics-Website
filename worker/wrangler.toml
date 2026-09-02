@@ -1,0 +1,11 @@
+name = "schaap-aanvragen"
+main = "aanvragen.js"
+compatibility_date = "2026-09-02"
+
+# Geen geheimen in dit bestand — dat staat in git. De Airtable-token zet je met
+#   wrangler secret put AIRTABLE_TOKEN
+# of via het Cloudflare-dashboard onder Settings > Variables and Secrets.
+[vars]
+AIRTABLE_BASE = "appLUKMbBBkJUagFs"
+AIRTABLE_TABEL = "tblhvOATDAfvBmabA"
+TOEGESTANE_ORIGIN = "https://picknicken.github.io"

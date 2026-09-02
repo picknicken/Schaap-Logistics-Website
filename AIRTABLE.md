@@ -1,54 +1,111 @@
 # Aanvragen naar Airtable
 
 De formulieren op de site werken standaard via `mailto:` — de aanvraag opent in
-het e-mailprogramma van de bezoeker. Dat is de eenvoudigste opzet en vereist geen
-server. Deze notitie beschrijft wat er nodig is om aanvragen in plaats daarvan
-automatisch in Airtable te laten binnenkomen.
+het e-mailprogramma van de bezoeker. Deze notitie beschrijft hoe je in plaats
+daarvan de aanvragen automatisch in Airtable laat binnenkomen.
 
 ## De hoofdregel
 
-**De Airtable-sleutel mag niet in `assets/site.js`.** De site is statisch: alles
-wat in dat bestand staat is voor iedere bezoeker leesbaar, ook een sleutel die
-verderop in de code verstopt staat. Met zo'n sleutel kan een willekeurige bezoeker jouw base
-uitlezen, aanpassen of leegmaken.
+**De Airtable-token mag niet in `assets/site.js`.** De site is statisch: alles
+wat in dat bestand staat is voor iedere bezoeker leesbaar. Met zo'n token kan een
+willekeurige bezoeker je base uitlezen, aanpassen of leegmaken.
 
 De pagina praat daarom nooit rechtstreeks met Airtable, maar met een eigen
-tussenlaag die de sleutel bewaart en de aanvraag doorzet.
-
-## Opzet
+tussenlaag die de token bewaart:
 
 ```
-formulier op de site  →  eigen webhook (server-side)  →  Airtable API
+formulier op de site  ->  Cloudflare Worker  ->  Airtable API
 ```
 
-Voor die tussenlaag kun je bijvoorbeeld een Cloudflare Worker, een Netlify- of
-Vercel-function, of een Make/Zapier-webhook gebruiken. Wat het ook wordt, het
-moet:
+Die Worker staat in [`worker/aanvragen.js`](worker/aanvragen.js).
 
-1. Een `POST` met JSON accepteren vanaf de domeinnaam van de site (CORS).
-2. De Airtable-sleutel als omgevingsvariabele bewaren, niet in de code.
-3. De velden doorzetten naar de juiste tabel in de base.
-4. Een `2xx` teruggeven bij succes; de pagina toont dan de bevestiging.
+## Wat er al klaar staat
 
-## Aanzetten in de pagina
+**De tabel.** In de base *Schaap Logistics* staat `Website-aanvragen`, met
+kolomnamen die exact overeenkomen met wat de site verstuurt.
 
-In `CONFIG` bovenaan `assets/site.js`:
+| | |
+| --- | --- |
+| Base | `appLUKMbBBkJUagFs` |
+| Tabel | `tblhvOATDAfvBmabA` |
+
+De velden `Datum`, `Geschatte afstand km` en `Prijsindicatie excl btw` hebben een
+echt datum-, getal- en valutatype. `Ophaaltijd`, `Aantal colli` en `Gewicht` zijn
+bewust tekstvelden: de site stuurt daar vrije tekst ("14:30", "ca. 30 kg").
+
+**De Worker.** Neemt de aanvraag aan, filtert alles weg wat niet in de
+kolomlijst staat, laat lege waarden weg (een lege string naar een keuzeveld is
+een fout in Airtable), maakt het record aan en hangt daarna pas de foto's eraan.
+
+## Installeren
+
+### 1. Een Airtable-token maken
+
+Op [airtable.com/create/tokens](https://airtable.com/create/tokens) een
+persoonlijke toegangstoken aanmaken met:
+
+- scope `data.records:write`
+- toegang tot alleen de base *Schaap Logistics*
+
+Kopieer de token; hij is daarna niet meer op te vragen. Plak hem nergens anders
+dan in stap 3.
+
+### 2. Cloudflare
+
+Een gratis account op [cloudflare.com](https://dash.cloudflare.com/sign-up).
+Verder niets instellen; de Worker maakt zichzelf aan bij het uitrollen.
+
+### 3. De Worker uitrollen
+
+```sh
+cd worker
+npx wrangler login
+npx wrangler secret put AIRTABLE_TOKEN     # token plakken
+npx wrangler deploy
+```
+
+`deploy` geeft een URL terug, iets als
+`https://schaap-aanvragen.<jouwnaam>.workers.dev`.
+
+De base- en tabel-ID en de toegestane herkomst staan al in `wrangler.toml`. De
+token staat als secret apart en komt niet in git.
+
+### 4. De site omzetten
+
+In `assets/site.js`, in `CONFIG`:
 
 ```js
-verzending: {
-  modus: 'webhook',
-  webhookUrl: 'https://<jouw-tussenlaag>/ritaanvraag'
-}
+webhookUrl: 'https://schaap-aanvragen.<jouwnaam>.workers.dev',
 ```
 
-De pagina POST't dan een JSON-object met twee sleutels:
+Committen en pushen. Leeg laten betekent `mailto:`; ingevuld betekent Airtable.
+Meer is er niet om te zetten.
+
+### 5. Controleren
+
+Vul het formulier op `/aanvragen/` in met een testaanvraag. Er hoort binnen een
+paar seconden een record in `Website-aanvragen` te staan, met `Status` op
+*Nieuw*. Gaat het mis, dan zie je de reden in de logs:
+
+```sh
+npx wrangler tail
+```
+
+## Wat de Worker verstuurt
+
+De pagina POST't een JSON-object met drie sleutels:
 
 ```json
 {
   "velden": { "Dienst": "Spoedtransport", "Ophaallocatie": "...", "...": "..." },
-  "fotos":  [ { "naam": "zending.jpg", "type": "image/jpeg", "data": "data:image/jpeg;base64,..." } ]
+  "fotos":  [ { "naam": "zending.jpg", "type": "image/jpeg", "data": "data:image/jpeg;base64,..." } ],
+  "controle": ""
 }
 ```
+
+`controle` is een verborgen veld in het formulier dat een bezoeker niet ziet en
+dus leeg laat. Is het ingevuld, dan komt de aanvraag van een bot; de Worker geeft
+dan netjes succes terug en schrijft niets weg.
 
 Lukt het versturen niet, dan blijft het formulier ingevuld staan en krijgt de
 bezoeker de melding dat hij kan bellen. Er is bewust **geen** automatische
@@ -57,14 +114,39 @@ laten belanden.
 
 ## Aandachtspunten
 
-- **Foto's.** Die gaan wél mee, als base64 data-URL in `fotos`. Reken op ongeveer
-  een derde meer bytes dan het originele bestand. De pagina staat 5 foto's van
-  maximaal 10 MB toe, dus een aanvraag kan tegen de 65 MB aan lopen, terwijl veel
-  webhook-endpoints bij 1 tot 10 MB dichtgaan. Verlaag `CONFIG.foto.maxMb` als je
-  tussenlaag een krappere limiet heeft. In de tussenlaag decodeer je de data-URL,
-  upload je het bestand naar opslag en zet je de resulterende URL in een
-  attachment-veld in Airtable.
-- **Spam.** Een open webhook wordt vroeg of laat gevonden. Voeg minimaal een
-  honeypot-veld of een rate limit toe in de tussenlaag.
-- **Bevestiging.** Laat de tussenlaag ook een bevestigingsmail sturen naar de
-  aanvrager; die krijgt hij bij `mailto:` vanzelf, bij een webhook niet.
+- **Foto's.** Die gaan mee als base64 en worden ná het record als bijlage
+  toegevoegd. Mislukt dat, dan blijft de aanvraag gewoon staan en zie je de
+  bestandsnamen in het veld *Foto's meegestuurd*, zodat je ze kunt opvragen. Een
+  fotoprobleem mag nooit een aanvraag kosten.
+
+  Het uploaden gaat via het `uploadAttachment`-endpoint van Airtable, dat base64
+  rechtstreeks aanneemt. **Dit is het enige onderdeel dat ik niet vooraf heb
+  kunnen verifiëren** — airtable.com was niet bereikbaar vanuit de omgeving waarin
+  dit gebouwd is. Werkt het niet, dan zie je dat in `wrangler tail` en is het
+  alternatief: de foto's naar eigen opslag (Cloudflare R2) schrijven en Airtable
+  de URL geven.
+
+- **Grootte.** De site staat 5 foto's van maximaal 10 MB toe; als base64 loopt een
+  aanvraag dan tegen de 65 MB aan. De Worker weigert alles boven 30 MB en slaat
+  losse foto's boven 5 MB over. Verlaag `CONFIG.foto.maxMb` naar 5, of laat de
+  foto's in de browser verkleinen vóór verzending — dat scheelt een factor tien.
+
+- **Bevestigingsmail.** Bij `mailto:` ziet de aanvrager zijn eigen bericht in zijn
+  verzonden items. Via de Worker krijgt hij niets. Wil je een bevestiging, dan
+  moet de Worker die versturen, via bijvoorbeeld Resend of Postmark. Nog niet
+  ingebouwd.
+
+- **Van aanvraag naar opdracht.** `Website-aanvragen` is een postbus, geen
+  administratie. Accepteer je een aanvraag, zet hem dan om in een record in
+  `Opdrachten` en leg de link vast in het veld *Opdracht*.
+
+## Losse einden in de base
+
+Twee dingen die niet met de koppeling te maken hebben, maar wel opvallen:
+
+- `Opdrachten.Type rit` kent alleen *Normaal* en *Spoed*. De site heeft vier
+  diensten. Zet je een aanvraag om, dan is er voor directe spoed en
+  internationaal geen passende optie.
+- De formules in `Ritten` rekenen met €50 starttarief en €1,50/€2,00 per km.
+  Directe spoed (€100 + €2,50) en internationaal ontbreken, dus die berekening
+  wijkt af van wat de site je klanten voorrekent.

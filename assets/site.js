@@ -29,17 +29,15 @@
     /* Omrekenfactor van hemelsbrede afstand naar werkelijke rijafstand. */
     wegfactor: 1.25,
 
-    /* Hoe de aanvraag verstuurd wordt.
-       'mailto'  — opent het e-mailprogramma van de bezoeker (geen server nodig).
-       'webhook' — POST als JSON naar webhookUrl; zo gaat de aanvraag later
-                   rechtstreeks naar Airtable. Zie AIRTABLE.md.
-       Zet modus op 'webhook' en vul webhookUrl in zodra de koppeling er staat.
-       Let op: nooit een Airtable-sleutel in deze pagina zetten — die is voor
-       iedere bezoeker leesbaar. Wijs webhookUrl naar een eigen tussenlaag. */
-    verzending: {
-      modus: 'mailto',
-      webhookUrl: ''    /* PLACEHOLDER, bijv. https://.../ritaanvraag */
-    },
+    /* Waar de aanvraag heen gaat.
+       Leeg     — het e-mailprogramma van de bezoeker opent met de aanvraag erin.
+                  Werkt zonder server, en dus prima op GitHub Pages.
+       Ingevuld — de aanvraag gaat als JSON naar deze URL, die hem in Airtable
+                  zet. Dat is de Cloudflare Worker uit worker/aanvragen.js;
+                  zie AIRTABLE.md voor het installeren ervan.
+       Zet hier nooit een Airtable-sleutel neer: alles in dit bestand is voor
+       iedere bezoeker leesbaar. Daarom staat de sleutel in de Worker. */
+    webhookUrl: '',   /* bijv. https://aanvragen.jouwnaam.workers.dev */
 
     /* Grenzen voor de foto's bij een aanvraag. */
     foto: {

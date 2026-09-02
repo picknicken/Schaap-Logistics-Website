@@ -164,7 +164,7 @@
       meldFoto('', false);
       return;
     }
-    if (CONFIG.verzending.modus === 'mailto') {
+    if (!CONFIG.webhookUrl) {
       meldFoto(fotos.length + (fotos.length === 1 ? ' foto gekozen. ' : " foto's gekozen. ") +
                'Voeg ze straks als bijlage toe aan de e-mail die opent — een website ' +
                'zonder server kan bestanden niet zelf versturen.', false);
@@ -288,7 +288,7 @@
   }
 
   /* Stuurt de aanvraag als JSON naar de tussenlaag die naar Airtable schrijft.
-     Nog niet actief: zet CONFIG.verzending.modus op 'webhook' en vul de URL in. */
+     Alleen actief zodra CONFIG.webhookUrl is ingevuld. */
   function verstuurViaWebhook(data, noot, knop) {
     var oudeTekst = knop.textContent;
     knop.disabled = true;
@@ -299,10 +299,15 @@
 
     Promise.all(fotos.map(leesBestand))
       .then(function (bijlagen) {
-        return fetch(CONFIG.verzending.webhookUrl, {
+        return fetch(CONFIG.webhookUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ velden: data, fotos: bijlagen })
+          body: JSON.stringify({
+            velden: data,
+            fotos: bijlagen,
+            /* Verborgen veld tegen bots; een mens laat dit leeg. */
+            controle: veld('r-controle')
+          })
         });
       })
       .then(function (res) {
@@ -334,7 +339,7 @@
     var data = bouwAanvraag();
     var noot = document.getElementById('ritNote');
 
-    if (CONFIG.verzending.modus === 'webhook' && CONFIG.verzending.webhookUrl) {
+    if (CONFIG.webhookUrl) {
       verstuurViaWebhook(data, noot, ritForm.querySelector('button[type=submit]'));
       return;
     }

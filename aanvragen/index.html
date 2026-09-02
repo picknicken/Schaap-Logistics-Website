@@ -205,6 +205,14 @@
           </div>
         </div>
 
+        <!-- Verborgen veld tegen bots. Een bezoeker ziet dit niet en laat het
+             leeg; een bot vult alles in. De tussenlaag gooit ingevulde
+             aanvragen weg. Niet weghalen. -->
+        <div class="honeypot" aria-hidden="true">
+          <label for="r-controle">Dit veld niet invullen</label>
+          <input type="text" id="r-controle" name="controle" tabindex="-1" autocomplete="off">
+        </div>
+
         <button type="submit" class="btn btn--primary btn--wide" style="margin-top:22px">
           Vraag een prijs aan
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>

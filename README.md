@@ -39,7 +39,14 @@ assets/
   calculator.js   de prijscalculator op de homepage
   aanvraag.js     het aanvraagformulier
   contact.js      het berichtformulier
+worker/
+  aanvragen.js    Cloudflare Worker die aanvragen in Airtable zet
+  wrangler.toml   instellingen voor het uitrollen (zonder geheimen)
 ```
+
+`worker/` hoort niet bij de site; het is de tussenlaag die op Cloudflare draait.
+GitHub Pages serveert de map wel mee, maar er staat niets gevoeligs in — de
+Airtable-token zit in de secrets van Cloudflare, niet in git.
 
 `site.js` moet vóór de andere scripts geladen worden; het zet `window.SL` klaar
 met `CONFIG` en de reken- en verzendfuncties. De drie andere bestanden schakelen
@@ -104,16 +111,18 @@ staan.
 
 ## Formulieren versturen
 
-Standaard staat `CONFIG.verzending.modus` op `'mailto'`: het formulier opent het
-e-mailprogramma van de bezoeker met alles al ingevuld. Dat werkt zonder server,
-en dus prima op GitHub Pages.
+Eén instelling bepaalt waar een aanvraag heen gaat: `CONFIG.webhookUrl` in
+`assets/site.js`.
 
-Wil je de aanvragen automatisch binnenkrijgen (bijvoorbeeld in Airtable), zet dan
-`modus` op `'webhook'` en vul `webhookUrl` in. De pagina POST't de aanvraag dan
-als JSON naar een eigen tussenlaag, foto's inbegrepen — zie `AIRTABLE.md`.
+**Leeg** (zoals nu): het formulier opent het e-mailprogramma van de bezoeker met
+alles al ingevuld. Werkt zonder server, en dus prima op GitHub Pages.
 
-> Zet nooit een API-sleutel in `assets/site.js`. Alles in dat bestand is leesbaar
-> voor iedere bezoeker.
+**Ingevuld**: de aanvraag gaat als JSON naar die URL, die hem in Airtable zet.
+Dat is de Cloudflare Worker in `worker/aanvragen.js` — zie `AIRTABLE.md` voor het
+installeren ervan.
+
+> Zet nooit een Airtable-token in `assets/site.js`. Alles in dat bestand is
+> leesbaar voor iedere bezoeker; daarom staat de token in de Worker.
 
 ## Publiceren
 
