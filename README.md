@@ -202,6 +202,16 @@ Wat het kan:
 
 Twee dingen die bewust zo zijn:
 
+**Het adres van de Worker hoeft niet in de code.** Laat `CONFIG.portaalUrl` in
+`assets/portaal.js` leeg, dan vraagt het inlogscherm er zelf om en onthoudt de
+telefoon het. Dat scheelt na het uitrollen een wijziging, een commit en een push
+— stappen waar het makkelijk misgaat en die niets opleveren. Vul je het veld wel
+in, dan gaat dat voor en verdwijnt de vraag uit het inlogscherm.
+
+Het adres blijft staan als je op *Sluiten* drukt; alleen de code raak je kwijt.
+Anders zou je bij elke keer sluiten die hele `workers.dev`-URL opnieuw moeten
+overtypen.
+
 **De toegangscode is een gedeeld wachtwoord, geen account.** Het past bij één man
 met één telefoon. Wie de code heeft, ziet alle ritten en klantgegevens. Raakt je
 telefoon kwijt, wijzig dan `PORTAAL_CODE` in Cloudflare — dat apparaat is er dan

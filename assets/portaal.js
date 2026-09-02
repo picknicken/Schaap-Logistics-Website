@@ -11,10 +11,13 @@
   'use strict';
 
   var CONFIG = {
-    /* De URL van de portaal-Worker. Leeg = nog niet uitgerold; het portaal
-       zegt dat dan gewoon, in plaats van te blijven hangen. */
+    /* Het adres van de portaal-Worker. Laat je dit leeg, dan vraagt het
+       inlogscherm er zelf om en onthoudt de telefoon het — dan hoef je na het
+       uitrollen niets meer in de code te veranderen. Vul je het hier wel in,
+       dan gaat dat voor en verdwijnt het veld. */
     portaalUrl: '',
-    sleutel: 'sl-portaal-code'
+    sleutel: 'sl-portaal-code',
+    sleutelAdres: 'sl-portaal-adres'
   };
 
   var euro = new Intl.NumberFormat('nl-NL', {
@@ -27,6 +30,7 @@
   var el = function (id) { return document.getElementById(id); };
 
   var code = '';
+  var adres = '';
   var dag = vandaag();
   var ritten = [];
   var tekentVoor = null;
@@ -64,15 +68,18 @@
 
   /* ------------------------------------------------------- communicatie */
 
+  function waarheen() {
+    return CONFIG.portaalUrl || adres;
+  }
+
   function verstuur(actie, gegevens) {
-    if (!CONFIG.portaalUrl) {
+    if (!waarheen()) {
       return Promise.reject(new Error(
-        'Het portaal is nog niet gekoppeld. Zet de URL van de portaal-Worker in ' +
-        'assets/portaal.js (CONFIG.portaalUrl).'
+        'Vul eerst het adres van het portaal in.'
       ));
     }
     var lading = Object.assign({ actie: actie }, gegevens || {});
-    return fetch(CONFIG.portaalUrl, {
+    return fetch(waarheen(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Portaal-Code': code },
       body: JSON.stringify(lading)
@@ -96,16 +103,31 @@
 
   /* ------------------------------------------------------------ toegang */
 
+  /* Het adres blijft staan als je uitlogt. Alleen de code raak je kwijt —
+     anders moet je bij elke keer sluiten ook die hele workers.dev-URL weer
+     overtypen, en dat is precies het soort werk dat niemand volhoudt. */
   function vergeetCode() {
     code = '';
     try { localStorage.removeItem(CONFIG.sleutel); } catch (e) { /* privémodus */ }
     el('app').hidden = true;
     el('slot').hidden = false;
+    vulSlotIn();
   }
 
-  function onthoudCode(nieuw) {
-    code = nieuw;
-    try { localStorage.setItem(CONFIG.sleutel, nieuw); } catch (e) { /* privémodus */ }
+  function onthoud(nieuweCode, nieuwAdres) {
+    code = nieuweCode;
+    adres = nieuwAdres;
+    try {
+      localStorage.setItem(CONFIG.sleutel, nieuweCode);
+      if (!CONFIG.portaalUrl) { localStorage.setItem(CONFIG.sleutelAdres, nieuwAdres); }
+    } catch (e) { /* privémodus */ }
+  }
+
+  /* Het adresveld staat er alleen als het niet al in de code is ingevuld. */
+  function vulSlotIn() {
+    var veld = el('slot-adres-veld');
+    veld.hidden = !!CONFIG.portaalUrl;
+    if (!veld.hidden) { el('slot-adres').value = adres; }
   }
 
   function meldSlot(tekst) {
@@ -122,14 +144,34 @@
 
   el('slot-form').addEventListener('submit', function (e) {
     e.preventDefault();
-    var ingetypt = el('slot-code').value.trim();
-    if (!ingetypt) { return; }
+    var ingetypteCode = el('slot-code').value.trim();
+    var ingetyptAdres = CONFIG.portaalUrl ||
+      el('slot-adres').value.trim().replace(/\/+$/, '');
+
+    if (!ingetypteCode) { return; }
+    if (!ingetyptAdres) {
+      meldSlot('Vul het adres van het portaal in. Dat begint met https:// en ' +
+               'eindigt op .workers.dev.');
+      el('slot-adres').focus();
+      return;
+    }
+    /* Alleen https, en geen willekeurige tekst. De code gaat naar dit adres toe,
+       dus een typefout mag geen wachtwoord ergens anders naartoe sturen. */
+    if (!/^https:\/\/[^\s/]+\.[^\s/]+/.test(ingetyptAdres)) {
+      meldSlot('Dat is geen geldig adres. Het hoort te beginnen met https:// — ' +
+               'neem het over zoals je het van Cloudflare kreeg.');
+      el('slot-adres').focus();
+      return;
+    }
+
     var knop = e.target.querySelector('button');
     knop.disabled = true;
     knop.textContent = 'Even kijken…';
-    code = ingetypt;
+    code = ingetypteCode;
+    adres = ingetyptAdres;
+
     verstuur('ritten', { dag: dag }).then(function (data) {
-      onthoudCode(ingetypt);
+      onthoud(ingetypteCode, ingetyptAdres);
       meldSlot('');
       el('slot').hidden = true;
       el('app').hidden = false;
@@ -502,9 +544,16 @@
 
   /* ---------------------------------------------------------- opstarten */
 
-  try { code = localStorage.getItem(CONFIG.sleutel) || ''; } catch (e) { code = ''; }
+  try {
+    code = localStorage.getItem(CONFIG.sleutel) || '';
+    adres = CONFIG.portaalUrl || localStorage.getItem(CONFIG.sleutelAdres) || '';
+  } catch (e) {
+    code = '';
+    adres = CONFIG.portaalUrl;
+  }
+  vulSlotIn();
 
-  if (code) {
+  if (code && waarheen()) {
     el('slot').hidden = true;
     el('app').hidden = false;
     haalDag();

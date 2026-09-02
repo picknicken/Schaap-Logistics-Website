@@ -76,6 +76,10 @@ input{font:inherit}
   background:var(--paper);color:var(--heading);
 }
 .veld input:focus{border-color:var(--amber-2);outline:none}
+.veld small{
+  display:block;margin-top:6px;font-size:.78rem;color:var(--muted);
+  text-transform:none;letter-spacing:0;font-weight:400;line-height:1.45;
+}
 
 .knop{
   display:inline-flex;align-items:center;justify-content:center;gap:8px;
@@ -211,6 +215,15 @@ input{font:inherit}
   <p>Je ritten van vandaag, statussen en handtekeningen. Alleen voor Schaap&nbsp;Logistics.</p>
   <div id="slot-melding" class="melding" hidden></div>
   <form id="slot-form">
+    <label class="veld" id="slot-adres-veld" hidden>
+      <span>Adres van het portaal</span>
+      <!-- Bewust type="text": bij type="url" onderschept de browser een typefout
+           met een eigen tekstballon, en die zegt minder dan onze eigen melding. -->
+      <input type="text" id="slot-adres" inputmode="url"
+             placeholder="https://schaap-portaal.....workers.dev"
+             autocapitalize="off" autocorrect="off" spellcheck="false">
+      <small>Dit adres kreeg je van Cloudflare. Je typt het één keer over; daarna onthoudt deze telefoon het.</small>
+    </label>
     <label class="veld">
       <span>Toegangscode</span>
       <input type="password" id="slot-code" autocomplete="current-password" required

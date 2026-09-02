@@ -316,9 +316,11 @@ npx wrangler secret put PORTAAL_CODE       # je eigen code, lang en willekeurig
 npx wrangler deploy
 ```
 
-De URL die `deploy` teruggeeft zet je in `assets/portaal.js` bij
-`CONFIG.portaalUrl`. Zolang die leeg is, zegt het portaal netjes dat het nog niet
-gekoppeld is in plaats van te blijven hangen.
+De URL die `deploy` teruggeeft typ je één keer over in het inlogscherm van het
+portaal; de telefoon onthoudt hem daarna. Je hoeft er dus niets voor in de code
+te veranderen. Wil je het toch vastleggen — bijvoorbeeld omdat er meerdere
+telefoons komen — dan kan het in `assets/portaal.js` bij `CONFIG.portaalUrl`;
+dat gaat dan voor en de vraag verdwijnt uit het inlogscherm.
 
 **Velden die hierbij horen**, allemaal in `Ritten`:
 
