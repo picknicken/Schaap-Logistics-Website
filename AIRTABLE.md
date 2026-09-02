@@ -196,13 +196,51 @@ Twee dingen om te weten:
   uitvoeringen per maand. Dat is één bevestiging per aanvraag; loop je daar
   tegenaan, dan is een betaald plan nodig.
 
-## Losse einden in de base
+## De base zelf
 
-Twee dingen die niet met de koppeling te maken hebben, maar wel opvallen:
+Twee dingen aan de administratie die los van de website staan maar hier thuishoren,
+omdat ze met de tarieven meebewegen.
 
-- `Opdrachten.Type rit` kent alleen *Normaal* en *Spoed*. De site heeft vier
-  diensten. Zet je een aanvraag om, dan is er voor directe spoed en
-  internationaal geen passende optie.
-- De formules in `Ritten` rekenen met €50 starttarief en €1,50/€2,00 per km.
-  Directe spoed (€100 + €2,50) en internationaal ontbreken, dus die berekening
-  wijkt af van wat de site je klanten voorrekent.
+### De ritprijs staat op drie plekken
+
+De bedragen leven in `CONFIG` in `assets/site.js` (waar de calculator mee rekent),
+als tekst op `/tarieven/`, en in de formule `Automatisch totaal excl. BTW` in de
+tabel `Ritten` (waar je facturen op gebaseerd worden). Wijzig je een tarief, pas
+het dan op alle drie aan — anders factureer je iets anders dan je op je site belooft.
+
+De tabel `Tarieven` is een naslagoverzicht, geen bron: daar iets wijzigen verandert
+niets aan je facturen.
+
+De formule volgt de website exact: standaard €50 + €1,50/km, spoed €75 + €2,00/km,
+directe spoed €100 + €2,50/km, minimum €75 per opdracht, en daarna pas de extra
+kosten erbij. Internationaal blijft leeg — dat gaat op offerte, dus vul je
+`Totaal excl. BTW` met de hand in. Vul je `Starttarief` of `Km-tarief` zelf in,
+dan gaat die afspraak voor op het standaardtarief.
+
+Gecontroleerd tegen de rekenvoorbeelden op `/tarieven/`: 10, 25, 50 en 300 km voor
+alle drie de binnenlandse diensten komen op de cent overeen, inclusief het minimum
+bij korte ritten.
+
+### Betalingsbewaking
+
+Op `Facturen` staan vier velden die samen laten zien wat er open staat:
+
+| Veld | Wat het doet |
+| --- | --- |
+| `Betaald` | Telt de gekoppelde betalingen op; deelbetalingen tellen mee |
+| `Openstaand` | Totaal min betaald; een gecrediteerde factuur staat op nul |
+| `Dagen te laat` | Nul zolang er niets openstaat of de vervaldatum nog niet geweest is |
+| `Betalingstermijn klant (dagen)` | Wat er bij die klant is afgesproken |
+
+De automatisering **Facturen te laat markeren** (`wflohgkVPefthWWuj`) kijkt elke
+ochtend om 8 uur welke facturen over hun vervaldatum zijn terwijl er nog geld
+openstaat, en zet die op *Te laat*.
+
+Nog niet gebouwd: een seintje naar Schaap Logistics zelf wanneer dat gebeurt, en
+automatische herinneringen naar de klant. Allebei wachten op een e-mailadres.
+
+### Verouderde velden
+
+`Type rit (verouderd)` in `Ritten`, `Opdrachten` en `Tarieven`, en
+`Berekend totaal excl. BTW (dubbel, mag weg)` in `Ritten`. Die zijn vervangen en
+mogen verwijderd worden; dat kan alleen met de hand in Airtable.
