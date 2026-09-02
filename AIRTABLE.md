@@ -7,9 +7,9 @@ automatisch in Airtable te laten binnenkomen.
 
 ## De hoofdregel
 
-**De Airtable-sleutel mag niet in `index.html`.** De site is statisch: alles wat
-in dat bestand staat is voor iedere bezoeker leesbaar, ook een sleutel die in het
-script verstopt staat. Met zo'n sleutel kan een willekeurige bezoeker jouw base
+**De Airtable-sleutel mag niet in `assets/site.js`.** De site is statisch: alles
+wat in dat bestand staat is voor iedere bezoeker leesbaar, ook een sleutel die
+verderop in de code verstopt staat. Met zo'n sleutel kan een willekeurige bezoeker jouw base
 uitlezen, aanpassen of leegmaken.
 
 De pagina praat daarom nooit rechtstreeks met Airtable, maar met een eigen
@@ -32,7 +32,7 @@ moet:
 
 ## Aanzetten in de pagina
 
-In het script onderaan `index.html`, in `CONFIG`:
+In `CONFIG` bovenaan `assets/site.js`:
 
 ```js
 verzending: {
