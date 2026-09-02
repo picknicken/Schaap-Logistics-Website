@@ -82,6 +82,24 @@ pas het dan op allebei aan.
 Er staan nog placeholder-gegevens in de site, en door de opsplitsing staan ze nu
 in meerdere bestanden. Zoek op `PLACEHOLDER` om ze te vinden.
 
+- [ ] **Zet de site weer op indexeerbaar.** Zolang het een concept is met
+      voorbeeldgegevens staat er op alle zeven pagina's
+      `<meta name="robots" content="noindex,nofollow">`, zodat Google geen
+      verzonnen telefoonnummer oppikt. Dat terugdraaien is de laatste handeling
+      vóór livegang — vergeet je het, dan is je site onvindbaar:
+
+      ```sh
+      grep -rl 'noindex,nofollow' --include='*.html' . \
+        | xargs sed -i 's/noindex,nofollow/index,follow/'
+      ```
+
+- [ ] **Algemene voorwaarden en privacyverklaring.** De footer stelt nu dat er
+      algemene voorwaarden van toepassing zijn, maar er staat nergens een link
+      naar zo'n document. Voeg ze toe, of haal die zin weg zolang ze er niet zijn.
+      Een privacyverklaring hoort er sowieso te komen: het formulier verzamelt
+      naam, telefoonnummer, e-mailadres, adressen en foto's en zet die door naar
+      Cloudflare en Airtable.
+
 - [ ] **Telefoonnummer** — nu `06 - 12 34 56 78` / `tel:+31612345678`, verspreid
       over alle zeven HTML-bestanden: header en footer van elke pagina, plus de
       contactsectie en een paar knoppen. Dat zijn 18 `tel:`-links en 17 keer de
