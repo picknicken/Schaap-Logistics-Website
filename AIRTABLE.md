@@ -252,8 +252,37 @@ Op `Facturen` staan vier velden die samen laten zien wat er open staat:
 | `Betalingstermijn klant (dagen)` | Wat er bij die klant is afgesproken |
 
 De automatisering **Facturen te laat markeren** (`wflohgkVPefthWWuj`) kijkt elke
-ochtend om 8 uur welke facturen over hun vervaldatum zijn terwijl er nog geld
-openstaat, en zet die op *Te laat*.
+maandagochtend welke facturen over hun vervaldatum zijn terwijl er nog geld
+openstaat, en zet die op *Te laat*. Een halfuur later stuurt
+**Betalingsherinnering sturen** (`wflWkvVHlNzs8B6gA`) de klant een herinnering
+voor de facturen die er nog geen hebben gehad.
+
+### Waarom die twee wekelijks draaien en niet dagelijks
+
+Het gratis Airtable-plan geeft **honderd automatiseringsruns per maand**. Elke
+keer dat een trigger afgaat telt mee, ook als er niets te doen is. Deze twee
+draaiden allebei dagelijks, en dat kostte samen ruim zestig runs per maand —
+voor twee klusjes die op de meeste dagen niets vinden. Er bleven er dan nog
+geen veertig over voor het echte werk, terwijl één rit van aanvraag tot betaalde
+factuur er vijf à zes verbruikt. Rond de zes ritten per maand zou de hele
+administratie stilvallen, zonder waarschuwing.
+
+Wekelijks kosten ze samen negen runs. De prijs daarvan is dat een factuur een
+paar dagen te laat kan zijn voordat de status omgaat en de herinnering vertrekt;
+bij een betalingstermijn van veertien dagen valt dat weg in de ruis.
+
+Ze konden niet tot één automatisering worden samengevoegd. Airtable staat geen
+stap toe ná een herhaallus, en allebei bestaan ze uit *zoek records* gevolgd
+door een lus. Een echte samenvoeging zou de tweede lus in de eerste moeten
+proppen met een voorwaarde eromheen — moeilijker te lezen, en het scheelt maar
+vier runs per maand.
+
+Ga je naar een betaald plan (25.000 runs), zet ze dan gerust weer op dagelijks.
+
+**Let op — een weekschema kent in Airtable geen tijdzone.** De tijd staat
+daarom in UTC: 07:00 UTC is 09:00 in de zomer en 08:00 in de winter. Dat
+verschuift dus een uur bij de overgang naar wintertijd. Voor een
+ochtendklus maakt dat niet uit.
 
 Nog niet gebouwd: een seintje naar Schaap Logistics zelf wanneer dat gebeurt, en
 automatische herinneringen naar de klant. Allebei wachten op een e-mailadres.

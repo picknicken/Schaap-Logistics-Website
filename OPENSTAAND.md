@@ -159,10 +159,15 @@ een dure diesel geld inlevert, zonder dat je je hele tarievenpagina hoeft om te
 gooien. Als je hier iets mee wilt, is dat een aparte klus: tarievenpagina,
 calculator, Airtable en factuur tegelijk.
 
-**Het gratis Airtable-plan houdt op bij 100 automatiseringen per maand.** Er
-lopen er nu acht, en één rit van aanvraag tot betaalde factuur verbruikt er al
-gauw vijf. Rond de vijftien à twintig ritten per maand loop je tegen het plafond
-en stopt de boel zonder waarschuwing. Betaald plan of minder automatiseren.
+**Het gratis Airtable-plan houdt op bij 100 runs per maand — nu opgelost, maar
+niet voor altijd.** De twee ochtendklussen (facturen te laat markeren en de
+betalingsherinnering) draaiden dagelijks en aten daarmee ruim zestig van die
+honderd op, terwijl ze op de meeste dagen niets te doen hadden. Ze draaien nu
+maandagochtend: samen negen runs. Er blijft dus ruim negentig over voor het
+echte werk, en één rit van aanvraag tot betaalde factuur kost er vijf à zes.
+Daarmee zit je rond de vijftien ritten per maand — genoeg voorlopig, maar geen
+oneindig plafond. Ga je daar structureel overheen, dan is een betaald plan
+(25.000 runs) het eerlijke antwoord.
 
 ---
 
