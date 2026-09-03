@@ -58,6 +58,7 @@ const R = {
   klant:      'Klantnaam',
   telefoon:   'Klant telefoon',
   opmerking:  'Opmerkingen',
+  chauffeur:  'Chauffeur',
   totaal:     'Automatisch totaal excl. BTW',
   handtek:    'Handtekening',
   getekendD:  'Getekend door',
@@ -181,6 +182,17 @@ function magVanOrigin(origin, toegestaan) {
     .includes(origin.replace(/\/$/, ''));
 }
 
+/* De acties die een chauffeur mag uitvoeren. Alles wat hier niet in staat is
+   voor de eigenaar: plannen, aanvragen aannemen, klanten koppelen, uitnodigen,
+   en een appje laten omzetten in een rit. Een chauffeur rijdt; hij verkoopt
+   niet en hij ziet geen bedragen.
+
+   Kilometers en ritkosten mag hij wel invullen — die weet hij als enige, en hij
+   krijgt ze niet terug als winstcijfer. */
+const CHAUFFEUR_MAG = new Set([
+  'overzicht', 'ritten', 'status', 'handtekening', 'notitie', 'ritkm', 'ritkosten'
+]);
+
 export default {
   async fetch(verzoek, env) {
     const origin = verzoek.headers.get('Origin') || '';
@@ -226,7 +238,23 @@ export default {
        een chauffeursactie niet eens bereiken. Dat is met opzet zo gebouwd en
        niet met een reeks controles per actie — dan vergeet je er een.
        ------------------------------------------------------------------ */
-    if (!gelijk(code, env.PORTAAL_CODE)) {
+    /* Wie is dit? Drie mogelijkheden, in deze volgorde:
+       de hoofdsleutel uit Cloudflare (altijd de eigenaar, kan nooit stuk),
+       een persoonlijke code uit de tabel Chauffeurs, of geen van beide — dan
+       is het misschien een klantcode en gaat het hieronder verder. */
+    let wie = null;
+    if (gelijk(code, env.PORTAAL_CODE)) {
+      wie = { rol: 'Eigenaar', naam: 'Eigenaar', id: null, hoofdsleutel: true };
+    } else if (code) {
+      try {
+        wie = await zoekMedewerker(env, code);
+      } catch (fout) {
+        console.log('Medewerker opzoeken mislukt: ' + fout.message);
+        return antwoord(502, { fout: fout.message }, origin, true);
+      }
+    }
+
+    if (!wie) {
       try {
         const uit = await klantPoort(env, code, body, origin);
         if (uit.status === 401) { telMislukking(ip); }
@@ -237,27 +265,42 @@ export default {
       }
     }
 
-    try {
-      switch (body.actie) {
-        case 'overzicht':    return await haalOverzicht(env, body, origin);
-        case 'ritten':       return await haalRitten(env, body, origin);
-        case 'status':       return await zetStatus(env, body, origin);
-        case 'handtekening': return await zetHandtekening(env, body, origin);
-        case 'notitie':      return await zetNotitie(env, body, origin);
-        case 'accepteer':    return await accepteerAanvraag(env, body, origin);
-        case 'afwijzen':     return await wijsAanvraagAf(env, body, origin);
-        case 'planrit':      return await planRit(env, body, origin);
-        case 'nieuwerit':    return await nieuweRit(env, body, origin);
-        case 'ritdatum':     return await zetRitdatum(env, body, origin);
-        case 'ritkm':        return await zetRitKm(env, body, origin);
-        case 'ritkosten':    return await zetRitKosten(env, body, origin);
-        case 'koppelklant':  return await koppelKlant(env, body, origin);
-        case 'nieuweklant':  return await nieuweKlant(env, body, origin);
-        case 'uitnodiging':  return await stuurUitnodiging(env, body, origin);
-        case 'leesbericht':  return await leesBericht(env, body, origin);
-        default:
-          return antwoord(400, { fout: 'Onbekende actie' }, origin, true);
+    /* Wat een chauffeur mag. Een allowlist en geen verbodenlijst: vergeet je
+       er een bij een verbodenlijst, dan staat hij open. Vergeet je er een
+       hier, dan staat hij dicht en hoor je het. */
+    if (wie.rol !== 'Eigenaar' && !CHAUFFEUR_MAG.has(body.actie)) {
+      return antwoord(403, {
+        fout: 'Dit is alleen voor de eigenaar. Vraag of hij het doet.'
+      }, origin, true);
+    }
+
+    /* Een chauffeur mag alleen aan zijn eigen ritten komen. Eén controle hier
+       in plaats van vijf keer dezelfde controle in vijf acties: zo kan er geen
+       actie bij komen die hem vergeet. Het kost een extra opvraging bij
+       Airtable, en dat is het waard. */
+    if (wie.rol !== 'Eigenaar' && RIT_ACTIES.has(body.actie)) {
+      const ritId = recordId(body.id);
+      if (!ritId) {
+        return antwoord(400, { fout: 'Geef een rit op' }, origin, true);
       }
+      try {
+        const rec = await airtable(env, `${env.AIRTABLE_RITTEN}/${ritId}`);
+        if (!ritIsVan(rec, wie)) {
+          return antwoord(403, { fout: 'Deze rit staat niet op jouw naam.' }, origin, true);
+        }
+      } catch (fout) {
+        console.log('Rit controleren mislukt: ' + fout.message);
+        return antwoord(502, { fout: fout.message }, origin, true);
+      }
+    }
+
+    try {
+      const uit = await schakel(env, body, origin, wie);
+      /* Laatste zeef. naarRitVoorChauffeur laat de bedragen er al uit, maar de
+         acties die een rit terugsturen na een wijziging gebruiken de gewone
+         naarRit. In plaats van elf plekken aan te passen en er één te vergeten,
+         gaat alles wat naar een chauffeur teruggaat hier nog een keer langs. */
+      return wie.rol === 'Eigenaar' ? uit : await zonderBedragen(uit, origin);
     } catch (fout) {
       console.log('Portaal: ' + fout.message);
       return antwoord(502, { fout: fout.message }, origin, true);
@@ -265,17 +308,82 @@ export default {
   }
 };
 
+/* De acties die op één rit werken. Voor een chauffeur wordt bij deze eerst
+   gecontroleerd of die rit van hem is. */
+const RIT_ACTIES = new Set(['status', 'handtekening', 'notitie', 'ritkm', 'ritkosten']);
+
+/* Wat een chauffeur nooit terugkrijgt, ook niet als een actie het per ongeluk
+   meestuurt. Dit zijn de velden waar geld in staat. */
+const GELDVELDEN = ['bedrag', 'korting', 'kortingRe', 'doorbereken',
+                    'brandstof', 'tol', 'overig', 'kosten', 'winst'];
+
+async function zonderBedragen(res, origin) {
+  let data;
+  try {
+    data = await res.clone().json();
+  } catch {
+    return res;   /* geen JSON, dan valt er ook niets uit te halen */
+  }
+  const schoon = (r) => {
+    if (!r || typeof r !== 'object') { return r; }
+    for (const veld of GELDVELDEN) { delete r[veld]; }
+    return r;
+  };
+  if (data && typeof data === 'object') {
+    if (data.rit) { schoon(data.rit); }
+    if (Array.isArray(data.ritten)) { data.ritten.forEach(schoon); }
+  }
+  return antwoord(res.status, data, origin, true);
+}
+
+async function schakel(env, body, origin, wie) {
+  switch (body.actie) {
+    case 'overzicht':    return await haalOverzicht(env, body, origin, wie);
+    case 'ritten':       return await haalRitten(env, body, origin, wie);
+    case 'status':       return await zetStatus(env, body, origin);
+    case 'handtekening': return await zetHandtekening(env, body, origin);
+    case 'notitie':      return await zetNotitie(env, body, origin);
+    case 'accepteer':    return await accepteerAanvraag(env, body, origin);
+    case 'afwijzen':     return await wijsAanvraagAf(env, body, origin);
+    case 'planrit':      return await planRit(env, body, origin);
+    case 'nieuwerit':    return await nieuweRit(env, body, origin);
+    case 'ritdatum':     return await zetRitdatum(env, body, origin);
+    case 'ritkm':        return await zetRitKm(env, body, origin);
+    case 'ritkosten':    return await zetRitKosten(env, body, origin);
+    case 'koppelklant':  return await koppelKlant(env, body, origin);
+    case 'nieuweklant':  return await nieuweKlant(env, body, origin);
+    case 'uitnodiging':  return await stuurUitnodiging(env, body, origin);
+    case 'leesbericht':  return await leesBericht(env, body, origin);
+    default:
+      return antwoord(400, { fout: 'Onbekende actie' }, origin, true);
+  }
+}
+
 /* ------------------------------------------------------------------ acties */
 
 /* Alles wat het portaal bij het openen nodig heeft, in één verzoek. Drie
    losse verzoeken zou onderweg op mobiel internet drie keer wachten zijn. */
-async function haalOverzicht(env, body, origin) {
+async function haalOverzicht(env, body, origin, wie) {
   const dag = datum(body.dag);
   if (!dag) {
     return antwoord(400, { fout: 'Geef een datum als JJJJ-MM-DD' }, origin, true);
   }
+
+  /* Een chauffeur krijgt alleen zijn eigen ritten, en verder niets. Aanvragen,
+     opdrachten en klanten worden voor hem niet eens opgehaald: wat je niet
+     ophaalt kun je ook niet per ongeluk meesturen. */
+  if (wie.rol !== 'Eigenaar') {
+    const ritten = await rittenOphalen(env, dag, dag, wie);
+    await noteerBezoek(env, wie);
+    return antwoord(200, {
+      ok: true, dag, ritten, aanvragen: [], opdrachten: [], klanten: [],
+      kan: { leesbericht: false },
+      ik: { naam: wie.naam, rol: wie.rol }
+    }, origin, true);
+  }
+
   const [ritten, aanvragen, opdrachten, klanten] = await Promise.all([
-    rittenOphalen(env, dag, dag),
+    rittenOphalen(env, dag, dag, wie),
     aanvragenOphalen(env),
     opdrachtenOphalen(env),
     klantenOphalen(env)
@@ -283,12 +391,14 @@ async function haalOverzicht(env, body, origin) {
   /* Het portaal moet weten of het de knop "vul het formulier in" mag laten
      zien. Alleen of er een sleutel staat, nooit de sleutel zelf. */
   const kan = { leesbericht: !!env.ANTHROPIC_API_KEY };
+  await noteerBezoek(env, wie);
 
-  return antwoord(200, { ok: true, dag, ritten, aanvragen, opdrachten, klanten, kan },
+  return antwoord(200, { ok: true, dag, ritten, aanvragen, opdrachten, klanten, kan,
+                         ik: { naam: wie.naam, rol: wie.rol } },
                   origin, true);
 }
 
-async function haalRitten(env, body, origin) {
+async function haalRitten(env, body, origin, wie) {
   const van = datum(body.van) || datum(body.dag);
   const tot = datum(body.tot) || van;
   if (!van || !tot) {
@@ -297,7 +407,7 @@ async function haalRitten(env, body, origin) {
   if (afstandInDagen(van, tot) > MAX_DAGEN) {
     return antwoord(400, { fout: `Hoogstens ${MAX_DAGEN} dagen tegelijk` }, origin, true);
   }
-  const ritten = await rittenOphalen(env, van, tot);
+  const ritten = await rittenOphalen(env, van, tot, wie);
   return antwoord(200, { ok: true, van, tot, ritten }, origin, true);
 }
 
@@ -954,7 +1064,7 @@ function naarKlantFactuur(record) {
 
 /* ------------------------------------------------------------- ophalen */
 
-async function rittenOphalen(env, van, tot) {
+async function rittenOphalen(env, van, tot, wie) {
   const filter = `AND(
     IS_AFTER({${R.datum}}, DATEADD(DATETIME_PARSE('${van}', 'YYYY-MM-DD'), -1, 'days')),
     IS_BEFORE({${R.datum}}, DATEADD(DATETIME_PARSE('${tot}', 'YYYY-MM-DD'), 1, 'days'))
@@ -965,7 +1075,17 @@ async function rittenOphalen(env, van, tot) {
   zoek.append('sort[0][field]', R.datum);
   zoek.append('sort[0][direction]', 'asc');
   const data = await airtable(env, `${env.AIRTABLE_RITTEN}?${zoek}`);
-  return (data.records || []).map(naarRit);
+  const records = data.records || [];
+
+  /* Zonder wie is dit de eigenaar; dat houdt oude aanroepen werkend. Filteren
+     gebeurt hier en niet in de Airtable-formule: het veld Chauffeur is vrije
+     tekst en een formule die daarop matcht is een formule die je verkeerd kunt
+     schrijven. Eerst alles ophalen en dan zelf zeven is hier veiliger, want de
+     dag van een eenmanszaak telt hoogstens een handvol ritten. */
+  if (!wie || wie.rol === 'Eigenaar') {
+    return records.map(naarRit);
+  }
+  return records.filter((r) => ritIsVan(r, wie)).map(naarRitVoorChauffeur);
 }
 
 /* Alleen aanvragen waar nog iets mee moet. Afgewezen en al omgezette
@@ -1449,4 +1569,116 @@ async function leesBericht(env, body, origin) {
         : []
     }
   }, origin, true);
+}
+
+/* ------------------------------------------------------- wie ben je
+
+   Tot nu toe had het chauffeursportaal één gedeeld wachtwoord: wie het had,
+   kon alles. Nu kan iedereen een eigen code hebben, met een rol erbij.
+
+   De hoofdsleutel PORTAAL_CODE uit Cloudflare blijft altijd werken en is
+   altijd de eigenaar. Dat is met opzet: raak je de tabel kwijt, verwijder je
+   per ongeluk je eigen rij, of zit er een fout in deze code, dan kom je er nog
+   steeds in. Een inlogsysteem dat jezelf kan buitensluiten is geen
+   verbetering.
+
+   De code gaat een Airtable-formule in, dus hij wordt eerst langs dezelfde
+   tekencontrole gehaald als een klantcode. */
+const MW = {
+  naam:   'Chauffeur',
+  code:   'Toegangscode',
+  rol:    'Rol',
+  actief: 'Actief',
+  gezien: 'Laatst ingelogd'
+};
+
+async function zoekMedewerker(env, ruweCode) {
+  const code = schoneCode(ruweCode);
+  if (!code) { return null; }
+
+  const zoek = new URLSearchParams();
+  zoek.set('filterByFormula', `{${MW.code}} = '${code}'`);
+  zoek.set('pageSize', '2');
+  const data = await airtable(env, `${env.AIRTABLE_CHAUFFEURS}?${zoek}`);
+  const gevonden = data.records || [];
+
+  /* Twee mensen met dezelfde code is een fout in de administratie. Dan
+     niemand binnenlaten in plaats van gokken wie het is — net als bij de
+     klanten. */
+  if (gevonden.length !== 1) { return null; }
+
+  const f = gevonden[0].fields || {};
+  if (f[MW.actief] === false) { return null; }
+
+  /* Geen rol ingevuld betekent chauffeur. De veiligste stand is de stand die
+     je krijgt als je vergeet iets in te vullen. */
+  const rol = keuze(f[MW.rol]) === 'Eigenaar' ? 'Eigenaar' : 'Chauffeur';
+
+  return {
+    id: gevonden[0].id,
+    naam: String(f[MW.naam] || '').trim(),
+    rol,
+    hoofdsleutel: false
+  };
+}
+
+/* Noteren wanneer iemand voor het laatst binnenkwam. Mislukt dit, dan mag dat
+   het inloggen niet tegenhouden: het is een aantekening, geen controle. */
+async function noteerBezoek(env, wie) {
+  if (!wie || !wie.id) { return; }
+  try {
+    await airtable(env, `${env.AIRTABLE_CHAUFFEURS}/${wie.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ fields: { [MW.gezien]: new Date().toISOString() } })
+    });
+  } catch (fout) {
+    console.log('Laatst ingelogd niet bijgewerkt: ' + fout.message);
+  }
+}
+
+/* De rit zoals een chauffeur hem mag zien. Een eigen lijst en geen kopie
+   waar velden uit weggehaald worden: komt er later een veld bij in naarRit,
+   dan staat het hier niet automatisch in. Dat is precies de bedoeling.
+
+   Wat er bewust niet in staat: bedrag, korting, brandstof, tol, overige
+   kosten, totale kosten en winst. Een chauffeur hoeft niet te weten wat de
+   klant betaalt of wat eraan verdiend wordt. */
+function naarRitVoorChauffeur(record) {
+  const f = record.fields || {};
+  return {
+    id:         record.id,
+    naam:       f[R.rit] || '',
+    datum:      f[R.datum] || '',
+    type:       keuze(f[R.type]),
+    status:     keuze(f[R.status]) || 'Gepland',
+    ophaal:     f[R.ophaal] || '',
+    aflever:    f[R.aflever] || '',
+    km:         f[R.km] || 0,
+    stops:      f[R.stops] || 0,
+    tijdvak:    keuze(f[R.tijdvak]) || '',
+    tijd:       f[R.tijd] || '',
+    wachttijd:  f[R.wachttijd] || 0,
+    klant:      eerste(f[R.klant]),
+    telefoon:   eerste(f[R.telefoon]),
+    opmerking:  f[R.opmerking] || '',
+    getekend:   f[R.getekendD] || '',
+    getekendOp: f[R.getekendO] || '',
+    onderweg:   f[R.onderweg] || '',
+    afgezegdDoorKlant: f[R.annulDoor] === true,
+    afgezegdOp: f[R.annulOp] || '',
+    afzegreden: f[R.annulReden] || '',
+    handtekening: Array.isArray(f[R.handtek]) && f[R.handtek].length > 0,
+    krabbel:      bijlageUrl(f[R.handtek])
+  };
+}
+
+/* Welke ritten hoort deze persoon te zien. De eigenaar alles; een chauffeur
+   alleen wat op zijn naam staat. Vergelijken gebeurt op de naam zoals hij in
+   Chauffeurs staat tegen het veld Chauffeur op de rit — hoofdletters en
+   spaties tellen niet mee, want die typt niemand twee keer hetzelfde. */
+function ritIsVan(record, wie) {
+  if (wie.rol === 'Eigenaar') { return true; }
+  const opDeRit = String((record.fields || {})[R.chauffeur] || '').trim().toLowerCase();
+  const ik = String(wie.naam || '').trim().toLowerCase();
+  return !!ik && opDeRit === ik;
 }

@@ -348,6 +348,46 @@ Twee dingen die het **niet** is: er is geen offline modus, en pushmeldingen op
 je telefoon zitten er niet in. Dat laatste kan op een geinstalleerde webapp
 (iOS 16.4 en hoger) maar is apart werk; nu gaat het spoedseintje per mail.
 
+### Inloggen: eigenaar en chauffeurs
+
+Het portaal had één gedeeld wachtwoord. Nu kan iedereen een eigen code hebben,
+met een rol erbij.
+
+**De hoofdsleutel blijft.** `PORTAAL_CODE` in Cloudflare werkt altijd en is
+altijd de eigenaar. Raak je de tabel kwijt, verwijder je je eigen rij, of zit er
+een fout in de code — je komt er nog steeds in. Een inlogsysteem dat jou kan
+buitensluiten is geen verbetering.
+
+**Iemand toegang geven.** Maak een rij in de tabel **Chauffeurs**, vul de naam
+in, zet **Rol** op Eigenaar of Chauffeur, en zet in **Toegangscode** een lange
+willekeurige code. Geef die door. Intrekken doe je door het veld leeg te maken of
+**Actief** uit te zetten; dat werkt meteen. In **Laatst ingelogd** zie je of de
+code ooit gebruikt is.
+
+**Wat een chauffeur ziet.** Alleen de ritten waar zijn naam bij staat in het veld
+*Chauffeur* op de rit. Geen aanvragen, geen planning, geen klanten. En geen enkel
+bedrag: niet de ritprijs, niet de korting, niet de brandstof- en tolkosten, niet
+de winst. Hij kan wel de status omzetten, laten tekenen, kilometers invullen en
+zijn eigen kosten kwijt — dat weet hij als enige.
+
+Dat is op drie plekken vastgelegd, met opzet drie:
+
+1. Een **allowlist** van acties die een chauffeur mag. Wat er niet in staat is
+   voor de eigenaar. Bij een verbodenlijst vergeet je er een en staat hij open;
+   hier vergeet je er een en staat hij dicht, en dat hoor je.
+2. Een **eigen lijst velden** (`naarRitVoorChauffeur`) in plaats van de gewone
+   lijst met velden eruit gehaald. Komt er later een veld bij, dan staat het er
+   niet automatisch in.
+3. Een **laatste zeef** over alles wat naar een chauffeur teruggaat, want de
+   acties die een rit terugsturen na een wijziging gebruiken de gewone lijst.
+
+En een chauffeur kan niet aan de rit van een ander komen: voordat een actie op
+één rit wordt uitgevoerd, wordt eerst gecontroleerd of die rit op zijn naam
+staat.
+
+Rol leeg laten betekent Chauffeur. De veiligste stand is de stand die je krijgt
+als je vergeet iets in te vullen.
+
 ### Een appje omzetten in een rit
 
 In het formulier *Rit buiten de website om* staat een vak waarin je het bericht

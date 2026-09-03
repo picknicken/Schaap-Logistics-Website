@@ -243,6 +243,25 @@
     var vak = el('plakvak');
     if (vak) { vak.hidden = !(data && data.kan && data.kan.leesbericht); }
 
+    /* Wie is er ingelogd. Een chauffeur ziet alleen zijn eigen ritten, dus de
+       twee andere tabbladen zouden bij hem altijd leeg zijn — die halen we weg
+       in plaats van ze leeg te laten staan. De tussenlaag houdt hem daar toch
+       al buiten; dit is alleen om hem niet tegen een dichte deur te laten
+       lopen. */
+    var ik = (data && data.ik) || null;
+    var alleenRitten = !!ik && ik.rol !== 'Eigenaar';
+    ['tab-aanvragen', 'tab-planning'].forEach(function (id) {
+      var t = el(id);
+      if (t) { t.hidden = alleenRitten; }
+    });
+    if (alleenRitten && tabblad !== 'ritten') { kiesTab('ritten'); }
+
+    var wieVak = el('kop-wie');
+    if (wieVak) {
+      wieVak.textContent = ik && ik.naam && ik.naam !== 'Eigenaar' ? ik.naam : '';
+      wieVak.hidden = !wieVak.textContent;
+    }
+
     ritten = data.ritten || [];
     /* Bij een dagwissel komen aanvragen en opdrachten mee; bij een losse
        rittenoproep niet. Dan houden we wat we al hadden. */
