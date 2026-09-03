@@ -15,7 +15,7 @@ versturen die klopt.
 | **IBAN en BIC** | `factuur/index.html`, regel 276-277 | Er staat nu letterlijk `IBAN: [NL00 XXXX 0000 0000 00]` op de factuur. Zo krijg je geen geld binnen. |
 | **KvK- en btw-nummer** | de voettekst van alle 11 pagina's, en de factuurkop | Wettelijk verplicht op een factuur, en zonder is je factuur ongeldig |
 | **Telefoonnummer en e-mailadres** | nu `06 - 12 34 56 78` en `info@schaaplogistics.nl` — allebei verzonnen | Een klant die belt komt bij een vreemde uit |
-| **Voorwaarden en privacyverklaring laten nakijken** | `/voorwaarden/`, `/privacy/` | Ik heb ze geschreven, maar ik ben geen jurist. Er staan bewust gaten in (zie punt 3) |
+| **Voorwaarden en privacyverklaring laten nakijken** | `/voorwaarden/`, `/privacy/` | Ik heb ze geschreven, maar ik ben geen jurist. De aansprakelijkheid staat er inmiddels concreet in (AVC 2002 / CMR); juist dát hoort iemand te bevestigen |
 | **Gmail koppelen in Airtable** | Airtable → Automations → Connect Gmail | Zolang dit niet gebeurt, komen al je mails in de spam |
 | **`noindex` eruit halen** | alle pagina's | Staat er nu op zodat Google geen halve site indexeert. Als laatste weghalen |
 
@@ -50,11 +50,18 @@ offerte. Maar er *is* geen offerteproces. De aanvraag komt binnen zonder bedrag
 en daarna is het handwerk. Te bouwen: een offerteregel in Airtable met dezelfde
 opmaak als de factuur, plus een knop om hem te mailen.
 
-### c. Annulering en loze rit
+### c. Annulering staat wel in de voorwaarden, maar je kunt hem niet factureren
 
-Nergens geregeld: niet in de tarieven, niet in de voorwaarden, geen veld in
-Airtable. Zegt een klant af terwijl je onderweg bent, dan heb je geen grond om
-iets in rekening te brengen. Dit kost je vroeg of laat geld. Zie ook punt 3.
+Correctie op een eerdere versie van deze lijst: artikel 9 van de voorwaarden
+regelt het al (kosteloos tot vertrek, daarna de gereden kilometers met een
+minimum van €75), en sinds vandaag staat het ook in de tarieventabel, zodat een
+klant het ziet vóór hij bestelt in plaats van erna.
+
+Wat nog niet kan: hem daadwerkelijk factureren. De status *Geannuleerd* bestaat
+in Airtable, maar de automatisering die een factuur maakt luistert alleen naar
+*Uitgevoerd*, en de totaalformule rekent bij een geannuleerde rit gewoon het
+starttarief mee. Zet je een rit op Geannuleerd, dan gebeurt er dus niets en moet
+je met de hand een factuur maken.
 
 ### d. De portaalcode is één gedeeld wachtwoord
 
@@ -65,8 +72,24 @@ code die per apparaat geldt, of een inlog per e-mail met een code die vervalt.
 ### e. Een back-up van Airtable
 
 Er is er geen. Verwijder je per ongeluk een tabel, dan is je administratie weg.
-Te bouwen: een wekelijkse GitHub Action die de hele base als bestand in de repo
-zet. Kost niets en draait vanzelf.
+
+Let op — in een eerdere versie van deze lijst stelde ik voor om de base
+wekelijks als bestand in deze repo te zetten. **Dat kan niet.** Deze repo is
+openbaar: dan zouden de naam, het adres en het telefoonnummer van al je klanten
+op internet komen te staan. Hetzelfde geldt voor de bestandjes die een GitHub
+Action achterlaat; ook die zijn bij een openbare repo voor iedereen te
+downloaden.
+
+Wat wel kan, van weinig naar veel moeite:
+
+1. **Airtable's eigen snapshots.** Base openen → het menu rechtsboven →
+   *Snapshots*. Op het gratis plan bewaart Airtable twee weken terug. Dekt de
+   meeste ongelukken (per ongeluk een tabel wissen) en kost je niets.
+2. **Base dupliceren.** Eens per maand → *Duplicate base*. Drie klikken, en je
+   hebt een bevroren kopie naast je echte base staan.
+3. **Een tweede, besloten repo** alleen voor back-ups, met een Action die daar
+   wekelijks naartoe schrijft. Dat is de nette oplossing, maar wel een aparte
+   repo en een extra sleutel om te beheren.
 
 ### f. De PDF van de factuur is nog handwerk
 
@@ -75,7 +98,6 @@ een paar facturen per maand prima; bij dertig niet meer.
 
 ### g. Kleinigheden
 
-- `robots.txt` en `sitemap.xml` (pas zinvol als `noindex` eraf gaat)
 - De rem op de Workers geldt per server, niet over alle servers samen. Genoeg
   tegen een klungelige bot, niet tegen iemand die het echt op je gemunt heeft.
   Cloudflare heeft daar eigen instellingen voor.
@@ -88,21 +110,25 @@ een paar facturen per maand prima; bij dertig niet meer.
 Hier kan ik niets bouwen voordat jij beslist. Het zijn geen technische maar
 zakelijke vragen.
 
-**Welke voorwaarden gelden er?** In `/voorwaarden/` staat nu *"AVC 2002 / CMR —
-nog vaststellen"*. Dit bepaalt waar je aansprakelijk voor bent als er iets
-kapotgaat. AVC 2002 is de Nederlandse standaard voor binnenlands wegvervoer en
-beperkt je aansprakelijkheid tot ongeveer €3,40 per kilo; CMR geldt voor
-internationaal. Kies je niets, dan ben je onbeperkt aansprakelijk voor de volle
-waarde van de lading. Dat is bij één laptop al duurder dan de rit.
+**Welke voorwaarden gelden er?** Ingevuld, maar nog te bevestigen. Artikel 8
+verwijst nu naar de AVC 2002 voor binnenlands vervoer (aansprakelijkheid beperkt
+tot €3,40 per kilo) en naar het CMR-verdrag voor grensoverschrijdend vervoer
+(8,33 SDR per kilo). CMR geldt bij internationaal vervoer van rechtswege, daar
+valt niets te kiezen; de AVC 2002 moet je wél zelf van toepassing verklaren, en
+op verzoek toesturen. Dat is de gebruikelijke combinatie voor een Nederlandse
+koerier, maar laat het bevestigen door een jurist of je brancheorganisatie
+voordat je de site live zet. Zonder die verwijzing ben je onbeperkt aansprakelijk
+voor de volle waarde van de lading — bij één laptop al duurder dan de rit.
 
 **Ben je verzekerd voor de lading?** Een aansprakelijkheidsverzekering voor je
 bedrijf dekt de lading van een ander meestal niet. Hier hoort een goederen- of
 vervoerdersaansprakelijkheidsverzekering bij.
 
-**Wat is je annuleringsregeling?** Bijvoorbeeld: kosteloos tot een uur voor
-ophalen, daarna het starttarief, en als je al onderweg bent de gereden
-kilometers. Zeg wat je wilt en ik zet het in de voorwaarden, de tarieven en
-Airtable tegelijk.
+**Op welke basis factureer je een annulering?** De voorwaarden zeggen nu: de
+gereden kilometers, met een minimum van €75. Dat is iets anders dan wat Airtable
+zou rekenen (starttarief plus kilometers, dus bij spoed al €75 + €2 per km voor
+je de deur uit bent). Zeg welke van de twee je wilt, dan maak ik de formule en
+de factuur daarop kloppend.
 
 **Btw bij ritten naar België en Duitsland.** De factuurpagina rekent nu altijd
 21%. Bij vervoer voor een buitenlands bedrijf met een geldig btw-nummer is de

@@ -1,0 +1,11 @@
+# Schaap Logistics
+# De besloten schermen (/factuur/, /portaal/, /klant/) worden hier bewust NIET
+# geblokkeerd. Ze dragen zelf <meta name="robots" content="noindex,nofollow">,
+# en dat werkt alleen als een zoekmachine de pagina mag ophalen om die regel te
+# lezen. Blokkeer je ze hier, dan kan het adres alsnog in Google belanden zonder
+# dat Google ooit het noindex heeft gezien.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://picknicken.github.io/Schaap-Logistics-Website/sitemap.xml

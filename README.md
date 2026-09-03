@@ -119,6 +119,13 @@ gemaakt moeten worden — staat in `OPENSTAAND.md`.
       `factuur/`, `portaal/` en `klant/` blijven bewust op `noindex`: dat zijn
       besloten schermen met klantgegevens en die horen niet in Google.
 
+      `robots.txt` en `sitemap.xml` staan er al klaar voor. Die blokkeren de
+      besloten schermen expres níét: ze dragen zelf een `noindex`, en die regel
+      kan een zoekmachine alleen lezen als hij de pagina mag ophalen.
+
+- [ ] **Adressen in `robots.txt` en `sitemap.xml`.** Beide wijzen nu naar
+      `picknicken.github.io`. Komt er een eigen domeinnaam, dan moeten ze mee.
+
 - [ ] **Algemene voorwaarden en privacyverklaring laten nakijken.** Ze staan er
       (`/voorwaarden/` en `/privacy/`, gelinkt vanuit elke voettekst), maar het
       zijn concepten met gaten erin — dat zegt de pagina zelf ook. Het gat dat er
