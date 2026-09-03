@@ -1,0 +1,3 @@
+# De afhankelijkheid van het chauffeursportaal wordt bij het uitrollen
+# opgehaald (npm install in de GitHub Action) en hoort niet in git.
+node_modules/

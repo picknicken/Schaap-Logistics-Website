@@ -348,6 +348,49 @@ Twee dingen die het **niet** is: er is geen offline modus, en pushmeldingen op
 je telefoon zitten er niet in. Dat laatste kan op een geinstalleerde webapp
 (iOS 16.4 en hoger) maar is apart werk; nu gaat het spoedseintje per mail.
 
+### Een appje omzetten in een rit
+
+In het formulier *Rit buiten de website om* staat een vak waarin je het bericht
+van een klant plakt. De tussenlaag leest eruit wat erin staat en vult de velden:
+datum, tijd, soort rit, de twee adressen, de klant en een opmerking. Wat het
+model niet zeker wist komt eronder als lijstje te staan, want dat is precies wat
+jij moet nalopen.
+
+Het is een **voorstel**, geen rit. Er wordt niets aangemaakt tot je onderaan op
+*Rit aanmaken* drukt, en velden die jij al hebt ingevuld blijven staan.
+
+Twee dingen doet het met opzet niet. Het rekent geen prijs uit — dat doet
+Airtable, met dezelfde formule als de website, en die moet elke keer hetzelfde
+uitkomen. En het verzint geen adres dat er niet staat: ontbreekt het huisnummer,
+dan zie je dat in het lijstje eronder.
+
+**Aanzetten.** Dit is het enige onderdeel dat geld kost per keer. Zet er een
+sleutel van de Anthropic-API op:
+
+```sh
+cd worker-portaal
+wrangler secret put ANTHROPIC_API_KEY
+```
+
+Zonder die sleutel antwoordt de tussenlaag met 501 en blijft het vak verborgen —
+een knop die niets doet is erger dan geen knop. Het portaal hoort dat via het
+veld `kan.leesbericht` in het overzicht.
+
+Dit is ook de reden dat `worker-portaal/` een `package.json` heeft en de
+aanvraag-Worker niet: de Anthropic-SDK is de enige afhankelijkheid van dit
+project. De GitHub Action draait er een `npm install` voor; wrangler bundelt hem
+mee. `node_modules/` staat in `.gitignore`.
+
+### Inspreken in plaats van typen
+
+Naast het plakvak en onder de opmerking staat een knop **Inspreken**, die de
+spraakherkenning van de browser gebruikt. Dat kost niets en er gaat geen sleutel
+aan te pas. Kan je browser het niet, dan blijft de knop weg.
+
+Op een iPhone staat er trouwens ook een microfoontje op het toetsenbord zelf, en
+dat werkt in elk veld van dit scherm — probeer dat eerst, misschien is het al
+genoeg.
+
 ## Het klantportaal
 
 `/klant/` is de kant die je klanten zien. Elke klant krijgt een eigen code en

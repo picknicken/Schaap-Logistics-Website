@@ -1,0 +1,9 @@
+{
+  "name": "schaap-portaal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloudflare Worker voor het chauffeursportaal. Wrangler bundelt deze afhankelijkheid mee bij het uitrollen; er is verder geen bouwstap.",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.72.0"
+  }
+}

@@ -73,6 +73,34 @@ input{font:inherit}
 
 /* ---------------------------------------------------------------- kop */
 
+/* ---------- een appje omzetten in een rit ----------
+   Staat bovenin het formulier voor een rit buiten de website om. Blijft
+   verborgen zolang de tussenlaag geen sleutel heeft, zodat er geen knop staat
+   die niets doet. */
+.plakvak{
+  background:var(--paper-2);border:1px solid var(--line);
+  border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;
+}
+.plakvak textarea{
+  width:100%;font:inherit;padding:10px 12px;border-radius:9px;
+  border:1px solid var(--line);background:var(--paper);color:inherit;resize:vertical;
+}
+.plakvak__rij{display:flex;gap:8px;flex-wrap:wrap}
+.plakvak__rij .knop{flex:1 1 auto}
+.plakvak__vragen{
+  margin:0;padding-left:19px;font-size:.85rem;color:#8c6b12;
+  background:#fff8e6;border:1px solid #f0dfae;border-radius:9px;
+  padding:10px 12px 10px 30px;display:flex;flex-direction:column;gap:4px;
+}
+/* Een knop die luistert. De kleur is dezelfde spoedkleur als elders: dit is
+   het enige wat op dit scherm ondertussen doorloopt. */
+.spreek[data-luistert]{
+  background:var(--urgent);color:#fff;border-color:var(--urgent);
+  animation:luister 1.4s ease-in-out infinite;
+}
+@keyframes luister{50%{opacity:.72}}
+@media (prefers-reduced-motion:reduce){.spreek[data-luistert]{animation:none}}
+
 /* ---------- tip: zet dit scherm op je beginscherm ----------
    iOS vraagt daar zelf niet om, dus dan weet je het niet. Hij verschijnt
    alleen in de browser en niet in de geinstalleerde app, en gaat na een tik
@@ -146,6 +174,9 @@ input{font:inherit}
   border-radius:10px;padding:11px 14px;font-size:.88rem;margin-bottom:14px;
   border-left:3px solid var(--urgent);background:#fdecea;color:#8c2415;
 }
+/* Een melding is hier standaard een waarschuwing. Ging er juist iets goed,
+   dan hoort hij er niet als een fout uit te zien. */
+.melding--goed{border-left-color:var(--ok);background:var(--ok-vlak);color:#11603c}
 
 /* ------------------------------------------------------------ tabbladen */
 .tabs{
@@ -525,6 +556,24 @@ input{font:inherit}
 
     <div id="nieuwrit-melding" class="melding" hidden></div>
 
+    <!-- Plak hier het appje of de mail van de klant. Wat eruit komt is een
+         voorstel: alles blijft aanpasbaar en er wordt niets aangemaakt tot je
+         onderaan op Rit aanmaken drukt. Het vak verbergt zichzelf wanneer de
+         tussenlaag geen sleutel heeft. -->
+    <div class="plakvak" id="plakvak" hidden>
+      <label class="veld" style="margin:0">
+        <span>Bericht van de klant</span>
+        <textarea id="plak-tekst" rows="3" placeholder="Plak hier het appje of de mail. Bijvoorbeeld: kun je morgenvroeg een pallet van Rotterdam naar Venlo halen?"></textarea>
+      </label>
+      <div class="plakvak__rij">
+        <button class="knop knop--rand" id="plak-lees" type="button">Vul het formulier in</button>
+        <button class="knop knop--stil spreek" id="plak-spreek" type="button" hidden
+                data-doel="plak-tekst" aria-label="Inspreken">Inspreken</button>
+      </div>
+      <div id="plak-melding" class="melding" hidden></div>
+      <ul id="plak-vragen" class="plakvak__vragen" hidden></ul>
+    </div>
+
     <div class="knoppen knoppen--twee">
       <label class="veld" style="margin:0">
         <span>Datum</span>
@@ -577,6 +626,9 @@ input{font:inherit}
       <span>Opmerking</span>
       <input type="text" id="nieuwrit-opmerking" placeholder="Wat er vervoerd wordt, of iets om te onthouden">
     </label>
+    <button class="knop knop--stil spreek" type="button" data-doel="nieuwrit-opmerking" hidden>
+      Opmerking inspreken
+    </button>
 
     <button class="knop knop--groen" id="nieuwrit-maak" type="button" style="width:100%">
       Rit aanmaken

@@ -239,6 +239,10 @@
   }
 
   function toon(data) {
+    /* Het plakvak alleen laten zien als de tussenlaag een sleutel heeft. */
+    var vak = el('plakvak');
+    if (vak) { vak.hidden = !(data && data.kan && data.kan.leesbericht); }
+
     ritten = data.ritten || [];
     /* Bij een dagwissel komen aanvragen en opdrachten mee; bij een losse
        rittenoproep niet. Dan houden we wat we al hadden. */
@@ -959,6 +963,140 @@
     el('ritdoek').hidden = true;
     document.body.style.overflow = '';
   }
+
+  /* ------------------------------------------- een appje omzetten in een rit
+
+     Je plakt het bericht van de klant in het vak, de tussenlaag haalt eruit
+     wat erin staat, en de velden vullen zich. Er wordt niets aangemaakt: dit
+     is een voorstel dat je nakijkt en aanpast voordat je op Rit aanmaken
+     drukt. Wat het model niet zeker wist komt eronder als lijstje te staan,
+     want dat is precies wat jij even moet nalopen.
+
+     Staat er geen sleutel op de tussenlaag, dan blijft het vak verborgen. Een
+     knop die niets doet is erger dan geen knop. */
+  function meldPlak(tekst, isFout) {
+    var m = el('plak-melding');
+    m.textContent = tekst || '';
+    m.hidden = !tekst;
+    /* Een melding ziet er hier standaard uit als een waarschuwing; ging het
+       goed, dan hoort hij groen te zijn en niet rood. */
+    m.classList.toggle('melding--goed', !!tekst && !isFout);
+  }
+
+  function vulUitVoorstel(v) {
+    /* Alleen invullen wat leeg is; wat jij al hebt getypt blijft staan. */
+    function zetAls(id, waarde) {
+      var veld = el(id);
+      if (veld && waarde && !veld.value) { veld.value = waarde; }
+    }
+    zetAls('nieuwrit-datum', v.datum);
+    zetAls('nieuwrit-tijd', v.tijd);
+    zetAls('nieuwrit-ophaal', v.ophaal);
+    zetAls('nieuwrit-aflever', v.aflever);
+    zetAls('nieuwrit-opmerking', v.opmerking);
+    var soort = el('nieuwrit-type');
+    if (soort && v.type && !soort.value) { soort.value = v.type; }
+
+    /* De klantnaam is een keuzelijst; alleen kiezen als hij er precies in staat. */
+    var lijst = el('nieuwrit-klant');
+    if (lijst && v.klant && !lijst.value) {
+      var zoek = String(v.klant).trim().toLowerCase();
+      for (var i = 0; i < lijst.options.length; i++) {
+        if (lijst.options[i].textContent.trim().toLowerCase() === zoek) {
+          lijst.selectedIndex = i;
+          break;
+        }
+      }
+    }
+
+    var vragen = el('plak-vragen');
+    vragen.innerHTML = '';
+    if (v.onduidelijk && v.onduidelijk.length) {
+      v.onduidelijk.forEach(function (t) {
+        var li = document.createElement('li');
+        li.textContent = t;
+        vragen.appendChild(li);
+      });
+      vragen.hidden = false;
+    } else {
+      vragen.hidden = true;
+    }
+  }
+
+  el('plak-lees').addEventListener('click', function () {
+    var knop = el('plak-lees');
+    var tekst = el('plak-tekst').value.trim();
+    if (tekst.length < 10) {
+      meldPlak('Plak eerst het bericht van de klant erin.', true);
+      return;
+    }
+    var oud = knop.textContent;
+    knop.disabled = true;
+    knop.textContent = 'Bezig met lezen…';
+    meldPlak('');
+    verstuur('leesbericht', { tekst: tekst })
+      .then(function (data) {
+        vulUitVoorstel(data.voorstel || {});
+        meldPlak('Ingevuld. Kijk het na en pas aan waar nodig.');
+      })
+      .catch(function (fout) {
+        meldPlak(fout.message, true);
+      })
+      .then(function () {
+        knop.disabled = false;
+        knop.textContent = oud;
+      });
+  });
+
+  /* ------------------------------------------------------------- inspreken
+
+     De ingebouwde spraakherkenning van de browser. Kost niets en er gaat geen
+     sleutel aan te pas. Kan je browser het niet, dan blijft de knop weg — op
+     een iPhone staat er trouwens ook een microfoontje op het toetsenbord zelf,
+     dat werkt in elk veld op dit scherm. */
+  var Spraak = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  function koppelSpreekknop(knop) {
+    if (!Spraak) { return; }
+    knop.hidden = false;
+    var luisteraar = null;
+    knop.addEventListener('click', function () {
+      var doel = el(knop.getAttribute('data-doel'));
+      if (!doel) { return; }
+      if (luisteraar) { luisteraar.stop(); return; }
+
+      luisteraar = new Spraak();
+      luisteraar.lang = 'nl-NL';
+      luisteraar.interimResults = false;
+      luisteraar.continuous = false;
+      var oudeTekst = knop.textContent;
+      knop.setAttribute('data-luistert', '');
+      knop.textContent = 'Klaar';
+
+      luisteraar.onresult = function (e) {
+        var gezegd = '';
+        for (var i = 0; i < e.results.length; i++) { gezegd += e.results[i][0].transcript; }
+        gezegd = gezegd.trim();
+        if (!gezegd) { return; }
+        /* Achter wat er al staat plakken, niet overschrijven. */
+        doel.value = doel.value ? (doel.value.replace(/\s+$/, '') + ' ' + gezegd) : gezegd;
+        doel.dispatchEvent(new Event('input', { bubbles: true }));
+      };
+      luisteraar.onerror = function (e) {
+        if (e.error === 'not-allowed') {
+          meldPlak('De microfoon staat uit voor deze pagina. Zet hem aan in de instellingen van je browser.', true);
+        }
+      };
+      luisteraar.onend = function () {
+        knop.removeAttribute('data-luistert');
+        knop.textContent = oudeTekst;
+        luisteraar = null;
+      };
+      luisteraar.start();
+    });
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('.spreek'), koppelSpreekknop);
 
   el('nieuwrit-terug').addEventListener('click', sluitNieuweRit);
 

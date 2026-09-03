@@ -54,6 +54,13 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: npx --yes wrangler@4 deploy
 
+      # Het chauffeursportaal heeft een afhankelijkheid: de Anthropic-SDK, voor
+      # het lezen van een appje van een klant. Wrangler bundelt hem mee, maar
+      # hij moet er eerst staan. De aanvraag-Worker hierboven heeft er geen.
+      - name: Afhankelijkheden van het chauffeursportaal
+        working-directory: worker-portaal
+        run: npm install --no-audit --no-fund
+
       - name: Chauffeursportaal
         working-directory: worker-portaal
         env:
