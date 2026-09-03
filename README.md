@@ -267,6 +267,22 @@ getekend moet worden. In Airtable springt het veld `Afleverbewijs` dan op
 Het portaal werkt niet offline. Val je onderweg uit bereik, dan zegt het dat er
 niets verstuurd is en probeer je het opnieuw zodra je weer bereik hebt.
 
+### Een rit buiten de website om
+
+Werk dat telefonisch binnenkomt heeft geen aanvraag en geen opdracht. Onder
+*Planning* staat daarom bovenaan **+ Rit buiten de website om**: datum, tijd,
+soort rit, de twee adressen, kilometers, stops, tijdvak en eventueel meteen de
+klant. Daarna loopt hij precies dezelfde weg als elke andere rit — dezelfde
+prijsformule, dezelfde bevestigingsmail aan de klant, en dezelfde factuur zodra
+je hem op *Uitgevoerd* zet.
+
+De klant mag je overslaan; dan staat de rit met een waarschuwing in je lijst en
+koppel je hem later op de ritkaart. Zonder klant komt er geen factuur uit.
+
+De vier soorten rit staan als vaste lijst in de Worker. Een verzonnen naam zou
+in Airtable een nieuwe keuze aanmaken die stilletjes geen tarief heeft —
+dezelfde reden waarom het tijdvak een keuzelijst is en geen tekstveld.
+
 ## Het klantportaal
 
 `/klant/` is de kant die je klanten zien. Elke klant krijgt een eigen code en

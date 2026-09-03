@@ -175,3 +175,7 @@ lopen kloppend van calculator naar Airtable naar factuur (inclusief stops,
 tijdvak, wachttijd en doorberekende kosten), de klant kan inloggen en zijn eigen
 zendingen en facturen zien zonder dat jouw kosten of marge meegaan, de
 handtekening wordt gezet én getoond, en de factuur is op een telefoon leesbaar.
+
+Sinds kort ook: een rit die telefonisch binnenkomt maak je zelf aan in het
+portaal (*Planning* → *+ Rit buiten de website om*), en ging er iets mis dan geef
+je korting op de ritkaart, die als eigen regel met reden op de factuur komt.

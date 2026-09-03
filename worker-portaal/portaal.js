@@ -242,6 +242,7 @@ export default {
         case 'accepteer':    return await accepteerAanvraag(env, body, origin);
         case 'afwijzen':     return await wijsAanvraagAf(env, body, origin);
         case 'planrit':      return await planRit(env, body, origin);
+        case 'nieuwerit':    return await nieuweRit(env, body, origin);
         case 'ritdatum':     return await zetRitdatum(env, body, origin);
         case 'ritkm':        return await zetRitKm(env, body, origin);
         case 'ritkosten':    return await zetRitKosten(env, body, origin);
@@ -454,6 +455,83 @@ async function planRit(env, body, origin) {
   }
 
   return antwoord(200, { ok: true, rit, opdracht: opdrachtNa }, origin, true);
+}
+
+/* Een rit die niet uit de website komt. Iemand belt, je rijdt, en het moet
+   toch gefactureerd worden. Er zit dan geen aanvraag en geen opdracht onder;
+   de rit staat op zichzelf en gaat verder precies dezelfde weg als alle andere:
+   dezelfde prijsformule, dezelfde bevestiging aan de klant, dezelfde factuur
+   zodra hij op Uitgevoerd gaat.
+
+   De klant koppelen mag hier meteen, want zonder klant kun je niet factureren.
+   Het hoeft niet — dat kan later met Klant koppelen — maar dan staat de rit wel
+   met een waarschuwing in je portaal. */
+async function nieuweRit(env, body, origin) {
+  const ritdatum = datum(body.datum);
+  if (!ritdatum) {
+    return antwoord(400, { fout: 'Geef een ritdatum als JJJJ-MM-DD' }, origin, true);
+  }
+  const soort = ritSoort(body.type);
+  if (!soort) {
+    return antwoord(400, { fout: 'Kies wat voor rit dit is' }, origin, true);
+  }
+  const ophaal = adresTekst(body.ophaal);
+  const aflever = adresTekst(body.aflever);
+  if (!ophaal || !aflever) {
+    return antwoord(400, {
+      fout: 'Vul in waar je ophaalt en waar je bezorgt'
+    }, origin, true);
+  }
+
+  const velden = {
+    [R.rit]:     (adresKort(ophaal) + ' → ' + adresKort(aflever)) + ' — ' + nlDatum(ritdatum),
+    [R.datum]:   ritdatum,
+    [R.status]:  'Gepland',
+    [R.type]:    soort,
+    [R.ophaal]:  ophaal,
+    [R.aflever]: aflever
+  };
+
+  const klantId = recordId(body.klantId);
+  if (klantId) { velden[R.klantlink] = [klantId]; }
+
+  const km = kilometers(body.km);
+  if (km !== null) { velden[R.km] = km; }
+  const stops = heelGetal(body.stops);
+  if (stops !== null) { velden[R.stops] = stops; }
+  const tijdvak = tijdvakUit(body.tijdvak);
+  if (tijdvak) { velden[R.tijdvak] = tijdvak; }
+  const tijd = klokTijd(body.tijd);
+  if (tijd) { velden[R.tijd] = tijd; }
+  const opmerking = String(body.opmerking || '').trim().slice(0, 2000);
+  if (opmerking) { velden[R.opmerking] = opmerking; }
+
+  const rit = naarRit(await maak(env, env.AIRTABLE_RITTEN, velden));
+  return antwoord(200, { ok: true, rit }, origin, true);
+}
+
+/* De vier diensten zoals ze in Airtable en op de website heten. Een verzonnen
+   naam zou in Airtable een nieuwe keuze aanmaken die stilletjes geen tarief
+   heeft — dezelfde reden waarom het tijdvak een vaste lijst is. */
+const RITSOORTEN = [
+  'Standaard transport',
+  'Spoedtransport',
+  'Directe spoed',
+  'Internationaal transport'
+];
+function ritSoort(w) {
+  const naam = String(w || '').trim();
+  return RITSOORTEN.includes(naam) ? naam : null;
+}
+
+function adresTekst(w) {
+  return String(w || '').trim().slice(0, 300);
+}
+
+/* Voor de naam van de rit is de hele straat te lang; de eerste regel volstaat
+   om hem in een lijst terug te vinden. */
+function adresKort(adres) {
+  return String(adres).split(',')[0].trim().slice(0, 60);
 }
 
 /* Een geplande rit verzetten. Hoort bij de planning: een klant belt, het

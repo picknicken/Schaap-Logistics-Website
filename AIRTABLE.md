@@ -325,6 +325,13 @@ klant, de opdracht en de bedragen uit de rit en de factuurdatum op vandaag. De
 status blijft *Concept*, zodat je hem eerst nakijkt. Ook deze start alleen als er
 nog geen factuur aan de rit hangt.
 
+**Een rit zonder aanvraag.** Belt iemand je op, dan maak je de rit rechtstreeks
+aan in het chauffeursportaal onder *Planning* → **+ Rit buiten de website om**.
+Er zit dan geen aanvraag en geen opdracht onder, maar verder verandert er niets:
+dezelfde prijsformule, dezelfde bevestiging aan de klant, en dezelfde
+conceptfactuur zodra je hem op *Uitgevoerd* zet. Dat is de manier om handmatig
+te factureren.
+
 **De loze rit.** Zegt een klant af terwijl je al onderweg bent, dan zet je de rit
 op *Geannuleerd*, pas je `Kilometers` aan naar wat je werkelijk gereden hebt en
 vink je **Annulering doorbelasten** aan. De automatisering **Geannuleerde rit

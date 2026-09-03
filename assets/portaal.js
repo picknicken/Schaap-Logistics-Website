@@ -401,6 +401,15 @@
   /* Hetzelfde, maar met een keuzelijst. De drie tijdvakken staan hier bewust
      letterlijk: het zijn dezelfde namen als in Airtable en op de website, en
      aan elk hangt een bedrag. */
+  /* Dezelfde vier namen als in Airtable en op de website. Aan elk hangt een
+     tarief; een verzonnen naam levert een rit op zonder prijs. */
+  var RITSOORTEN = [
+    'Standaard transport',
+    'Spoedtransport',
+    'Directe spoed',
+    'Internationaal transport'
+  ];
+
   var TIJDVAKKEN = [
     ['Overdag', 'Overdag — geen toeslag'],
     ['Avondrit (18:00-23:00)', 'Avond 18:00-23:00 — + € 15'],
@@ -880,6 +889,14 @@
     var lijst = el('lijst-planning');
     lijst.innerHTML = '';
 
+    /* Bovenaan, niet onderaan: werk dat telefonisch binnenkomt is meestal
+       spoed, en dan wil je niet eerst langs een lijst met opdrachten. */
+    var nieuw = maak('button', 'knop knop--rand', '+ Rit buiten de website om');
+    nieuw.type = 'button';
+    nieuw.style.width = '100%';
+    nieuw.addEventListener('click', openNieuweRit);
+    lijst.appendChild(nieuw);
+
     if (!opdrachten.length) {
       lijst.appendChild(maak('div', 'leeg',
         'Niets in te plannen. Elke opdracht heeft een rit.'));
@@ -887,6 +904,103 @@
     }
     opdrachten.forEach(function (o) { lijst.appendChild(tekenOpdracht(o)); });
   }
+
+  /* ------------------------------------------- rit buiten de website om */
+
+  function meldNieuweRit(tekst) {
+    var m = el('nieuwrit-melding');
+    m.textContent = tekst || '';
+    m.hidden = !tekst;
+  }
+
+  function openNieuweRit() {
+    meldNieuweRit('');
+
+    var soort = el('nieuwrit-type');
+    soort.innerHTML = '';
+    RITSOORTEN.forEach(function (naam) {
+      var o = maak('option', '', naam);
+      o.value = naam;
+      soort.appendChild(o);
+    });
+    soort.value = 'Spoedtransport';
+
+    var tv = el('nieuwrit-tijdvak');
+    tv.innerHTML = '';
+    TIJDVAKKEN.forEach(function (paar) {
+      var o = maak('option', '', paar[1]);
+      o.value = paar[0];
+      tv.appendChild(o);
+    });
+
+    var kk = el('nieuwrit-klant');
+    kk.innerHTML = '';
+    var leeg = maak('option', '', klanten.length ? 'Nog geen klant kiezen' : 'Nog geen klanten');
+    leeg.value = '';
+    kk.appendChild(leeg);
+    klanten.forEach(function (k) {
+      var o = maak('option', '', k.naam || '(zonder naam)');
+      o.value = k.id;
+      kk.appendChild(o);
+    });
+
+    el('nieuwrit-datum').value = dag;
+    ['nieuwrit-tijd', 'nieuwrit-ophaal', 'nieuwrit-aflever', 'nieuwrit-km',
+     'nieuwrit-stops', 'nieuwrit-opmerking'].forEach(function (id) {
+      el(id).value = '';
+    });
+
+    el('ritdoek').hidden = false;
+    document.body.style.overflow = 'hidden';
+    el('nieuwrit-ophaal').focus();
+  }
+
+  function sluitNieuweRit() {
+    el('ritdoek').hidden = true;
+    document.body.style.overflow = '';
+  }
+
+  el('nieuwrit-terug').addEventListener('click', sluitNieuweRit);
+
+  el('nieuwrit-maak').addEventListener('click', function () {
+    var knop = el('nieuwrit-maak');
+    /* Hier controleren zodat je geen ronde langs de server hoeft voor iets wat
+       je op het scherm al ziet. De Worker kijkt het daarna nog eens na. */
+    if (!el('nieuwrit-datum').value) {
+      meldNieuweRit('Vul een datum in.');
+      return;
+    }
+    if (!el('nieuwrit-ophaal').value.trim() || !el('nieuwrit-aflever').value.trim()) {
+      meldNieuweRit('Vul in waar je ophaalt en waar je bezorgt.');
+      return;
+    }
+    meldNieuweRit('');
+    bezig(knop, 'Aanmaken…', function (klaar) {
+      verstuur('nieuwerit', {
+        datum: el('nieuwrit-datum').value,
+        tijd: el('nieuwrit-tijd').value,
+        type: el('nieuwrit-type').value,
+        ophaal: el('nieuwrit-ophaal').value,
+        aflever: el('nieuwrit-aflever').value,
+        km: el('nieuwrit-km').value,
+        stops: el('nieuwrit-stops').value,
+        tijdvak: el('nieuwrit-tijdvak').value,
+        klantId: el('nieuwrit-klant').value,
+        opmerking: el('nieuwrit-opmerking').value
+      }).then(function (data) {
+        sluitNieuweRit();
+        klaar(true);
+        /* Naar de dag van de nieuwe rit springen, anders maak je iets aan dat
+           je daarna nergens ziet staan. */
+        dag = (data.rit && data.rit.datum) || dag;
+        kiesTab('ritten');
+        haalDag();
+      }).catch(function (fout) {
+        meldNieuweRit(fout.message);
+        klaar(false);
+      });
+    });
+  });
 
   /* Wat de rit jou kostte. Ingeklapt, want het hoeft niet in de weg te staan
      tijdens het rijden — maar wel bij de hand als je met de bon in je hand

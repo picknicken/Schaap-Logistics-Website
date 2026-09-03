@@ -457,6 +457,79 @@ input{font:inherit}
   </div>
 </div>
 
+<!-- ======================== nieuwe rit blad ======================== -->
+<!-- Voor een rit die niet via de website binnenkwam: iemand belt, je rijdt.
+     Verder loopt hij dezelfde weg als elke andere rit. -->
+<div class="doek" id="ritdoek" hidden>
+  <div class="blad" role="dialog" aria-modal="true" aria-labelledby="nieuwrit-titel">
+    <div>
+      <h2 id="nieuwrit-titel">Rit buiten de website om</h2>
+      <p class="blad__sub">Voor werk dat telefonisch binnenkomt. De prijs, de
+        bevestiging aan de klant en de factuur lopen daarna vanzelf.</p>
+    </div>
+
+    <div id="nieuwrit-melding" class="melding" hidden></div>
+
+    <div class="knoppen knoppen--twee">
+      <label class="veld" style="margin:0">
+        <span>Datum</span>
+        <input type="date" id="nieuwrit-datum">
+      </label>
+      <label class="veld" style="margin:0">
+        <span>Hoe laat</span>
+        <input type="time" id="nieuwrit-tijd">
+      </label>
+    </div>
+
+    <label class="veld" style="margin:0">
+      <span>Soort rit</span>
+      <select id="nieuwrit-type"></select>
+    </label>
+
+    <label class="veld" style="margin:0">
+      <span>Ophalen bij</span>
+      <input type="text" id="nieuwrit-ophaal" placeholder="Straat 1, 1234 AB Plaats">
+    </label>
+    <label class="veld" style="margin:0">
+      <span>Bezorgen bij</span>
+      <input type="text" id="nieuwrit-aflever" placeholder="Straat 2, 5678 CD Plaats">
+    </label>
+
+    <div class="knoppen knoppen--twee">
+      <label class="veld" style="margin:0">
+        <span>Kilometers</span>
+        <input type="number" id="nieuwrit-km" inputmode="decimal" min="0" step="0.1" placeholder="0">
+      </label>
+      <label class="veld" style="margin:0">
+        <span>Extra stops</span>
+        <input type="number" id="nieuwrit-stops" inputmode="numeric" min="0" step="1" placeholder="0">
+      </label>
+    </div>
+
+    <label class="veld" style="margin:0">
+      <span>Tijdvak</span>
+      <select id="nieuwrit-tijdvak"></select>
+    </label>
+
+    <label class="veld" style="margin:0">
+      <span>Klant</span>
+      <select id="nieuwrit-klant"></select>
+      <small>Zonder klant kun je later geen factuur versturen. Je kunt hem ook
+        achteraf koppelen op de ritkaart.</small>
+    </label>
+
+    <label class="veld" style="margin:0">
+      <span>Opmerking</span>
+      <input type="text" id="nieuwrit-opmerking" placeholder="Wat er vervoerd wordt, of iets om te onthouden">
+    </label>
+
+    <button class="knop knop--groen" id="nieuwrit-maak" type="button" style="width:100%">
+      Rit aanmaken
+    </button>
+    <button class="knop knop--stil" id="nieuwrit-terug" type="button">Annuleren</button>
+  </div>
+</div>
+
 <!-- =========================== tekenblad =========================== -->
 <div class="doek" id="doek" hidden>
   <div class="blad" role="dialog" aria-modal="true" aria-labelledby="blad-titel">
