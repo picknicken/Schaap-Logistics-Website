@@ -209,7 +209,35 @@ tabel `Ritten` (waar je facturen op gebaseerd worden). Wijzig je een tarief, pas
 het dan op alle drie aan — anders factureer je iets anders dan je op je site belooft.
 
 De tabel `Tarieven` is een naslagoverzicht, geen bron: daar iets wijzigen verandert
-niets aan je facturen.
+niets aan je facturen. Er hoort precies één regel per dienst in te staan. Stonden
+er ooit twee regels *Standaard – Normaal* en *Standaard – Spoed* in — restanten
+van een eerdere naamgeving, met een spoedtarief van €50 in plaats van €75 — dan
+zijn die verwijderd; bij internationaal transport hoort geen kilometerprijs te
+staan, want dat gaat op offerte.
+
+#### Een factuur terugdraaien: de creditnota
+
+Een factuur die de deur uit is, mag je niet meer aanpassen — ook niet als het
+bedrag fout was. Corrigeren doe je met een creditnota, en daarna eventueel een
+nieuwe factuur.
+
+Vul op de factuur eerst `Creditreden` in (die tekst leest de klant) en zet dan
+het vinkje **Crediteren** aan. De automatisering **Creditfactuur maken**
+(`wflTZBUjJxTmM8ubq`) doet de rest: er komt een creditnota bij te staan met een
+eigen factuurnummer, hetzelfde bedrag maar negatief, en een verwijzing naar het
+nummer van de factuur die wordt teruggedraaid. Die verwijzing is een wettelijke
+eis, geen opmaakkeuze. De oorspronkelijke factuur gaat op *Gecrediteerd*, staat
+daarmee op nul open, en het vinkje gaat vanzelf weer uit.
+
+De creditnota blijft op *Concept* staan zodat je hem nakijkt. Versturen gaat
+daarna net als bij een gewone factuur, met `Factuur versturen` — de mail past
+zichzelf aan: geen betaalverzoek, maar de mededeling dat het bedrag wordt
+verrekend of teruggestort.
+
+Drie velden op `Facturen` heten *Tegenboeking …*. Die staan er alleen omdat de
+taal waarin automatiseringen geschreven zijn zelf niet kan rekenen: ze zetten er
+een minteken voor, zodat de automatisering het negatieve bedrag kan overnemen.
+Kijk er verder niet naar.
 
 #### Korting geven
 

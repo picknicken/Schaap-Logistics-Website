@@ -104,7 +104,21 @@ header{
 }
 .nav__links a.nav__login::before{content:none}
 .nav__links a.nav__login:hover{background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.4)}
-.nav__toggle{display:none;background:none;border:0;color:#fff;padding:8px;cursor:pointer}
+/* De knop die het menu opent. Een rijtje streepjes zonder woord erbij is voor
+   veel mensen een raadsel, dus staat het woord Menu ernaast en wisselt het icoon
+   naar een kruisje zodra het openstaat. */
+.nav__toggle{
+  display:none;align-items:center;gap:7px;cursor:pointer;
+  background:rgba(255,255,255,.06);color:#fff;
+  border:1px solid rgba(255,255,255,.22);border-radius:10px;
+  padding:8px 12px;font:inherit;font-size:.85rem;font-weight:600;letter-spacing:.01em;
+}
+.nav__toggle:hover{background:rgba(255,255,255,.12)}
+.nav__toggle:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.nav__toggle-dicht{display:none}
+.nav__toggle[aria-expanded="true"]{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.4)}
+.nav__toggle[aria-expanded="true"] .nav__toggle-open{display:none}
+.nav__toggle[aria-expanded="true"] .nav__toggle-dicht{display:block}
 
 /* ---------- hero ---------- */
 .hero{
@@ -373,31 +387,78 @@ footer a:hover{color:var(--amber)}
   .brand{margin-right:0}
   .nav__links{display:none}
   .nav__links.is-open{
-    display:flex;position:absolute;top:72px;left:0;right:0;flex-direction:column;gap:2px;
-    background:var(--navy);border-bottom:1px solid var(--line-dark);
-    padding:10px 20px 18px;box-shadow:0 14px 30px rgba(0,0,0,.35);
+    display:flex;position:absolute;top:72px;left:0;right:0;flex-direction:column;gap:0;
+    background:var(--navy);border-top:1px solid rgba(255,255,255,.10);
+    border-bottom:1px solid var(--line-dark);
+    padding:6px 16px 16px;box-shadow:0 16px 34px rgba(0,0,0,.42);
   }
   /* Blok, niet inline: anders loopt de scheidingslijn maar tot halverwege de
      tekst en schuift de knop over het item erboven. */
   .nav__links.is-open li{display:block;width:100%}
+  /* Een streep tussen de items. Zonder die lijnen zweven de woorden los in een
+     donker vlak en zie je niet dat het een lijst is om uit te kiezen. */
+  .nav__links.is-open li + li a{border-top:1px solid rgba(255,255,255,.09)}
   .nav__links.is-open a{
-    display:block;width:100%;padding:13px 12px;font-size:.95rem;border-radius:9px;
+    /* Helderder dan in de balk: op een klein scherm met zonlicht erop was het
+       grijs van de bovenbalk nauwelijks te lezen. */
+    display:flex;align-items:center;width:100%;color:#e9eff8;
+    padding:15px 8px;font-size:1rem;border-radius:0;
   }
-  .nav__links.is-open a[aria-current="page"]{background:rgba(255,255,255,.10)}
+  /* Een pijltje rechts, zodat een regel leest als "hier ga je heen" en niet
+     als een kopje. */
+  .nav__links.is-open a::after{
+    content:"";margin-left:auto;width:7px;height:7px;
+    border-right:2px solid rgba(255,255,255,.35);
+    border-bottom:2px solid rgba(255,255,255,.35);
+    transform:rotate(-45deg);
+  }
+  /* De pagina waar je nu bent: witte tekst, een amberkleurige balk ervoor en
+     geen pijltje, want daar hoef je niet heen. */
+  .nav__links.is-open a[aria-current="page"]{
+    background:rgba(255,255,255,.07);color:#fff;
+    box-shadow:inset 3px 0 0 var(--amber);border-radius:0 8px 8px 0;
+  }
+  .nav__links.is-open a[aria-current="page"]::before{display:none}
+  .nav__links.is-open a[aria-current="page"]::after{content:"Je bent hier";
+    border:0;transform:none;width:auto;height:auto;
+    font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--amber);
+  }
   .nav__links.is-open a.nav__login{
-    margin-top:10px;text-align:center;font-size:.95rem;
-    border:1px solid rgba(255,255,255,.22);
+    margin-top:14px;justify-content:center;font-size:1rem;font-weight:700;
+    background:var(--amber);color:var(--navy);border:0;border-radius:11px;
+    padding:15px 12px;
   }
-  .nav__toggle{display:block;order:3}
+  .nav__links.is-open a.nav__login::after{display:none}
+  .nav__toggle{display:flex;order:3}
 }
 @media (max-width:620px){
   .grid--3,.grid--4,.grid--2,.field-row{grid-template-columns:1fr}
   .footer__grid{grid-template-columns:1fr}
   .brand__sub{display:none}
   .nav__phone span{display:none}
+  /* De bovenbalk is hier krap: logo, naam, telefoon en de menuknop met het
+     woord erbij. Zonder deze regels breekt de bedrijfsnaam over twee regels en
+     wordt de balk twee keer zo hoog. */
+  header .brand__name{white-space:nowrap;font-size:.95rem}
+  header .brand{gap:8px}
+  header .brand__mark{height:28px}
+  .nav__toggle{padding:8px 10px;gap:5px}
   .hero{padding:56px 0 52px}
   .calc{padding:22px}
   .step{grid-template-columns:44px 1fr;gap:14px}
+}
+
+/* Een heel smalle telefoon (320px, een oude SE). Logo, naam, telefoon en de
+   menuknop met het woord erbij passen er net niet naast elkaar; met wat minder
+   marge en een iets kleinere naam wel, en dan hoeft er niets weg. */
+@media (max-width:360px){
+  header .wrap{padding-left:12px;padding-right:12px}
+  header .brand__name{font-size:.88rem}
+  header .brand{gap:7px}
+  header .nav{gap:8px}
+  .nav__phone{padding-left:10px;padding-right:10px}
+  .nav__toggle{padding:8px;gap:4px;font-size:.8rem}
 }
 
 @media (prefers-reduced-motion:reduce){

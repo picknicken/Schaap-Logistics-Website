@@ -177,5 +177,11 @@ zendingen en facturen zien zonder dat jouw kosten of marge meegaan, de
 handtekening wordt gezet én getoond, en de factuur is op een telefoon leesbaar.
 
 Sinds kort ook: een rit die telefonisch binnenkomt maak je zelf aan in het
-portaal (*Planning* → *+ Rit buiten de website om*), en ging er iets mis dan geef
-je korting op de ritkaart, die als eigen regel met reden op de factuur komt.
+portaal (*Planning* → *+ Rit buiten de website om*), ging er iets mis dan geef je
+korting op de ritkaart die als eigen regel met reden op de factuur komt, en een
+verstuurde factuur draai je terug met een creditnota (vinkje *Crediteren*).
+
+Het menu op een telefoon draagt nu het woord *Menu*, wordt *Sluiten* met een
+kruisje, sluit ook met Escape of door ernaast te tikken, en zet de pagina waar je
+bent duidelijk apart. In de tabel `Tarieven` stonden twee restanten van een
+eerdere naamgeving met een fout spoedtarief; die zijn weg.

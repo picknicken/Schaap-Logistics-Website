@@ -196,7 +196,7 @@ tbody td.af{color:#1d7a4c}
 
   <header class="kop">
     <div>
-      <h1>Factuur</h1>
+      <h1 id="v-titel">Factuur</h1>
       <div class="afzender" style="text-align:left;margin-top:14px">
         <b>Schaap Logistics</b>
         <!-- PLACEHOLDER bedrijfsgegevens -->
@@ -210,7 +210,7 @@ tbody td.af{color:#1d7a4c}
 
   <section class="meta">
     <dl>
-      <dt>Factuurnr.</dt><dd id="v-nr">—</dd>
+      <dt id="v-nrlabel">Factuurnr.</dt><dd id="v-nr">—</dd>
       <dt>Adres</dt><dd id="v-eigenadres">[Adres]</dd>
       <dt>Woonplaats</dt><dd id="v-eigenplaats">[Postcode + Plaats]</dd>
       <dt>Telefoon</dt><dd id="v-eigentel">[Telefoon]</dd>
@@ -223,6 +223,7 @@ tbody td.af{color:#1d7a4c}
       <dt>Uw referentie</dt><dd id="v-referentie">—</dd>
       <dt>Ritdatum</dt><dd id="v-ritdatum">—</dd>
       <dt>Opdracht</dt><dd id="v-opdracht">—</dd>
+      <dt id="v-creditlabel" hidden>Crediteert</dt><dd id="v-creditvan" hidden>—</dd>
     </dl>
   </section>
 
@@ -268,9 +269,14 @@ tbody td.af{color:#1d7a4c}
   </div>
 
   <section class="betaling">
-    <p>
+    <p id="v-betaalzin">
       Gelieve het totaalbedrag binnen <b id="v-termijn">14 dagen</b> na factuurdatum
       over te maken onder vermelding van het factuurnummer.
+    </p>
+    <!-- Bij een creditnota vraag je niets; je geeft iets terug. -->
+    <p id="v-creditzin" hidden>
+      Dit bedrag krijgt u van ons terug. Wij verrekenen het met een openstaande
+      factuur, of maken het aan u over als er niets meer openstaat.
     </p>
     <p>
       <b>Betaalgegevens</b>
@@ -370,6 +376,30 @@ tbody td.af{color:#1d7a4c}
   var termijn = lees('termijn', '14');
   zet('v-termijn', termijn + (termijn === '1' ? ' dag' : ' dagen'));
 
+  /* ---------- creditnota ----------
+
+     Een factuur die de deur uit is mag je niet meer aanpassen; die corrigeer je
+     met een creditnota. Dat is hetzelfde vel papier, maar met een eigen nummer,
+     negatieve bedragen, een verwijzing naar de factuur die wordt teruggedraaid,
+     en geen verzoek om te betalen — je geeft juist iets terug. */
+  var credit       = lees('credit', '') === '1';
+  var creditVan    = lees('creditvan', '');
+  var creditReden  = lees('creditreden', '');
+  var creditBedrag = getal('creditbedrag', 0);
+
+  if (credit) {
+    zet('v-titel', 'Creditfactuur');
+    zet('v-nrlabel', 'Creditnr.');
+    zet('v-creditvan', creditVan || '—');
+    document.getElementById('v-creditlabel').hidden = false;
+    document.getElementById('v-creditvan').hidden = false;
+    document.getElementById('v-betaalzin').hidden = true;
+    document.getElementById('v-creditzin').hidden = false;
+    document.title = 'Creditfactuur — Schaap Logistics';
+    zet('v-route', '—');
+    zet('v-omschrijving', 'Creditering van factuur ' + (creditVan || ''));
+  }
+
   /* ---------- de regels, in dezelfde volgorde als de mal ----------
 
      De ritprijs is starttarief plus kilometers. Ligt die onder het
@@ -457,6 +487,22 @@ tbody td.af{color:#1d7a4c}
       bedrag: -korting,
       min: true
     });
+  }
+
+  /* Bij een creditnota vervalt alles hierboven: er is geen rit om regels van te
+     maken, alleen een bedrag dat teruggaat. Wat er precies gecrediteerd wordt
+     staat in de reden, en het factuurnummer waar het bij hoort staat erbij —
+     dat laatste is geen keuze maar een eis: een creditnota zonder verwijzing
+     naar de oorspronkelijke factuur is niet geldig. */
+  if (credit) {
+    regels = [{
+      oms: 'Creditering van factuur ' + (creditVan || '(nummer onbekend)') +
+           (creditReden ? ' — ' + creditReden : ''),
+      aantal: '1 stuk',
+      prijs: -creditBedrag,
+      bedrag: -creditBedrag,
+      min: true
+    }];
   }
 
   var lijf = document.getElementById('regels');

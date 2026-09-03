@@ -188,16 +188,33 @@
   var links  = document.getElementById('navLinks');
 
   if (toggle && links) {
-    toggle.addEventListener('click', function () {
-      var open = links.classList.toggle('is-open');
+    function zetMenu(open) {
+      links.classList.toggle('is-open', open);
       toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-      toggle.setAttribute('aria-label', open ? 'Menu sluiten' : 'Menu openen');
+      var woord = toggle.querySelector('.nav__toggle-tekst');
+      if (woord) { woord.textContent = open ? 'Sluiten' : 'Menu'; }
+    }
+
+    toggle.addEventListener('click', function () {
+      zetMenu(!links.classList.contains('is-open'));
     });
 
     links.addEventListener('click', function (e) {
-      if (e.target.tagName === 'A') {
-        links.classList.remove('is-open');
-        toggle.setAttribute('aria-expanded', 'false');
+      if (e.target.closest('a')) { zetMenu(false); }
+    });
+
+    /* Buiten het menu tikken sluit het ook. Zonder dit moet je terug naar
+       precies die ene knop, en dat is op een telefoon net te veel gedoe. */
+    document.addEventListener('click', function (e) {
+      if (!links.classList.contains('is-open')) { return; }
+      if (e.target.closest('#navLinks') || e.target.closest('#navToggle')) { return; }
+      zetMenu(false);
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && links.classList.contains('is-open')) {
+        zetMenu(false);
+        toggle.focus();
       }
     });
   }

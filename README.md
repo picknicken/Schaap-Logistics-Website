@@ -283,6 +283,22 @@ De vier soorten rit staan als vaste lijst in de Worker. Een verzonnen naam zou
 in Airtable een nieuwe keuze aanmaken die stilletjes geen tarief heeft —
 dezelfde reden waarom het tijdvak een keuzelijst is en geen tekstveld.
 
+### Het menu op een telefoon
+
+Onder 1040px klapt de menubalk in. De knop rechtsboven draagt het woord **Menu**
+naast het icoon en wordt **Sluiten** met een kruisje zodra het openstaat — een
+rijtje streepjes zonder woord erbij is voor veel mensen een raadsel. Het menu
+sluit ook met Escape of door ernaast te tikken.
+
+In het opengeklapte menu staat elk item op een eigen regel met een streep
+ertussen en een pijltje rechts, zodat het leest als een lijst om uit te kiezen.
+De pagina waar je bent krijgt een amberkleurige balk en het label *Je bent hier*
+in plaats van dat pijltje. Inloggen staat onderaan als volle knop.
+
+Onder 360px (een oude iPhone SE) wordt de bovenbalk krap: daar staan wat
+kleinere marges en een iets kleinere bedrijfsnaam, zodat alles op één regel past
+en er niets weg hoeft.
+
 ## Het klantportaal
 
 `/klant/` is de kant die je klanten zien. Elke klant krijgt een eigen code en
