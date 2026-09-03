@@ -1,201 +1,176 @@
 # Wat er nog open staat
 
-Bijgewerkt op 3 september 2026. Drie soorten werk: dingen die op jou wachten,
-dingen die ik kan bouwen, en keuzes die eerst gemaakt moeten worden.
+Bijgewerkt op 3 september 2026, nagekeken tegen de werkelijke stand van de site,
+de Workers en de Airtable-base.
+
+Vier soorten werk, in volgorde van hoe hard het knelt:
+
+1. **Wat de livegang tegenhoudt** — gegevens die alleen jij hebt
+2. **Wat je moet beslissen** — zakelijke keuzes, geen technische
+3. **Wat ik nog kan bouwen** — af te spreken wanneer
+4. **Kleine dingen** — losse eindjes
 
 ---
 
-## 1. Op jou — dit moet af voordat de site live kan
+## 1. Wat de livegang tegenhoudt
 
-Zonder deze punten kun je de site niet in Google zetten en kun je geen factuur
-versturen die klopt.
+Dit zijn geen bouwklussen. Het zijn gegevens die alleen jij hebt, en zonder deze
+kun je de site niet in Google zetten en geen factuur versturen die klopt.
 
-| Wat | Waar het staat | Waarom het niet kan wachten |
+| Wat | Waar | Waarom het niet kan wachten |
 | --- | --- | --- |
-| **IBAN en BIC** | `factuur/index.html`, regel 276-277 | Er staat nu letterlijk `IBAN: [NL00 XXXX 0000 0000 00]` op de factuur. Zo krijg je geen geld binnen. |
-| **KvK- en btw-nummer** | de voettekst van alle 11 pagina's, en de factuurkop | Wettelijk verplicht op een factuur, en zonder is je factuur ongeldig |
-| **Telefoonnummer en e-mailadres** | nu `06 - 12 34 56 78` en `info@schaaplogistics.nl` — allebei verzonnen | Een klant die belt komt bij een vreemde uit |
-| **Voorwaarden en privacyverklaring laten nakijken** | `/voorwaarden/`, `/privacy/` | Ik heb ze geschreven, maar ik ben geen jurist. De aansprakelijkheid staat er inmiddels concreet in (AVC 2002 / CMR); juist dát hoort iemand te bevestigen |
-| **Gmail koppelen in Airtable** | Airtable → Automations → Connect Gmail | Zolang dit niet gebeurt, komen al je mails in de spam |
-| **`noindex` eruit halen** | alle pagina's | Staat er nu op zodat Google geen halve site indexeert. Als laatste weghalen |
+| **IBAN en BIC** | `factuur/index.html`, regel 285-286 | Er staat nu letterlijk `IBAN: [NL00 XXXX 0000 0000 00]`. Zo krijg je geen geld binnen. |
+| **KvK- en btw-nummer** | voettekst van elke pagina + de factuurkop | Wettelijk verplicht; zonder is je factuur ongeldig |
+| **Telefoonnummer** | `06 - 12 34 56 78`, op negen pagina's | Verzonnen nummer. Wie belt komt bij een vreemde uit |
+| **E-mailadres** | `info@schaaplogistics.nl` | Bestaat nog niet; het domein is er wel |
+| **Vestigingsplaats** | `/voorwaarden/`, `/privacy/` | Hoort in je algemene voorwaarden |
+| **Voorwaarden laten nakijken** | `/voorwaarden/`, `/privacy/` | Ik heb ze geschreven, ik ben geen jurist. Zie punt 2 |
+| **`noindex` eruit** | twaalf pagina's | Als allerlaatste, anders pikt Google een verzonnen nummer op |
 
-Er staan in totaal **30 plaatsen** in de HTML gemarkeerd met `data-placeholder`;
-die vallen geel op als je de pagina bekijkt, dus je kunt ze niet missen.
+Er staan **29 plekken** in de HTML met `data-placeholder`. Die vallen geel op als
+je de pagina bekijkt, dus je kunt ze niet missen.
 
-**De domeinnaam doet het.** De site staat op `https://schaaplogistics.nl/`. Het
-oude adres stuurt door, dus links die al verstuurd zijn blijven werken. Twee
-kleine dingen staan nog open: zet in de repo-instellingen onder Pages
-*Enforce HTTPS* aan zodra GitHub het certificaat heeft aangemaakt, en voeg bij
-Strato de overige drie A- en drie AAAA-records van GitHub toe — nu staat er van
-elk maar één, en heeft dat ene adres een storing dan is de site onbereikbaar.
+### Je e-mail komt nog steeds in de spam
+
+Gecontroleerd: er is nog geen enkele e-mailkoppeling in Airtable. Alle post — de
+ontvangstbevestiging, de ritbevestiging, de factuur, de herinnering, én je eigen
+SPOED-seintje — gaat dus via Airtable's afzender, die voor jouw domein niets kan
+aantonen. Dat is precies het patroon waar Gmail en Outlook op filteren.
+
+Twee stappen, in deze volgorde:
+
+1. **Maak `info@schaaplogistics.nl` aan bij Strato.** Het domein is er al.
+2. **Koppel Gmail in Airtable** (Automations → het e-mailonderdeel → *Connect
+   Gmail*). Dan gaan de mails echt vanaf jouw adres en komen ze aan. Ik kan dat
+   niet voor je doen: die koppeling vraagt jouw Google-inlog.
+
+Zolang dat niet gebeurt: markeer je eigen seintje één keer als *Geen spam* en
+maak in Gmail een filter met **"Nooit naar Spam sturen"**. Anders mis je een
+spoedaanvraag omdat het bericht in een map belandde waar je niet kijkt.
 
 ---
 
-## 2. Wat ik kan bouwen
+## 2. Wat je moet beslissen
 
-In volgorde van hoeveel het uitmaakt. Wat er *gebouwd, moet nog aan* bij
-staat, staat klaar in Airtable maar is nog uitgeschakeld: alles wat via de API
-wordt aangemaakt komt uit als concept, zodat jij het eerst kunt nakijken.
+Hier kan ik niets bouwen voordat jij beslist. Geen technische vragen.
 
-### a. Een seintje aan jou bij een nieuwe aanvraag — *gebouwd, moet nog aan*
+**Ben je verzekerd voor andermans lading?** Een gewone
+bedrijfsaansprakelijkheidsverzekering dekt de spullen van een klant meestal niet.
+Hier hoort een goederen- of vervoerdersaansprakelijkheidsverzekering bij. Dit is
+het punt waar het echt om geld gaat: artikel 8 beperkt je aansprakelijkheid tot
+€3,40 per kilo (AVC 2002), maar dát bedrag moet je dan nog steeds zelf kunnen
+betalen als er iets misgaat.
 
-De automatisering **Seintje bij een nieuwe aanvraag** (`wflWygljnGucqKwyV`) staat
-klaar in Airtable. Zet hem daar aan; hij is nog uit, zoals alles wat via de API
-wordt aangemaakt.
+**Kloppen de voorwaarden?** Artikel 8 verwijst nu naar de AVC 2002 voor
+binnenlands vervoer en het CMR-verdrag voor grensoverschrijdend vervoer. CMR
+geldt internationaal van rechtswege — daar valt niets te kiezen. De AVC 2002 moet
+je zelf van toepassing verklaren en op verzoek toesturen. Dat is de gebruikelijke
+combinatie voor een Nederlandse koerier, maar laat het bevestigen door een jurist
+of je brancheorganisatie voordat de site live gaat.
 
-Bij *Spoedtransport* en *Directe spoed* begint het onderwerp met `SPOED`. Zet op
-je telefoon een aparte melding op dat woord of op de afzender, dan hoor je het
-ook 's avonds.
+**Btw bij ritten naar België en Duitsland.** De factuurpagina rekent nu altijd
+21%. Bij vervoer voor een buitenlands bedrijf met een geldig btw-nummer is de btw
+meestal verlegd: 0%, met de vermelding *btw verlegd* op de factuur. Vraag dit aan
+je boekhouder vóór de eerste internationale factuur. Zeg wat het wordt en ik bouw
+het in — de factuurpagina en de formules kunnen het aan.
 
-Nog open: een echt sms'je. Airtable kan dat alleen via een koppeling met Twilio,
-een betaalde dienst — reken op ongeveer negen cent per bericht plus een paar euro
-per maand voor een nummer. Koppel je die ooit, dan is het sms-onderdeel er in vijf
-minuten naast gezet.
+**Een brandstofclausule?** Veel vervoerders werken met een basistarief plus een
+dieseltoeslag als percentage, die per kwartaal meebeweegt met de pompprijs. Dat
+voorkomt dat je bij dure diesel inlevert zonder je hele tarievenpagina om te
+gooien. Wil je dat, dan is het één klus over tarievenpagina, calculator, Airtable
+en factuur tegelijk.
 
-### b. Internationaal — *gebouwd*
+**Het Airtable-plan.** Het gratis plan geeft honderd automatiseringsruns per
+maand. Sinds de twee ochtendklussen wekelijks draaien kost dat er negen, dus
+blijft er ruim negentig over. Eén rit van aanvraag tot betaalde factuur kost er
+vijf à zes: je zit dus rond de vijftien ritten per maand. Genoeg voorlopig, maar
+geen oneindig plafond. Ga je daaroverheen, dan is een betaald plan (25.000 runs)
+het eerlijke antwoord.
 
-Internationaal ging op offerte en gaf dus helemaal geen prijs; de aanvraag kwam
-binnen zonder bedrag en daarna was het handwerk. Nu geldt er een tarief:
-**€150 starttarief + €2,00 per kilometer, minimaal €200 per opdracht.** Dat staat
-op de tarieven- en dienstenpagina, in de calculator, en in de prijsformule in
-Airtable.
+---
 
-Eén ding blijft handwerk, en met opzet: de **afstand** naar het buitenland wordt
-niet geschat. Die schatting werkt op Nederlandse postcodes, en een Belgische
-postcode van vier cijfers zou daar een Nederlandse regio uit halen — een
-verzonnen afstand is erger dan geen. Het aanvraagformulier toont daarom het
-tarief en de ondergrens, en zegt erbij dat je het exacte bedrag bevestigt zodra
-je de route hebt nagekeken. Vul je die kilometers in bij het inplannen, dan
-rekent de rest van de keten vanzelf door.
+## 3. Wat ik nog kan bouwen
 
-Nog te doen vóór de eerste internationale factuur: vraag je boekhouder naar de
-**btw**. Bij vervoer voor een buitenlands bedrijf met een geldig btw-nummer is
-die meestal verlegd, dus 0% met de vermelding *btw verlegd*; de factuurpagina
-rekent nu altijd 21%.
+### a. De PDF van de factuur is handwerk
 
-### c. Annulering — *gebouwd, moet nog aan*
+Per factuur: link openen, *Opslaan als PDF*, bestand terugslepen in Airtable. Bij
+een paar facturen per maand prima; bij dertig niet meer. Automatiseren kan, maar
+vraagt een externe dienst die HTML naar PDF omzet — dus een account en waarschijnlijk
+een paar euro per maand.
 
-Artikel 9 van de voorwaarden en de tarieventabel zeggen nu allebei hetzelfde: tot
-je vertrekt kosteloos, daarna het starttarief plus de gereden kilometers, met een
-minimum van €75.
+### b. Er is geen back-up van je administratie
 
-**Jij, als je al onderweg was.** Op `Ritten` staat een vinkje **Annulering
-doorbelasten**. Zet de rit op *Geannuleerd*, pas `Kilometers` aan naar wat je
-werkelijk gereden hebt en zet het vinkje aan; dan maakt de automatisering
-**Geannuleerde rit doorbelasten** (`wflu0LCjXTvG7ZSj7`) er een conceptfactuur bij,
-met *(geannuleerde rit)* achter de omschrijving.
-
-**De klant, in zijn eigen portaal.** Bij een zending die nog op *Gepland* staat
-staat nu een knop *Deze zending annuleren*, met een bevestigingsstap en ruimte
-voor een reden. De rit gaat op *Geannuleerd* en jij krijgt een mail via **Seintje
-bij een annulering door de klant** (`wflt0t7LtWvQDpj5d`). Is de rit al *Onderweg*,
-dan verdwijnt de knop en krijgt de klant te zien dat hij moet bellen — vanaf dat
-moment kost het geld en hoort er een gesprek bij.
-
-Alle drie de automatiseringen staan nog uit en moet je in Airtable aanzetten.
-
-### d. De portaalcode is één gedeeld wachtwoord
-
-Werkt prima zolang alleen jij hem hebt. Lekt hij, dan moet je hem in Cloudflare
-vervangen en zijn alle klantlinks nog geldig. Te bouwen als het nodig wordt: een
-code die per apparaat geldt, of een inlog per e-mail met een code die vervalt.
-
-### e. Een back-up van Airtable
-
-Er is er geen. Verwijder je per ongeluk een tabel, dan is je administratie weg.
-
-Let op — in een eerdere versie van deze lijst stelde ik voor om de base
-wekelijks als bestand in deze repo te zetten. **Dat kan niet.** Deze repo is
-openbaar: dan zouden de naam, het adres en het telefoonnummer van al je klanten
-op internet komen te staan. Hetzelfde geldt voor de bestandjes die een GitHub
-Action achterlaat; ook die zijn bij een openbare repo voor iedereen te
-downloaden.
+Verwijder je per ongeluk een tabel, dan is alles weg. **Let op: dit kan niet in
+deze repo** — die is openbaar, dus dan zouden de naam, het adres en het
+telefoonnummer van al je klanten op internet staan. Hetzelfde geldt voor
+bestanden die een GitHub Action achterlaat.
 
 Wat wel kan, van weinig naar veel moeite:
 
-1. **Airtable's eigen snapshots.** Base openen → het menu rechtsboven →
-   *Snapshots*. Op het gratis plan bewaart Airtable twee weken terug. Dekt de
-   meeste ongelukken (per ongeluk een tabel wissen) en kost je niets.
-2. **Base dupliceren.** Eens per maand → *Duplicate base*. Drie klikken, en je
-   hebt een bevroren kopie naast je echte base staan.
-3. **Een tweede, besloten repo** alleen voor back-ups, met een Action die daar
-   wekelijks naartoe schrijft. Dat is de nette oplossing, maar wel een aparte
-   repo en een extra sleutel om te beheren.
+1. **Airtable's eigen snapshots** — base openen → menu rechtsboven →
+   *Snapshots*. Gratis plan bewaart twee weken. Dekt de meeste ongelukken.
+2. **Base dupliceren** — eens per maand, drie klikken, bevroren kopie.
+3. **Een tweede, besloten repo** met een Action die daar wekelijks naartoe
+   schrijft. De nette oplossing, maar een extra repo en een extra sleutel.
 
-### f. De PDF van de factuur is nog handwerk
+### c. De portaalcode is één gedeeld wachtwoord
 
-Per factuur: link openen, *Opslaan als PDF*, bestand terugslepen in Airtable. Bij
-een paar facturen per maand prima; bij dertig niet meer.
+Werkt prima zolang alleen jij hem hebt. Lekt hij, dan moet je hem in Cloudflare
+vervangen. Te bouwen als het nodig wordt: een code per apparaat, of inloggen met
+een code per e-mail die vervalt.
 
-### g. Kleinigheden
+### d. Een echt sms'je bij spoed
 
-- De rem op de Workers geldt per server, niet over alle servers samen. Genoeg
-  tegen een klungelige bot, niet tegen iemand die het echt op je gemunt heeft.
-  Cloudflare heeft daar eigen instellingen voor.
-- Foto's bij een aanvraag zijn nog nooit met een echte aanvraag getest.
+Nu gaat het seintje per mail, met `SPOED` in het onderwerp. Een sms kan Airtable
+alleen via een koppeling met Twilio: ongeveer negen cent per bericht plus een paar
+euro per maand voor een nummer. Koppel je die, dan zet ik het sms-onderdeel er in
+vijf minuten naast.
 
 ---
 
-## 3. Keuzes die eerst gemaakt moeten worden
+## 4. Kleine dingen
 
-Hier kan ik niets bouwen voordat jij beslist. Het zijn geen technische maar
-zakelijke vragen.
-
-**Welke voorwaarden gelden er?** Ingevuld, maar nog te bevestigen. Artikel 8
-verwijst nu naar de AVC 2002 voor binnenlands vervoer (aansprakelijkheid beperkt
-tot €3,40 per kilo) en naar het CMR-verdrag voor grensoverschrijdend vervoer
-(8,33 SDR per kilo). CMR geldt bij internationaal vervoer van rechtswege, daar
-valt niets te kiezen; de AVC 2002 moet je wél zelf van toepassing verklaren, en
-op verzoek toesturen. Dat is de gebruikelijke combinatie voor een Nederlandse
-koerier, maar laat het bevestigen door een jurist of je brancheorganisatie
-voordat je de site live zet. Zonder die verwijzing ben je onbeperkt aansprakelijk
-voor de volle waarde van de lading — bij één laptop al duurder dan de rit.
-
-**Ben je verzekerd voor de lading?** Een aansprakelijkheidsverzekering voor je
-bedrijf dekt de lading van een ander meestal niet. Hier hoort een goederen- of
-vervoerdersaansprakelijkheidsverzekering bij. Dit is het punt waar de AVC 2002
-hierboven je alleen beschermt tot €3,40 per kilo — daarboven ben je op je
-verzekering aangewezen.
-
-**Btw bij ritten naar België en Duitsland.** De factuurpagina rekent nu altijd
-21%. Bij vervoer voor een buitenlands bedrijf met een geldig btw-nummer is de
-btw meestal verlegd, en dan hoort er 0% op te staan met de vermelding *"btw
-verlegd"*. Vraag dit aan je boekhouder voordat je de eerste internationale rit
-factureert.
-
-**Een brandstofclausule in plaats van een vast tarief.** Veel vervoerders werken
-met een basistarief plus een dieseltoeslag als percentage, die per kwartaal
-meebeweegt met de pompprijs. Dat is de nette manier om te voorkomen dat je bij
-een dure diesel geld inlevert, zonder dat je je hele tarievenpagina hoeft om te
-gooien. Als je hier iets mee wilt, is dat een aparte klus: tarievenpagina,
-calculator, Airtable en factuur tegelijk.
-
-**Het gratis Airtable-plan houdt op bij 100 runs per maand — nu opgelost, maar
-niet voor altijd.** De twee ochtendklussen (facturen te laat markeren en de
-betalingsherinnering) draaiden dagelijks en aten daarmee ruim zestig van die
-honderd op, terwijl ze op de meeste dagen niets te doen hadden. Ze draaien nu
-maandagochtend: samen negen runs. Er blijft dus ruim negentig over voor het
-echte werk, en één rit van aanvraag tot betaalde factuur kost er vijf à zes.
-Daarmee zit je rond de vijftien ritten per maand — genoeg voorlopig, maar geen
-oneindig plafond. Ga je daar structureel overheen, dan is een betaald plan
-(25.000 runs) het eerlijke antwoord.
+- **`Enforce HTTPS` aanzetten** in de repo-instellingen onder Pages, zodra GitHub
+  het certificaat voor `schaaplogistics.nl` heeft aangemaakt.
+- **De overige DNS-records bij Strato.** Er staat nu één A- en één AAAA-record;
+  GitHub geeft er vier van elk. Met één werkt het, maar heeft dat ene adres een
+  storing dan is de site onbereikbaar. De andere zes: `185.199.109.153`,
+  `185.199.110.153`, `185.199.111.153` en `2606:50c0:8001::153`,
+  `2606:50c0:8002::153`, `2606:50c0:8003::153`.
+- **De rem op de Workers** geldt per server, niet over alle servers samen. Genoeg
+  tegen een klungelige bot, niet tegen iemand die het echt op je gemunt heeft.
+  Cloudflare heeft daar eigen instellingen voor als het ooit nodig is.
+- **Foto's bij een aanvraag** zijn nog nooit met een echte aanvraag getest.
+- **`robots.txt` en `sitemap.xml`** staan klaar en wijzen naar het juiste domein.
 
 ---
 
 ## Wat er níét meer open staat
 
-Voor de volledigheid, zodat je niet twee keer naar hetzelfde kijkt: de prijzen
-lopen kloppend van calculator naar Airtable naar factuur (inclusief stops,
-tijdvak, wachttijd en doorberekende kosten), de klant kan inloggen en zijn eigen
-zendingen en facturen zien zonder dat jouw kosten of marge meegaan, de
-handtekening wordt gezet én getoond, en de factuur is op een telefoon leesbaar.
+Zodat je niet twee keer naar hetzelfde kijkt.
 
-Sinds kort ook: een rit die telefonisch binnenkomt maak je zelf aan in het
-portaal (*Planning* → *+ Rit buiten de website om*), ging er iets mis dan geef je
-korting op de ritkaart die als eigen regel met reden op de factuur komt, en een
-verstuurde factuur draai je terug met een creditnota (vinkje *Crediteren*).
+**De keten klopt van begin tot eind.** Prijs op de site = prijs in Airtable =
+prijs op de factuur, inclusief stops, tijdvak, wachttijd, doorberekende kosten en
+korting. Starttarieven €75 / €100 / €125, kilometerprijzen €1,50 / €2,00 / €2,50,
+internationaal €150 + €2,00 met een minimum van €200.
 
-Het menu op een telefoon draagt nu het woord *Menu*, wordt *Sluiten* met een
-kruisje, sluit ook met Escape of door ernaast te tikken, en zet de pagina waar je
-bent duidelijk apart. In de tabel `Tarieven` stonden twee restanten van een
-eerdere naamgeving met een fout spoedtarief; die zijn weg.
+**Het klantportaal** laat een klant zijn eigen zendingen en facturen zien, zijn
+handtekening bekijken en een geplande rit zelf afzeggen — zonder dat jouw kosten
+of marge ooit meegaan.
+
+**Het chauffeursportaal** doet planning, statussen, handtekening, kosten, korting,
+een rit buiten de website om, en het versturen van een portaaluitnodiging.
+
+**Alle elf automatiseringen in Airtable staan gepubliceerd**, gecontroleerd: het
+concept is gelijk aan wat er draait. Bevestigingsmail, aanvraag omzetten, rit
+bevestigen, rit factureren, geannuleerde rit doorbelasten, creditfactuur maken,
+factuur versturen, betalingsherinnering, facturen te laat markeren, seintje bij
+een aanvraag, seintje bij een annulering.
+
+**Het domein** `schaaplogistics.nl` is live, met een doorstuur vanaf het oude
+adres zodat verstuurde links blijven werken.
+
+**112 schermtests en alle Worker-tests** draaien groen, waaronder controles dat de
+prijzen op de site kloppen met de calculator, dat een klant nooit een cent van
+jouw kosten te zien krijgt, en dat een creditnota naar de oorspronkelijke factuur
+verwijst.
