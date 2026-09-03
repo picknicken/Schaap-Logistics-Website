@@ -3,6 +3,10 @@
 Bijgewerkt op 3 september 2026, nagekeken tegen de werkelijke stand van de site,
 de Workers en de Airtable-base.
 
+Wil je weten in welke **volgorde** je dit doet en wanneer, kijk dan in
+[TIJDLIJN.md](TIJDLIJN.md). Dit bestand zegt *wat* er nog moet; dat bestand zegt
+*wanneer*.
+
 Vier soorten werk, in volgorde van hoe hard het knelt:
 
 1. **Wat de livegang tegenhoudt** — gegevens die alleen jij hebt
@@ -29,6 +33,13 @@ kun je de site niet in Google zetten en geen factuur versturen die klopt.
 
 Er staan **29 plekken** in de HTML met `data-placeholder`. Die vallen geel op als
 je de pagina bekijkt, dus je kunt ze niet missen.
+
+Eén plek valt niet geel op, omdat hij onzichtbaar is: het blokje bedrijfsgegevens
+onderaan de `<head>` van `index.html` dat Google uitleest voor het kaartje naast
+de zoekresultaten. Daar horen `telephone`, `email`, `address`, `vatID` en `taxID`
+in zodra je ze hebt. Ik heb er bewust geen voorbeeldnummer in gezet: een verzonnen
+telefoonnummer op die plek komt rechtstreeks in Google terecht en krijg je er
+daarna moeilijk weer uit.
 
 ### Je e-mail komt nog steeds in de spam
 
@@ -169,6 +180,14 @@ een aanvraag, seintje bij een annulering.
 
 **Het domein** `schaaplogistics.nl` is live, met een doorstuur vanaf het oude
 adres zodat verstuurde links blijven werken.
+
+**De site zelf is nagelopen op snelheid, vindbaarheid en toegankelijkheid.**
+Het lettertype staat op onze eigen server (scheelt een verbinding met Google en
+haalt de laatste privacyvraag uit de privacyverklaring), er is een deelplaatje
+voor WhatsApp en LinkedIn, elke pagina heeft een canonieke link, de koppen lopen
+netjes van h1 naar h2 zonder gaten, en de foutpagina werkt weer — die verwees na
+de domeinverhuizing nog naar het oude adres en kwam daardoor zonder opmaak en met
+dode links binnen.
 
 **112 schermtests en alle Worker-tests** draaien groen, waaronder controles dat de
 prijzen op de site kloppen met de calculator, dat een klant nooit een cent van
