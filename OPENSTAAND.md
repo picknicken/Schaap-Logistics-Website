@@ -30,18 +30,24 @@ in plaats van een gmail-adres. Ongeveer €10 per jaar.
 
 ## 2. Wat ik kan bouwen
 
-In volgorde van hoeveel het uitmaakt.
+In volgorde van hoeveel het uitmaakt. Wat er *gebouwd, moet nog aan* bij
+staat, staat klaar in Airtable maar is nog uitgeschakeld: alles wat via de API
+wordt aangemaakt komt uit als concept, zodat jij het eerst kunt nakijken.
 
-### a. Een seintje aan jou bij een nieuwe aanvraag — *dit is het grootste gat*
+### a. Een seintje aan jou bij een nieuwe aanvraag — *gebouwd, moet nog aan*
 
-De klant krijgt nu netjes een ontvangstbevestiging. Jij krijgt niets. Je weet pas
-van een aanvraag als je zelf in Airtable kijkt. Voor een spoedbedrijf is dat het
-verkeerde model: iemand die om 23:00 een directe spoedrit aanvraagt verwacht
-binnen minuten iets te horen.
+De automatisering **Seintje bij een nieuwe aanvraag** (`wflWygljnGucqKwyV`) staat
+klaar in Airtable. Zet hem daar aan; hij is nog uit, zoals alles wat via de API
+wordt aangemaakt.
 
-Te bouwen: een automatisering die je een mail (en eventueel een pushbericht)
-stuurt zodra er een aanvraag binnenkomt, met het adres, het type rit en de prijs
-erin, zodat je vanaf je telefoon kunt beslissen.
+Bij *Spoedtransport* en *Directe spoed* begint het onderwerp met `SPOED`. Zet op
+je telefoon een aparte melding op dat woord of op de afzender, dan hoor je het
+ook 's avonds.
+
+Nog open: een echt sms'je. Airtable kan dat alleen via een koppeling met Twilio,
+een betaalde dienst — reken op ongeveer negen cent per bericht plus een paar euro
+per maand voor een nummer. Koppel je die ooit, dan is het sms-onderdeel er in vijf
+minuten naast gezet.
 
 ### b. Internationaal transport heeft geen route
 
@@ -50,18 +56,17 @@ offerte. Maar er *is* geen offerteproces. De aanvraag komt binnen zonder bedrag
 en daarna is het handwerk. Te bouwen: een offerteregel in Airtable met dezelfde
 opmaak als de factuur, plus een knop om hem te mailen.
 
-### c. Annulering staat wel in de voorwaarden, maar je kunt hem niet factureren
+### c. Annulering — *gebouwd, moet nog aan*
 
-Correctie op een eerdere versie van deze lijst: artikel 9 van de voorwaarden
-regelt het al (kosteloos tot vertrek, daarna de gereden kilometers met een
-minimum van €75), en sinds vandaag staat het ook in de tarieventabel, zodat een
-klant het ziet vóór hij bestelt in plaats van erna.
+Artikel 9 van de voorwaarden en de tarieventabel zeggen nu allebei hetzelfde: tot
+je vertrekt kosteloos, daarna het starttarief plus de gereden kilometers, met een
+minimum van €75.
 
-Wat nog niet kan: hem daadwerkelijk factureren. De status *Geannuleerd* bestaat
-in Airtable, maar de automatisering die een factuur maakt luistert alleen naar
-*Uitgevoerd*, en de totaalformule rekent bij een geannuleerde rit gewoon het
-starttarief mee. Zet je een rit op Geannuleerd, dan gebeurt er dus niets en moet
-je met de hand een factuur maken.
+In Airtable staat op `Ritten` een vinkje **Annulering doorbelasten**. Zet de rit
+op *Geannuleerd*, pas `Kilometers` aan naar wat je werkelijk gereden hebt en zet
+het vinkje aan; dan maakt de automatisering **Geannuleerde rit doorbelasten**
+(`wflu0LCjXTvG7ZSj7`) er een conceptfactuur bij, met *(geannuleerde rit)* achter
+de omschrijving. Ook deze staat nog uit en moet je in Airtable aanzetten.
 
 ### d. De portaalcode is één gedeeld wachtwoord
 
@@ -122,13 +127,9 @@ voor de volle waarde van de lading — bij één laptop al duurder dan de rit.
 
 **Ben je verzekerd voor de lading?** Een aansprakelijkheidsverzekering voor je
 bedrijf dekt de lading van een ander meestal niet. Hier hoort een goederen- of
-vervoerdersaansprakelijkheidsverzekering bij.
-
-**Op welke basis factureer je een annulering?** De voorwaarden zeggen nu: de
-gereden kilometers, met een minimum van €75. Dat is iets anders dan wat Airtable
-zou rekenen (starttarief plus kilometers, dus bij spoed al €75 + €2 per km voor
-je de deur uit bent). Zeg welke van de twee je wilt, dan maak ik de formule en
-de factuur daarop kloppend.
+vervoerdersaansprakelijkheidsverzekering bij. Dit is het punt waar de AVC 2002
+hierboven je alleen beschermt tot €3,40 per kilo — daarboven ben je op je
+verzekering aangewezen.
 
 **Btw bij ritten naar België en Duitsland.** De factuurpagina rekent nu altijd
 21%. Bij vervoer voor een buitenlands bedrijf met een geldig btw-nummer is de

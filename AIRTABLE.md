@@ -280,6 +280,36 @@ klant, de opdracht en de bedragen uit de rit en de factuurdatum op vandaag. De
 status blijft *Concept*, zodat je hem eerst nakijkt. Ook deze start alleen als er
 nog geen factuur aan de rit hangt.
 
+**De loze rit.** Zegt een klant af terwijl je al onderweg bent, dan zet je de rit
+op *Geannuleerd*, pas je `Kilometers` aan naar wat je werkelijk gereden hebt en
+vink je **Annulering doorbelasten** aan. De automatisering **Geannuleerde rit
+doorbelasten** (`wflu0LCjXTvG7ZSj7`) maakt dan dezelfde conceptfactuur, en op de
+factuur komt achter de omschrijving *(geannuleerde rit)* te staan. Dat volgt
+artikel 9 van de voorwaarden: het starttarief plus de gereden kilometers, met het
+minimum van €75. Zegt de klant af vóór je vertrekt, dan laat je het vinkje uit en
+gebeurt er niets.
+
+Het moesten twee losse automatiseringen worden omdat een trigger geen
+samengestelde voorwaarde aankan — *uitgevoerd* óf *geannuleerd én doorbelasten*
+past niet in één filter.
+
+### Het seintje aan jezelf
+
+De klant krijgt een ontvangstbevestiging; jij kreeg niets, en wist dus pas van een
+aanvraag als je uit jezelf in Airtable keek. Voor spoedwerk is dat te laat.
+
+**Seintje bij een nieuwe aanvraag** (`wflWygljnGucqKwyV`) mailt je zodra er een
+aanvraag binnenkomt. Bij *Spoedtransport* en *Directe spoed* begint het onderwerp
+met `SPOED`; bij de rest is het een gewoon bericht. Zet op je telefoon een aparte
+melding op dat woord (op een iPhone: markeer de afzender als VIP, of maak in Mail
+een melding op het onderwerp), dan hoor je een spoedaanvraag ook 's avonds.
+
+Het adres staat in de twee e-mailonderdelen van de automatisering ingevuld en kun
+je daar aanpassen. Wil je een echt sms'je, dan heeft Airtable daar een koppeling
+met Twilio voor nodig — een betaalde dienst, ongeveer negen cent per bericht plus
+een paar euro per maand voor een nummer. Zodra die koppeling er is, kan er een
+sms-onderdeel naast de mail.
+
 ### Het factuurnummer
 
 `Factuurnummer` op `Facturen` is een formule: het jaar uit de factuurdatum plus
