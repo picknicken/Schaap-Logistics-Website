@@ -21,7 +21,11 @@
   --navy-3:#1a2c47;
   --amber:#ffb020;
   --amber-2:#e08c00;
-  --urgent:#ff5a3c;
+  /* Het rood uit het logo. Dit is de spoedkleur en niets anders: de melding
+     "Spoedrit nodig?", de labels SNELST en MET PRIORITEIT, en de prijzen van
+     directe spoed. Oranje blijft de kleur van knoppen en links, zodat de twee
+     elk hun eigen werk doen. Wit hierop haalt 5,4:1 en is dus leesbaar. */
+  --urgent:#d6010b;
   --paper:#ffffff;
   --paper-2:#f4f6fa;
   --heading:#0b1526;
@@ -154,8 +158,10 @@ footer .brand__mark{height:46px}
 .hero__grid{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center}
 .hero__badge{
   display:inline-flex;align-items:center;gap:9px;
-  background:rgba(255,90,60,.14);border:1px solid rgba(255,90,60,.4);
-  color:#ffb3a3;font-size:.8rem;font-weight:600;
+  background:rgba(214,1,11,.16);border:1px solid rgba(214,1,11,.45);
+  /* Het rood zelf is op donkerblauw te donker voor kleine tekst (3,2:1). Een
+     lichte tint van dezelfde kleur haalt ruim 9:1 en blijft herkenbaar rood. */
+  color:#ffa6a6;font-size:.8rem;font-weight:600;
   padding:7px 15px;border-radius:100px;margin-bottom:22px;
 }
 .hero__badge .dot{width:7px;height:7px;border-radius:50%;background:var(--urgent);animation:pulse 1.9s ease-in-out infinite}
@@ -264,7 +270,7 @@ input[type=range]:focus-visible{outline:2px solid var(--amber);outline-offset:4p
   display:inline-block;font-size:.68rem;font-weight:700;letter-spacing:.06em;
   text-transform:uppercase;padding:3px 9px;border-radius:99px;margin-top:10px;
 }
-.pill--high{background:rgba(255,90,60,.13);color:#d3381c}
+.pill--high{background:rgba(214,1,11,.12);color:var(--urgent)}
 .pill--mid{background:rgba(255,176,32,.18);color:#9a6200}
 .pill--norm{background:rgba(46,102,190,.12);color:#28568f}
 
@@ -303,13 +309,13 @@ tbody tr:last-child td{border-bottom:0}
 tbody tr:hover{background:#fbfcfe}
 .td-strong{font-weight:600;color:var(--heading)}
 .td-price{font-weight:700;color:var(--heading)}
-.td-urgent{color:#c8351a;font-weight:700}
+.td-urgent{color:var(--urgent);font-weight:700}
 
 /* price cards */
 .price-card{
   background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:28px;position:relative;
 }
-.price-card--urgent{border-color:rgba(255,90,60,.45);box-shadow:0 12px 34px rgba(255,90,60,.12)}
+.price-card--urgent{border-color:rgba(214,1,11,.4);box-shadow:0 12px 34px rgba(214,1,11,.13)}
 .price-card__tag{
   position:absolute;top:-11px;right:22px;background:var(--urgent);color:#fff;
   font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
