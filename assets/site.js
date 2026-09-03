@@ -15,11 +15,16 @@
     email: 'info@schaaplogistics.nl',   /* PLACEHOLDER */
     minimum: 75,                         /* minimumtarief per opdracht */
     btw: 0.21,
+    /* Per dienst een starttarief en een kilometerprijs. Een dienst mag een
+       eigen minimum hebben; staat dat er niet, dan geldt CONFIG.minimum.
+       Internationaal heeft een hoger minimum omdat de kortste rit over de
+       grens al gauw een halve dag kost: heen, lossen, en leeg terug. */
     ritten: {
       standaard:     { naam: 'Standaard transport',    start: 75,  km: 1.50 },
       spoed:         { naam: 'Spoedtransport',         start: 100, km: 2.00, spoed: true },
       direct:        { naam: 'Directe spoed',          start: 125, km: 2.50, spoed: true },
-      internationaal:{ naam: 'Internationaal transport', offerte: true }
+      internationaal:{ naam: 'Internationaal transport', start: 150, km: 2.00, minimum: 200,
+                       buitenland: true }
     },
     tijden: {
       dag:   { naam: 'Overdag',                toeslag: 0  },
@@ -117,13 +122,14 @@
      bovenop, net als in de factuurberekening in Airtable. */
   function bereken(soort, km, tijd, stops) {
     var r = CONFIG.ritten[soort];
-    if (!r || r.offerte) { return null; }
+    if (!r) { return null; }
     var t = CONFIG.tijden[tijd] || CONFIG.tijden.dag;
     var n = stopsUit(stops);
     var kmSom = km * r.km;
     var stopSom = n * CONFIG.stoptoeslag;
     var ritprijs = r.start + kmSom;
-    var correctie = Math.max(0, CONFIG.minimum - ritprijs);
+    var bodem = r.minimum || CONFIG.minimum;
+    var correctie = Math.max(0, bodem - ritprijs);
     return {
       tarief: r, tijdstip: t, kmSom: kmSom, correctie: correctie,
       stops: n, stopSom: stopSom,

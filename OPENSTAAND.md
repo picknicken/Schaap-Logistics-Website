@@ -52,12 +52,26 @@ een betaalde dienst — reken op ongeveer negen cent per bericht plus een paar e
 per maand voor een nummer. Koppel je die ooit, dan is het sms-onderdeel er in vijf
 minuten naast gezet.
 
-### b. Internationaal transport heeft geen route
+### b. Internationaal — *gebouwd*
 
-De calculator geeft bij België en Duitsland bewust geen prijs — dat gaat op
-offerte. Maar er *is* geen offerteproces. De aanvraag komt binnen zonder bedrag
-en daarna is het handwerk. Te bouwen: een offerteregel in Airtable met dezelfde
-opmaak als de factuur, plus een knop om hem te mailen.
+Internationaal ging op offerte en gaf dus helemaal geen prijs; de aanvraag kwam
+binnen zonder bedrag en daarna was het handwerk. Nu geldt er een tarief:
+**€150 starttarief + €2,00 per kilometer, minimaal €200 per opdracht.** Dat staat
+op de tarieven- en dienstenpagina, in de calculator, en in de prijsformule in
+Airtable.
+
+Eén ding blijft handwerk, en met opzet: de **afstand** naar het buitenland wordt
+niet geschat. Die schatting werkt op Nederlandse postcodes, en een Belgische
+postcode van vier cijfers zou daar een Nederlandse regio uit halen — een
+verzonnen afstand is erger dan geen. Het aanvraagformulier toont daarom het
+tarief en de ondergrens, en zegt erbij dat je het exacte bedrag bevestigt zodra
+je de route hebt nagekeken. Vul je die kilometers in bij het inplannen, dan
+rekent de rest van de keten vanzelf door.
+
+Nog te doen vóór de eerste internationale factuur: vraag je boekhouder naar de
+**btw**. Bij vervoer voor een buitenlands bedrijf met een geldig btw-nummer is
+die meestal verlegd, dus 0% met de vermelding *btw verlegd*; de factuurpagina
+rekent nu altijd 21%.
 
 ### c. Annulering — *gebouwd, moet nog aan*
 

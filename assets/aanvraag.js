@@ -131,10 +131,19 @@
       samRijen.appendChild(samRij('Tijdvak', CONFIG.tijden[tKey].naam));
     }
 
-    if (rit.offerte) {
-      samPrijs.textContent = 'Op offerte';
-      samNoot.textContent  = 'Voor internationale ritten ontvangt u vooraf een prijsopgave ' +
-                             'op basis van route, rijtijd en eventuele tol.';
+    /* Buitenland: het tarief staat vast, maar de afstand kunnen wij hier niet
+       schatten. Die schatting werkt op Nederlandse postcodes, en een Belgische
+       postcode van vier cijfers zou daar een Nederlandse regio uit halen — een
+       verzonnen afstand is erger dan geen. Dus tonen wij wel het tarief en de
+       ondergrens, en bevestigen wij het bedrag zodra de route bekend is. */
+    if (rit.buitenland) {
+      samPrijs.textContent = 'vanaf ' + euro.format(rit.minimum);
+      samNoot.textContent  = 'Naar Belgi\u00eb en Duitsland rekenen wij ' + euro.format(rit.start) +
+                             ' starttarief plus \u20ac ' + rit.km.toFixed(2).replace('.', ',') +
+                             ' per kilometer, met ' +
+                             'een minimum van ' + euro.format(rit.minimum) + '. De afstand naar het ' +
+                             'buitenland rekenen wij met de hand na, dus bevestigen wij het ' +
+                             'exacte bedrag zodra wij uw route hebben bekeken.';
       return;
     }
 
@@ -271,7 +280,7 @@
     var af     = veld('r-afPc');
     var tKey   = tijdSleutel();
     var stops  = aantalStops();
-    var km     = rit.offerte ? null : window.SL.schatAfstand(window.SL.postcodeUit(op), window.SL.postcodeUit(af));
+    var km     = rit.buitenland ? null : window.SL.schatAfstand(window.SL.postcodeUit(op), window.SL.postcodeUit(af));
     var prijs  = km === null ? null : window.SL.bereken(dienst, km, tKey, stops).totaal;
 
     return {

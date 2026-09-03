@@ -209,9 +209,8 @@ tabel `Ritten` (waar je facturen op gebaseerd worden). Wijzig je een tarief, pas
 het dan op alle drie aan — anders factureer je iets anders dan je op je site belooft.
 
 De tabel `Tarieven` is een naslagoverzicht, geen bron: daar iets wijzigen verandert
-niets aan je facturen. Er hoort precies één regel per dienst in te staan; bij
-internationaal transport hoort geen kilometerprijs te staan, want dat gaat op
-offerte.
+niets aan je facturen. Er hoort precies één regel per dienst in te staan, ook voor
+internationaal transport.
 
 #### Een factuur terugdraaien: de creditnota
 
@@ -274,10 +273,14 @@ wél door te berekenen: die zet je in `Extra kosten`, en dan komt het via de
 
 De formule volgt de website exact: standaard €75 + €1,50/km, spoed €100 + €2,00/km,
 directe spoed €125 + €2,50/km, minimum €75 per opdracht, en daarna pas de extra
-kosten erbij. Dat minimum is sinds de tariefverhoging een dode letter: het laagste
-starttarief is er zelf aan gelijk. Het staat er nog voor het geval je bij een klant
-een lager Starttarief afspreekt. Internationaal blijft leeg — dat gaat op offerte, dus vul je
-`Totaal excl. BTW` met de hand in. Vul je `Starttarief` of `Km-tarief` zelf in,
+kosten erbij. Internationaal rekent mee met een eigen tarief: €150 + €2,00/km,
+met een eigen bodem van €200 in plaats van €75. Dat minimum is hoger omdat de
+kortste rit over de grens al gauw een halve dag kost — heen, lossen, en leeg
+terug — terwijl een rit naar Turnhout korter is dan een rit naar Rotterdam.
+
+Het binnenlandse minimum van €75 is sinds de tariefverhoging een dode letter:
+het laagste starttarief is er zelf aan gelijk. Het staat er nog voor het geval je
+bij een klant een lager `Starttarief` afspreekt. Vul je `Starttarief` of `Km-tarief` zelf in,
 dan gaat die afspraak voor op het standaardtarief.
 
 Gecontroleerd tegen de rekenvoorbeelden op `/tarieven/`: 10, 25, 50 en 300 km voor
