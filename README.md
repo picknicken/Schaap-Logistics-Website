@@ -365,3 +365,47 @@ bestanden ongewijzigd geserveerd worden in plaats van door Jekyll te gaan.
 
 Aanpassing doorvoeren: bewerken, committen, pushen. Pages publiceert de nieuwe
 versie binnen ongeveer een minuut.
+
+### Verhuizen naar schaaplogistics.nl
+
+Het domein is geregistreerd bij Strato en wijst daar nu nog naar de eigen
+parkeerpagina. De volgorde luistert nauw: **eerst de DNS, dan pas het bestand
+`CNAME` in deze repo.** Andersom staat de site tussentijds op zwart, want zodra
+`CNAME` er is stuurt GitHub het oude `.github.io`-adres door naar een domein dat
+nog nergens heen wijst.
+
+**Stap 1 — bij Strato.** Vervang bij `schaaplogistics.nl` de A- en
+AAAA-records door die van GitHub Pages. De bestaande AAAA-records van Strato
+moeten weg; laat je er een staan, dan komt iedereen met IPv6 alsnog op de
+parkeerpagina uit.
+
+| Type | Naam | Waarde |
+| --- | --- | --- |
+| A | @ | 185.199.108.153 |
+| A | @ | 185.199.109.153 |
+| A | @ | 185.199.110.153 |
+| A | @ | 185.199.111.153 |
+| AAAA | @ | 2606:50c0:8000::153 |
+| AAAA | @ | 2606:50c0:8001::153 |
+| AAAA | @ | 2606:50c0:8002::153 |
+| AAAA | @ | 2606:50c0:8003::153 |
+| CNAME | www | picknicken.github.io. |
+
+Blijf van de MX- en TXT-records af: daar hangt de e-mail aan.
+
+**Stap 2 — in deze repo.** Een bestand `CNAME` in de root met daarin
+`schaaplogistics.nl`, en in de repo-instellingen onder Pages *Enforce HTTPS*
+aanzetten zodra GitHub het certificaat heeft aangemaakt (dat duurt een kwartier
+tot een paar uur).
+
+Let op: met een eigen domein verdwijnt het pad `/Schaap-Logistics-Website/`. De
+site komt op `https://schaaplogistics.nl/` te staan. Alle links binnen de site
+zijn relatief en gaan vanzelf mee, maar deze absolute adressen moeten met de
+hand om:
+
+- `robots.txt` en `sitemap.xml`
+- de formule `Factuurlink` op `Facturen` in Airtable
+- de links in de automatiseringen die mail versturen
+- `TOEGESTANE_ORIGIN` in beide `wrangler.toml`-bestanden (staat al klaar: die
+  accepteert nu een lijst, met het oude adres er nog bij zodat er tijdens het
+  verhuizen niets omvalt)

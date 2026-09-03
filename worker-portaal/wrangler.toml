@@ -13,4 +13,8 @@ AIRTABLE_OPDRACHTEN = "tblMNRxxvlQ2ykGCb"
 AIRTABLE_AANVRAGEN = "tblhvOATDAfvBmabA"
 AIRTABLE_KLANTEN = "tbluCJAsTFXdB2ZeR"
 AIRTABLE_FACTUREN = "tblDA2m46PWhhiFnC"
-TOEGESTANE_ORIGIN = "https://picknicken.github.io"
+# Meerdere adressen mogen, gescheiden door een komma. Het oude
+# github.io-adres blijft er voorlopig bij staan: dat leidt naar het
+# nieuwe door, maar tijdens het verhuizen van de DNS kan een bezoeker
+# nog even op het oude uitkomen.
+TOEGESTANE_ORIGIN = "https://schaaplogistics.nl,https://www.schaaplogistics.nl,https://picknicken.github.io"

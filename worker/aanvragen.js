@@ -8,7 +8,7 @@
    en als gewone variabelen:
      AIRTABLE_BASE    appLUKMbBBkJUagFs
      AIRTABLE_TABEL   tblhvOATDAfvBmabA
-     TOEGESTANE_ORIGIN  https://picknicken.github.io
+     TOEGESTANE_ORIGIN  https://schaaplogistics.nl,https://picknicken.github.io
    ========================================================================= */
 
 /* Alleen deze velden gaan door naar Airtable. Alles wat de aanvrager verder
@@ -63,10 +63,23 @@ const FOTONAMEN   = "Foto's meegestuurd";
 const MAX_FOTO_MB = 5;     /* limiet van het Airtable-uploadendpoint */
 const MAX_BODY_MB = 30;    /* hele verzoek, base64 meegerekend */
 
+/* Meer dan een adres toestaan. Tijdens een verhuizing naar een eigen
+   domeinnaam draaien het oude en het nieuwe adres een tijd naast elkaar; met
+   een enkele waarde zou je moeten kiezen welke van de twee stuk mag. Scheiden
+   met een komma. */
+function magVanOrigin(origin, toegestaan) {
+  if (!origin) { return false; }
+  return String(toegestaan || '')
+    .split(',')
+    .map((a) => a.trim().replace(/\/$/, ''))
+    .filter(Boolean)
+    .includes(origin.replace(/\/$/, ''));
+}
+
 export default {
   async fetch(verzoek, env) {
     const origin = verzoek.headers.get('Origin') || '';
-    const toegestaan = origin === env.TOEGESTANE_ORIGIN;
+    const toegestaan = magVanOrigin(origin, env.TOEGESTANE_ORIGIN);
 
     /* De site stuurt Content-Type: application/json, dus de browser doet eerst
        een preflight. Zonder dit antwoord komt de POST nooit aan. */

@@ -22,9 +22,15 @@ versturen die klopt.
 Er staan in totaal **30 plaatsen** in de HTML gemarkeerd met `data-placeholder`;
 die vallen geel op als je de pagina bekijkt, dus je kunt ze niet missen.
 
-**Een eigen domeinnaam** (`schaaplogistics.nl`) lost drie dingen tegelijk op: de
-spam, het `noreply@`-adres dat nu nergens naar wijst, en `info@` op je facturen
-in plaats van een gmail-adres. Ongeveer €10 per jaar.
+**De domeinnaam is er** — `schaaplogistics.nl`, geregistreerd bij Strato en
+geactiveerd. Hij wijst alleen nog naar Strato's eigen parkeerpagina. Wat er nog
+moet gebeuren staat in `README.md` onder *Verhuizen naar schaaplogistics.nl*:
+eerst de DNS omzetten, dan pas het bestand `CNAME` in de repo, en daarna de
+absolute adressen in `robots.txt`, `sitemap.xml` en Airtable.
+
+Daarmee vallen ook twee andere punten om: het `noreply@`-adres dat nu nergens
+naar wijst, en `info@schaaplogistics.nl` op je facturen in plaats van een
+gmail-adres.
 
 ---
 

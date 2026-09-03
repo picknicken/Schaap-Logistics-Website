@@ -19,7 +19,7 @@
      AIRTABLE_AANVRAGEN   tblhvOATDAfvBmabA
      AIRTABLE_KLANTEN     tbluCJAsTFXdB2ZeR
      AIRTABLE_FACTUREN    tblDA2m46PWhhiFnC
-     TOEGESTANE_ORIGIN    https://picknicken.github.io
+     TOEGESTANE_ORIGIN    https://schaaplogistics.nl,https://picknicken.github.io
 
    De token heeft data.records:read én data.records:write nodig. Alleen
    schrijven volstaat niet: het portaal leest je ritten uit.
@@ -161,10 +161,23 @@ function telMislukking(ip) {
   rij.aantal += 1;
 }
 
+/* Meer dan een adres toestaan. Tijdens een verhuizing naar een eigen
+   domeinnaam draaien het oude en het nieuwe adres een tijd naast elkaar; met
+   een enkele waarde zou je moeten kiezen welke van de twee stuk mag. Scheiden
+   met een komma. */
+function magVanOrigin(origin, toegestaan) {
+  if (!origin) { return false; }
+  return String(toegestaan || '')
+    .split(',')
+    .map((a) => a.trim().replace(/\/$/, ''))
+    .filter(Boolean)
+    .includes(origin.replace(/\/$/, ''));
+}
+
 export default {
   async fetch(verzoek, env) {
     const origin = verzoek.headers.get('Origin') || '';
-    const toegestaan = origin === env.TOEGESTANE_ORIGIN;
+    const toegestaan = magVanOrigin(origin, env.TOEGESTANE_ORIGIN);
 
     if (verzoek.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: cors(origin, toegestaan) });
