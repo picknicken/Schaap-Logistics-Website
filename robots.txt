@@ -1,4 +1,4 @@
-# Schaap Logistics
+# Schaap Express Transport
 # De besloten schermen (/factuur/, /portaal/, /klant/) worden hier bewust NIET
 # geblokkeerd. Ze dragen zelf <meta name="robots" content="noindex,nofollow">,
 # en dat werkt alleen als een zoekmachine de pagina mag ophalen om die regel te

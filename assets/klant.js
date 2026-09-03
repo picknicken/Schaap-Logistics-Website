@@ -64,7 +64,7 @@
         if (res.status === 401) {
           vergeet();
           throw new Error('Deze toegangscode werkt niet. Controleer hem, of ' +
-                          'vraag Schaap Logistics om een nieuwe.');
+                          'vraag Schaap Express Transport om een nieuwe.');
         }
         if (!res.ok || !data.ok) {
           throw new Error(data.fout || ('Er ging iets mis (' + res.status + ')'));

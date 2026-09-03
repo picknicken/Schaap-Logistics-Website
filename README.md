@@ -1,6 +1,6 @@
-# Schaap Logistics — website
+# Schaap Express Transport — website
 
-Statische site voor Schaap Logistics: zakelijk koeriers- en spoedtransport.
+Statische site voor Schaap Express Transport: zakelijk koeriers- en spoedtransport.
 Geen build-stap, geen framework, geen dependencies — platte HTML met één
 stylesheet en vier scriptbestanden.
 
@@ -167,7 +167,7 @@ staan.
 
 ## De factuur
 
-`/factuur/` toont één factuur in de opmaak van de mal van Schaap Logistics, klaar
+`/factuur/` toont één factuur in de opmaak van de mal van Schaap Express Transport, klaar
 om te printen of als PDF op te slaan. De pagina heeft geen database: alles komt
 uit de adresregel.
 

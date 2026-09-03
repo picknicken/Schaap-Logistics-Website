@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Factuur — Schaap Logistics</title>
-<meta name="description" content="Factuur van Schaap Logistics.">
+<title>Factuur — Schaap Express Transport</title>
+<meta name="description" content="Factuur van Schaap Express Transport.">
 <meta name="theme-color" content="#0b1526">
 <!-- Deze pagina hoort nooit in Google: hij toont klantgegevens uit de URL. -->
 <meta name="robots" content="noindex,nofollow">
@@ -12,7 +12,7 @@
 <link rel="preload" href="../assets/inter.woff2" as="font" type="font/woff2" crossorigin>
 <style>
 /* =========================================================================
-   Factuur van Schaap Logistics, opgemaakt naar de Word-mal.
+   Factuur van Schaap Express Transport, opgemaakt naar de Word-mal.
    De gegevens komen uit de adresregel van de browser; zie het veld
    Factuurlink in de tabel Facturen. Zonder gegevens toont de pagina een
    voorbeeldfactuur, zodat je altijd ziet hoe hij eruitziet.
@@ -201,14 +201,14 @@ tbody td.af{color:#1d7a4c}
     <div>
       <h1 id="v-titel">Factuur</h1>
       <div class="afzender" style="text-align:left;margin-top:14px">
-        <b>Schaap Logistics</b>
+        <b>Schaap Express Transport</b>
         <!-- PLACEHOLDER bedrijfsgegevens -->
         <span id="afzender">[Adres] &middot; [Postcode + Plaats]<br>
         KvK [nummer] &middot; Btw [nummer]<br>
         [Telefoon] &middot; [E-mail]</span>
       </div>
     </div>
-    <img class="kop__logo" src="../assets/logo-volledig.png" alt="Schaap Logistics" width="720" height="510">
+    <img class="kop__logo" src="../assets/logo-volledig.png" alt="Schaap Express Transport" width="720" height="510">
   </header>
 
   <section class="meta">
@@ -287,7 +287,7 @@ tbody td.af{color:#1d7a4c}
       <span class="betaalregels">
         <span>IBAN: [NL00 XXXX 0000 0000 00]</span>
         <span>BIC: [BIC]</span>
-        <span>Ten name van: Schaap Logistics</span>
+        <span>Ten name van: Schaap Express Transport</span>
       </span>
     </p>
   </section>
@@ -295,7 +295,7 @@ tbody td.af{color:#1d7a4c}
   <footer class="voet">
     Op al onze opdrachten zijn onze algemene voorwaarden van toepassing.<br>
     <!-- PLACEHOLDER website en e-mailadres -->
-    Schaap Logistics &middot; [website] &middot; [e-mailadres]
+    Schaap Express Transport &middot; [website] &middot; [e-mailadres]
   </footer>
 
 </main>
@@ -398,7 +398,7 @@ tbody td.af{color:#1d7a4c}
     document.getElementById('v-creditvan').hidden = false;
     document.getElementById('v-betaalzin').hidden = true;
     document.getElementById('v-creditzin').hidden = false;
-    document.title = 'Creditfactuur — Schaap Logistics';
+    document.title = 'Creditfactuur — Schaap Express Transport';
     zet('v-route', '—');
     zet('v-omschrijving', 'Creditering van factuur ' + (creditVan || ''));
   }
@@ -549,7 +549,7 @@ tbody td.af{color:#1d7a4c}
   zet('v-btw',       euro.format(btw));
   zet('v-totaal',    euro.format(subtotaal + btw));
 
-  document.title = 'Factuur ' + (lees('nr', 'SL-2026-0001') || '') + ' — Schaap Logistics';
+  document.title = 'Factuur ' + (lees('nr', 'SL-2026-0001') || '') + ' — Schaap Express Transport';
   document.getElementById('printen').addEventListener('click', function () { window.print(); });
 })();
 </script>

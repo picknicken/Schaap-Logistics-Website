@@ -23,7 +23,7 @@ Die Worker staat in [`worker/aanvragen.js`](worker/aanvragen.js) en draait op
 
 ## Wat er al klaar staat
 
-**De tabel.** In de base *Schaap Logistics* staat `Website-aanvragen`, met
+**De tabel.** In de base *Schaap Express Transport* staat `Website-aanvragen`, met
 kolomnamen die exact overeenkomen met wat de site verstuurt.
 
 | | |
@@ -47,7 +47,7 @@ Op [airtable.com/create/tokens](https://airtable.com/create/tokens) een
 persoonlijke toegangstoken aanmaken met:
 
 - scope `data.records:write`
-- toegang tot alleen de base *Schaap Logistics*
+- toegang tot alleen de base *Schaap Express Transport*
 
 Kopieer de token; hij is daarna niet meer op te vragen. Plak hem nergens anders
 dan in stap 3.
@@ -331,7 +331,7 @@ daarom in UTC: 07:00 UTC is 09:00 in de zomer en 08:00 in de winter. Dat
 verschuift dus een uur bij de overgang naar wintertijd. Voor een
 ochtendklus maakt dat niet uit.
 
-Nog niet gebouwd: een seintje naar Schaap Logistics zelf wanneer dat gebeurt, en
+Nog niet gebouwd: een seintje naar Schaap Express Transport zelf wanneer dat gebeurt, en
 automatische herinneringen naar de klant. Allebei wachten op een e-mailadres.
 
 ### Van aanvraag tot factuur

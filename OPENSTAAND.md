@@ -16,6 +16,29 @@ Vier soorten werk, in volgorde van hoe hard het knelt:
 
 ---
 
+## 0. De naamswissel is halverwege
+
+De naam is **Schaap Express Transport**. De teksten op de site zijn om; het logo
+en het domein volgen nog, en daar hangt een tweede ronde aan vast:
+
+| Wat | Waarom het nog niet kan |
+| --- | --- |
+| **Het logo** | `logo-sl*.png` en `logo-volledig*.png` tonen nog het SL-monogram. Jij maakt een nieuw beeldmerk |
+| **`assets/deelkaart.jpg`** | Het deelplaatje draagt het oude logo én het oude domein. Maak ik opnieuw zodra beide er zijn |
+| **Het domein** | `schaaplogistics.nl` staat nog in 21 bestanden, in `CNAME`, in de DNS bij Strato, in twee `wrangler.toml`, en in de Airtable-formules `Factuurlink` en `Portaallink` |
+| **`info@schaaplogistics.nl`** | Hangt aan het domein |
+| **De mailteksten in Airtable** | Alle dertien automatiseringen ondertekenen met de oude naam en linken naar het oude domein. Die twee dingen zitten in dezelfde regels, dus ik doe ze in één ronde zodra het domein bekend is |
+
+Laat `schaaplogistics.nl` daarna aflopen. Dat adres is precies wat botst met
+Schaap Logistics B.V. in Breda, en zolang je het aanhoudt houd je die botsing in
+stand.
+
+**En nog niet vergeten:** laat toetsen of *Schaap Express Transport* voldoende
+afstand houdt tot Schaap Logistics B.V. voordat je hem bij de KvK vastlegt. Het
+blijft Schaap plus een transportwoord in dezelfde branche.
+
+---
+
 ## 1. Wat de livegang tegenhoudt
 
 Dit zijn geen bouwklussen. Het zijn gegevens die alleen jij hebt, en zonder deze
