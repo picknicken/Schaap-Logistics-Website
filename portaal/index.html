@@ -229,6 +229,14 @@ input{font:inherit}
 .veldlink{font-size:.85rem;color:var(--onderweg);text-decoration:none;
   border-bottom:1px solid currentColor;justify-self:start}
 
+/* De handtekening zoals hij gezet is. Op een witte ondergrond met een rand,
+   zodat een lichte krabbel niet in de pagina verdwijnt. */
+.krabbel{
+  display:block;background:#fff;border:1px solid var(--line);border-radius:10px;
+  padding:8px;
+}
+.krabbel img{width:100%;height:auto;display:block;max-height:180px;object-fit:contain}
+
 /* Wat de rit jou kostte. Ingeklapt, want tijdens het rijden is het in de weg;
    met de bon in je hand klap je hem open. */
 .kosten{border:1px solid var(--line);border-radius:11px;overflow:hidden;background:var(--paper-2)}

@@ -37,6 +37,9 @@ body{
 }
 
 /* ---------- balk met bediening, verdwijnt bij printen ---------- */
+/* display:flex wint het anders van het hidden-attribuut, waardoor de balk
+   toch bij de klant in beeld zou komen. */
+[hidden]{display:none!important}
 .balk{
   max-width:820px;margin:0 auto 20px;
   background:var(--inkt);color:#c9d6ea;border-radius:10px;
@@ -85,6 +88,9 @@ body{
 .blok .naam{font-weight:600}
 
 /* ---------- regels ---------- */
+/* Op een telefoon past een tabel met zes kolommen niet. Zonder deze omhulling
+   loopt de laatste kolom — het bedrag, juist waar het om gaat — buiten beeld. */
+.regelvak{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:4px}
 table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:4px}
 thead th{
   font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
@@ -129,6 +135,27 @@ tbody tr.leeg td{color:var(--zacht)}
   .afzender{text-align:left}
   .meta,.blokken{grid-template-columns:1fr;gap:18px}
   .totalen dl{min-width:0;width:100%}
+
+  /* De regels worden kaartjes: elk bedrag met zijn eigen label ernaast, zodat
+     er niets buiten beeld valt en je niet hoeft te schuiven. */
+  .regelvak{overflow-x:visible}
+  table,thead,tbody,tr,td{display:block;width:100%}
+  thead{display:none}
+  tbody tr{
+    border-bottom:1px solid var(--lijn);padding:12px 0;
+    display:grid;grid-template-columns:auto 1fr;gap:4px 12px;
+  }
+  tbody td{border:0;padding:0;text-align:right}
+  tbody td::before{
+    content:attr(data-kop);float:left;color:var(--zacht);font-weight:600;
+    font-size:10px;letter-spacing:.09em;text-transform:uppercase;
+  }
+  tbody td:nth-child(1){grid-column:1;font-size:10px;color:var(--zacht);text-align:left}
+  tbody td:nth-child(2){grid-column:2;text-align:left;font-weight:600;color:var(--inkt)}
+  tbody td:nth-child(1)::before,tbody td:nth-child(2)::before{content:none}
+  tbody td:nth-child(n+3){grid-column:1 / -1}
+  tbody tr.leeg{display:block}
+  tbody tr.leeg td{text-align:left}
 }
 
 @media print{
@@ -142,7 +169,11 @@ tbody tr.leeg td{color:var(--zacht)}
 </head>
 <body>
 
-<div class="balk">
+<!-- De uitleg over de PDF is voor onszelf, niet voor de klant: die opent
+     dezelfde pagina vanuit zijn portaal. Hij staat daarom standaard uit en
+     verschijnt alleen als de adresregel ?beheer=1 bevat, wat de Factuurlink
+     in Airtable meestuurt. -->
+<div class="balk" id="balk" hidden>
   <p>
     <b>Zo maak je hier een PDF van:</b> druk op de knop hiernaast en kies bij
     bestemming <em>Bewaren als PDF</em>. Sleep dat bestand daarna in het veld PDF
@@ -150,6 +181,13 @@ tbody tr.leeg td{color:var(--zacht)}
   </p>
   <button type="button" id="printen">Opslaan als PDF</button>
 </div>
+<script>
+  /* Meteen hier, nog voor de rest van de pagina: anders flitst de balk even
+     in beeld bij de klant. */
+  if (new URLSearchParams(window.location.search).get('beheer') === '1') {
+    document.getElementById('balk').hidden = false;
+  }
+</script>
 
 <main class="vel">
 
@@ -200,6 +238,7 @@ tbody tr.leeg td{color:var(--zacht)}
     </div>
   </section>
 
+  <div class="regelvak">
   <table>
     <thead>
       <tr>
@@ -213,6 +252,7 @@ tbody tr.leeg td{color:var(--zacht)}
     </thead>
     <tbody id="regels"></tbody>
   </table>
+  </div>
 
   <div class="totalen">
     <dl>
@@ -413,6 +453,7 @@ tbody tr.leeg td{color:var(--zacht)}
   }
 
   var subtotaal = 0;
+  var KOPPEN = ['Regel', 'Omschrijving', 'Aantal', 'Prijs', 'Btw', 'Nettobedrag'];
   regels.forEach(function (r, i) {
     subtotaal += r.bedrag;
     var tr = document.createElement('tr');
@@ -423,10 +464,12 @@ tbody tr.leeg td{color:var(--zacht)}
       [euro.format(r.prijs), 'num'],
       ['21%', 'num'],
       [euro.format(r.bedrag), 'num']
-    ].forEach(function (cel) {
+    ].forEach(function (cel, k) {
       var td = document.createElement('td');
       td.textContent = cel[0];
       if (cel[1]) { td.className = cel[1]; }
+      /* Op een telefoon vervalt de kolomkop; dan zet de stijl hem hier voor. */
+      td.setAttribute('data-kop', KOPPEN[k]);
       tr.appendChild(td);
     });
     lijf.appendChild(tr);

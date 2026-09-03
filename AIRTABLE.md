@@ -211,6 +211,25 @@ het dan op alle drie aan — anders factureer je iets anders dan je op je site b
 De tabel `Tarieven` is een naslagoverzicht, geen bron: daar iets wijzigen verandert
 niets aan je facturen.
 
+#### Wat er wel en niet op de factuur mag
+
+Je eigen kosten en de kosten van de klant zijn twee verschillende dingen:
+
+| Veld op `Ritten` | Van wie | Op de factuur? |
+| --- | --- | --- |
+| `Brandstofkosten`, `Tol en parkeren`, `Overige ritkosten` | jouw kosten, voor je eigen boekhouding | nee |
+| `Extra kosten` (in het portaal: *Doorberekenen*) | wat de klant je terugbetaalt | ja, als losse regel *Doorberekende kosten* |
+
+Brandstof zit al in het kilometertarief — dat is precies waar €1,50 tot €2,50 per
+kilometer voor bedoeld is. Zet je je brandstof daarnaast ook nog op de factuur,
+dan betaalt de klant twee keer voor dezelfde liters. Dekt het kilometertarief je
+kosten niet meer, dan hoort het kilometertarief omhoog (op alle drie de plekken
+hierboven), niet een extra regel op de factuur.
+
+Tol, veerpont, parkeergeld of iets dat je onderweg voor de klant moest kopen zijn
+wél door te berekenen: die zet je in `Extra kosten`, en dan komt het via de
+`Factuurlink` als eigen regel op de factuur te staan.
+
 De formule volgt de website exact: standaard €50 + €1,50/km, spoed €75 + €2,00/km,
 directe spoed €100 + €2,50/km, minimum €75 per opdracht, en daarna pas de extra
 kosten erbij. Internationaal blijft leeg — dat gaat op offerte, dus vul je

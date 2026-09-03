@@ -493,6 +493,21 @@
       }
       bewijs.appendChild(tekst);
       lijf.appendChild(bewijs);
+
+      /* En de krabbel zelf, want anders kun je hem alleen in Airtable terugzien
+         en is het geen bewijs dat je onderweg even laat zien. */
+      if (rit.krabbel) {
+        var vak = maak('a', 'krabbel');
+        vak.href = rit.krabbel;
+        vak.target = '_blank';
+        vak.rel = 'noopener';
+        var afb = document.createElement('img');
+        afb.src = rit.krabbel;
+        afb.alt = 'Handtekening van ' + (rit.getekend || 'de ontvanger');
+        afb.loading = 'lazy';
+        vak.appendChild(afb);
+        lijf.appendChild(vak);
+      }
     }
 
     /* Zonder kilometers rekent de factuur alleen het starttarief en valt hij
@@ -533,8 +548,9 @@
       lijf.appendChild(extraRij);
       lijf.appendChild(maak('div', 'terzijde',
         'Eerste 15 minuten wachten inbegrepen, daarna € 15 per kwartier. ' +
-        'Onder Doorberekenen zet je tol of parkeren die de klant betaalt — ' +
-        'jouw eigen kosten horen hieronder.'));
+        'Onder Doorberekenen zet je tol, parkeren of veerpont die de klant betaalt; ' +
+        'dat komt als losse regel op de factuur. Brandstof niet: die zit al in het ' +
+        'kilometertarief. Jouw eigen kosten horen hieronder.'));
 
       var kmKnop = maak('button', 'knop knop--rand', 'Gegevens van de rit opslaan');
       kmKnop.type = 'button';

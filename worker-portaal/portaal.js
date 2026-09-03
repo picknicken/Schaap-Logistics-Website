@@ -739,7 +739,10 @@ function naarKlantRit(record) {
     bedrag:     f[R.totaal] || 0,
     getekend:   f[R.getekendD] || '',
     getekendOp: f[R.getekendO] || '',
-    afgeleverd: Array.isArray(f[R.handtek]) && f[R.handtek].length > 0
+    afgeleverd: Array.isArray(f[R.handtek]) && f[R.handtek].length > 0,
+    /* De klant mag zijn eigen afleverbewijs zien. Het is het bewijs dat zijn
+       zending is aangekomen; daar hoeft hij ons niet voor te bellen. */
+    krabbel:    bijlageUrl(f[R.handtek])
   };
 }
 
@@ -754,7 +757,9 @@ function naarKlantFactuur(record) {
     betaald:    f['Betaald'] || 0,
     openstaand: f['Openstaand'] || 0,
     status:     keuze(f['Status']) || '',
-    link:       f['Factuurlink'] || '',
+    /* De beheerbalk boven de factuur ("sleep de PDF in Airtable") is voor ons.
+       De klant krijgt dezelfde pagina zonder die schakelaar erin. */
+    link:       zonderBeheer(f['Factuurlink']),
     pdf:        pdf ? (pdf.url || '') : ''
   };
 }
@@ -888,6 +893,19 @@ function heelGetal(w, maximum) {
   return Math.round(n);
 }
 
+/* Het adres van de eerste bijlage. Airtable geeft die links een houdbaarheid
+   mee, dus hij is niet eeuwig geldig — precies goed voor iets wat je opent op
+   het moment dat je ernaar kijkt. */
+function bijlageUrl(veld) {
+  if (!Array.isArray(veld) || !veld.length) { return ''; }
+  const eerste = veld[0] || {};
+  return String(eerste.url || '');
+}
+
+function zonderBeheer(link) {
+  return String(link || '').replace(/([?&])beheer=1&?/, '$1').replace(/[?&]$/, '');
+}
+
 function recordId(w) {
   return /^rec[A-Za-z0-9]{14}$/.test(String(w || '')) ? String(w) : null;
 }
@@ -935,7 +953,10 @@ function naarRit(record) {
     getekend:   f[R.getekendD] || '',
     getekendOp: f[R.getekendO] || '',
     onderweg:   f[R.onderweg] || '',
-    handtekening: Array.isArray(f[R.handtek]) && f[R.handtek].length > 0
+    handtekening: Array.isArray(f[R.handtek]) && f[R.handtek].length > 0,
+    /* De krabbel zelf. Zonder deze link kun je hem nergens terugzien behalve
+       in Airtable, en dan is het geen afleverbewijs dat je even laat zien. */
+    krabbel:      bijlageUrl(f[R.handtek])
   };
 }
 

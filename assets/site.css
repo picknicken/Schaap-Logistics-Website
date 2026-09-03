@@ -75,17 +75,19 @@ header{
   border-bottom:1px solid var(--line-dark);
 }
 .nav{display:flex;align-items:center;gap:28px;height:72px}
-.brand{display:flex;align-items:center;gap:11px;text-decoration:none;margin-right:auto}
+.brand{display:flex;align-items:center;gap:11px;text-decoration:none;margin-right:30px}
 /* Het beeldmerk uit de huisstijl. Wit, want header en footer zijn donker. */
 .brand__mark{height:34px;width:auto;flex:none;display:block}
 .brand__name{color:#fff;font-weight:800;font-size:1.06rem;letter-spacing:-.02em;line-height:1.15}
 .brand__sub{color:#7f90aa;font-size:.68rem;font-weight:600;letter-spacing:.09em;text-transform:uppercase}
-.nav__links{display:flex;gap:20px;list-style:none}
+/* De links staan links, naast het logo, en duwen de knoppen naar rechts. Een
+   menu dat je van links naar rechts leest hoort ook links te beginnen. */
+.nav__links{display:flex;gap:4px;list-style:none;margin-right:auto}
 .nav__links a{
-  color:#c3cfe2;text-decoration:none;font-size:.92rem;font-weight:500;white-space:nowrap;
-  padding:6px 0;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;
+  color:#a9b8cf;text-decoration:none;font-size:.85rem;font-weight:500;white-space:nowrap;
+  padding:7px 11px;border-radius:8px;transition:color .15s,background .15s;
 }
-.nav__links a:hover{color:#fff;border-bottom-color:var(--amber)}
+.nav__links a:hover{color:#fff;background:rgba(255,255,255,.07)}
 .nav__phone{
   display:inline-flex;align-items:center;gap:8px;text-decoration:none;
   color:#fff;font-weight:700;font-size:.95rem;white-space:nowrap;
@@ -98,8 +100,9 @@ header{
    Rustiger dan het telefoonnummer, want bellen blijft de hoofdweg. */
 .nav__links a.nav__login{
   padding:8px 16px;border-radius:9px;border:1px solid rgba(255,255,255,.22);
-  color:#fff;font-weight:600;
+  color:#fff;font-weight:600;margin-left:8px;
 }
+.nav__links a.nav__login::before{content:none}
 .nav__links a.nav__login:hover{background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.4)}
 .nav__toggle{display:none;background:none;border:0;color:#fff;padding:8px;cursor:pointer}
 
@@ -365,16 +368,24 @@ footer a:hover{color:var(--amber)}
 /* De menubalk klapt eerder in dan de rest van de pagina: met zes links en het
    telefoonnummer erbij past hij op 940px net niet meer naast het logo. */
 @media (max-width:1040px){
+  /* Zonder links ernaast heeft het logo die marge niet nodig; met marge breekt
+     de naam op een smal scherm over twee regels. */
+  .brand{margin-right:0}
   .nav__links{display:none}
   .nav__links.is-open{
-    display:flex;position:absolute;top:72px;left:0;right:0;flex-direction:column;gap:0;
-    background:var(--navy);border-bottom:1px solid var(--line-dark);padding:8px 24px 18px;
+    display:flex;position:absolute;top:72px;left:0;right:0;flex-direction:column;gap:2px;
+    background:var(--navy);border-bottom:1px solid var(--line-dark);
+    padding:10px 20px 18px;box-shadow:0 14px 30px rgba(0,0,0,.35);
   }
-  .nav__links.is-open a{padding:12px 0;border-bottom:1px solid var(--line-dark)}
-  /* In het uitgeklapte menu geen streep onder de knop: dan lijkt het weer een
-     gewoon menu-item. */
+  /* Blok, niet inline: anders loopt de scheidingslijn maar tot halverwege de
+     tekst en schuift de knop over het item erboven. */
+  .nav__links.is-open li{display:block;width:100%}
+  .nav__links.is-open a{
+    display:block;width:100%;padding:13px 12px;font-size:.95rem;border-radius:9px;
+  }
+  .nav__links.is-open a[aria-current="page"]{background:rgba(255,255,255,.10)}
   .nav__links.is-open a.nav__login{
-    margin-top:12px;padding:12px 16px;text-align:center;
+    margin-top:10px;text-align:center;font-size:.95rem;
     border:1px solid rgba(255,255,255,.22);
   }
   .nav__toggle{display:block;order:3}
@@ -533,7 +544,16 @@ footer a:hover{color:var(--amber)}
 /* ---------- meerdere pagina's ---------- */
 
 /* De pagina waar je nu bent, oplichten in het menu. */
-.nav__links a[aria-current="page"]{color:#fff;border-bottom-color:var(--amber)}
+/* De pagina waar je bent. Eerder was dit een oranje streepje onder de tekst;
+   dat leek bij het scrollen een los balkje dat met je meeschoof. Een rustig
+   vlak met een oranje stipje ervoor zegt hetzelfde en staat stil. */
+.nav__links a[aria-current="page"]{
+  color:#fff;font-weight:600;background:rgba(255,255,255,.10);
+}
+.nav__links a[aria-current="page"]::before{
+  content:"";display:inline-block;width:5px;height:5px;border-radius:50%;
+  background:var(--amber);margin-right:7px;vertical-align:1px;
+}
 
 /* Uitgewerkte dienst op /diensten/. */
 .dienst{

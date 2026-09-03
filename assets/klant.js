@@ -236,6 +236,21 @@
       ));
       bewijs.appendChild(t);
       lijf.appendChild(bewijs);
+
+      /* De krabbel zelf erbij. Dat is waar een afleverbewijs om draait: je
+         wilt hem kunnen zien, niet alleen lezen dat hij bestaat. */
+      if (r.krabbel) {
+        var vak = maak('a', 'krabbel');
+        vak.href = r.krabbel;
+        vak.target = '_blank';
+        vak.rel = 'noopener';
+        var afb = document.createElement('img');
+        afb.src = r.krabbel;
+        afb.alt = 'Handtekening van ' + (r.getekend || 'de ontvanger');
+        afb.loading = 'lazy';
+        vak.appendChild(afb);
+        lijf.appendChild(vak);
+      }
     }
 
     kaart.appendChild(lijf);
