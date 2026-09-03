@@ -476,6 +476,21 @@
     regel('Opmerking', rit.opmerking);
     if (dl.children.length) { lijf.appendChild(dl); }
 
+    /* --- de klant heeft zelf afgezegd --- */
+    if (rit.afgezegdDoorKlant) {
+      var afzeg = maak('div', 'bewijs bewijs--mist');
+      var afzegT = maak('div');
+      afzegT.appendChild(maak('b', '', 'Door de klant afgezegd'));
+      afzegT.appendChild(document.createTextNode(
+        (rit.afgezegdOp ? 'In het klantportaal op ' + datumKort(rit.afgezegdOp) +
+          ' om ' + klok(rit.afgezegdOp) + '. ' : 'In het klantportaal. ') +
+        (rit.afzegreden ? 'Reden: ' + rit.afzegreden :
+          'Er is geen reden opgegeven.')
+      ));
+      afzeg.appendChild(afzegT);
+      lijf.appendChild(afzeg);
+    }
+
     /* --- afleverbewijs --- */
     if (rit.status === 'Uitgevoerd') {
       var bewijs = maak('div', 'bewijs' + (rit.handtekening ? '' : ' bewijs--mist'));

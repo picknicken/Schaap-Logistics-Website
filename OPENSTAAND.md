@@ -62,11 +62,20 @@ Artikel 9 van de voorwaarden en de tarieventabel zeggen nu allebei hetzelfde: to
 je vertrekt kosteloos, daarna het starttarief plus de gereden kilometers, met een
 minimum van €75.
 
-In Airtable staat op `Ritten` een vinkje **Annulering doorbelasten**. Zet de rit
-op *Geannuleerd*, pas `Kilometers` aan naar wat je werkelijk gereden hebt en zet
-het vinkje aan; dan maakt de automatisering **Geannuleerde rit doorbelasten**
-(`wflu0LCjXTvG7ZSj7`) er een conceptfactuur bij, met *(geannuleerde rit)* achter
-de omschrijving. Ook deze staat nog uit en moet je in Airtable aanzetten.
+**Jij, als je al onderweg was.** Op `Ritten` staat een vinkje **Annulering
+doorbelasten**. Zet de rit op *Geannuleerd*, pas `Kilometers` aan naar wat je
+werkelijk gereden hebt en zet het vinkje aan; dan maakt de automatisering
+**Geannuleerde rit doorbelasten** (`wflu0LCjXTvG7ZSj7`) er een conceptfactuur bij,
+met *(geannuleerde rit)* achter de omschrijving.
+
+**De klant, in zijn eigen portaal.** Bij een zending die nog op *Gepland* staat
+staat nu een knop *Deze zending annuleren*, met een bevestigingsstap en ruimte
+voor een reden. De rit gaat op *Geannuleerd* en jij krijgt een mail via **Seintje
+bij een annulering door de klant** (`wflt0t7LtWvQDpj5d`). Is de rit al *Onderweg*,
+dan verdwijnt de knop en krijgt de klant te zien dat hij moet bellen — vanaf dat
+moment kost het geld en hoort er een gesprek bij.
+
+Alle drie de automatiseringen staan nog uit en moet je in Airtable aanzetten.
 
 ### d. De portaalcode is één gedeeld wachtwoord
 

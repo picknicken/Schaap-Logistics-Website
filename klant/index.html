@@ -86,6 +86,9 @@ input{font:inherit}
 .knop:active{opacity:.75}
 .knop--vol{background:var(--amber);color:var(--navy);width:100%}
 .knop--rand{background:var(--paper);color:var(--heading);border:1.5px solid var(--line)}
+/* Alleen voor het echte afzeggen. Rood genoeg om te laten zien dat er iets
+   ongedaan wordt gemaakt, niet zo rood dat het een foutmelding lijkt. */
+.knop--waarschuwing{background:var(--urgent);color:#fff}
 .knop[disabled]{opacity:.5;pointer-events:none}
 
 .melding{
@@ -132,6 +135,7 @@ input{font:inherit}
 .s-gepland{background:var(--paper-2);color:var(--muted);border:1px solid var(--line)}
 .s-onderweg{background:var(--onderweg-vlak);color:var(--onderweg);border:1px solid var(--onderweg)}
 .s-uitgevoerd{background:var(--ok-vlak);color:var(--ok);border:1px solid var(--ok)}
+.s-geannuleerd{background:#fdecea;color:#8c2415;border:1px solid #e8a99f}
 .s-open{background:#fff4e0;color:#8a5a00;border:1px solid #e0a94a}
 .s-betaald{background:var(--ok-vlak);color:var(--ok);border:1px solid var(--ok)}
 .kaart__hoofd{flex:1;min-width:0}
@@ -156,6 +160,31 @@ input{font:inherit}
 }
 .krabbel img{width:100%;height:auto;display:block;max-height:180px;object-fit:contain}
 .bewijs b{display:block;color:#08512f}
+
+/* ----------------------------------------------------------- afzeggen */
+/* De knop staat er rustig bij; de bevestiging eronder is waar het gebeurt.
+   Zo kost afzeggen twee handelingen, en dat is precies de bedoeling. */
+.afzeggen{display:grid;gap:10px}
+.afzeggen .knop{width:100%}
+.afzeggen__vraag{
+  display:grid;gap:10px;border:1px solid #e8a99f;border-radius:11px;
+  background:#fdecea;padding:13px 14px;
+}
+.afzeggen__vraag p{font-size:.86rem;color:#8c2415;line-height:1.5}
+.afzeggen__vraag textarea{
+  font:inherit;font-size:.9rem;width:100%;resize:vertical;
+  border:1px solid var(--line);border-radius:9px;padding:10px 12px;
+  background:var(--paper);color:var(--text);
+}
+.afzeggen__vraag textarea:focus-visible{outline:2px solid var(--navy);outline-offset:1px}
+.afzeggen__vraag .knoppen{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+.afgezegd{
+  display:flex;gap:10px;align-items:flex-start;
+  background:#fdecea;border:1px solid #e8a99f;border-radius:10px;
+  padding:11px 14px;font-size:.86rem;color:#8c2415;flex-direction:column;
+}
+.afgezegd b{color:#6f1b10}
 
 .bedrag{
   display:flex;justify-content:space-between;align-items:baseline;gap:12px;

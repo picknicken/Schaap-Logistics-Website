@@ -291,6 +291,23 @@ record-ids, en uiteraard alles wat aan een andere klant hangt. Dat laatste zit
 structureel dicht: het portaal vraagt niet "geef alle ritten en filter" maar
 "geef de ritten die aan deze klant hangen".
 
+**Zelf afzeggen.** Bij een zending die nog op *Gepland* staat, staat een knop
+*Deze zending annuleren*. Twee handelingen: eerst de knop, dan een bevestiging
+met ruimte voor een reden — één verkeerde tik op een telefoon mag geen zending
+afzeggen. De rit gaat daarna in Airtable op *Geannuleerd*, met het moment en de
+reden erbij, en jij krijgt er meteen een mail over.
+
+Zodra een rit *Onderweg* is, verdwijnt de knop, en probeert iemand het toch
+buiten de pagina om, dan weigert de Worker het met de boodschap dat er gebeld
+moet worden. Dat is met opzet: vanaf dat moment kost afzeggen geld (artikel 9
+van de voorwaarden) en hoort daar een gesprek bij, geen knop.
+
+Om die knop aan een zending te kunnen hangen zonder record-ids weg te geven,
+krijgt elke zending een vaste, betekenisloze sleutel van zestien tekens. De
+Worker rekent hem terug door de sleutels van de zendingen van díe klant uit te
+rekenen en te kijken welke past. Een sleutel opent dus niets, en de zending van
+een ander is onbereikbaar — die staat niet in de lijst waar het zoeken begint.
+
 **Een code uitdelen.** Maak je een klant aan via het chauffeursportaal, dan komt
 er vanzelf een code op het veld `Portaalcode`. In de interface *Administratie* →
 *Klanten* staat daarnaast `Portaallink`: die link mag je doorsturen, de code zit

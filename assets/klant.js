@@ -153,19 +153,22 @@
     return e;
   }
 
-  function toon(data) {
+  /* openHouden is de sleutel van de zending die zojuist is afgezegd. Zonder dat
+     klapt de kaart dicht op het moment dat je op Ja drukt, en zie je de
+     bevestiging niet die je net verdiend hebt. */
+  function toon(data, openHouden) {
     ritten = data.ritten || [];
     facturen = data.facturen || [];
     if (data.klant && data.klant.naam) {
       el('kop-klant').textContent = data.klant.naam.toUpperCase();
     }
     badge('badge-zendingen', ritten.filter(function (r) {
-      return r.status !== 'Uitgevoerd';
+      return r.status !== 'Uitgevoerd' && r.status !== 'Geannuleerd';
     }).length);
     badge('badge-facturen', facturen.filter(function (f) {
       return (Number(f.openstaand) || 0) > 0;
     }).length);
-    tekenZendingen();
+    tekenZendingen(openHouden);
     tekenFacturen();
   }
 
@@ -185,19 +188,22 @@
     return dl.children.length ? dl : null;
   }
 
-  function tekenZendingen() {
+  function tekenZendingen(openHouden) {
     var lijst = el('lijst-zendingen');
     lijst.innerHTML = '';
     if (!ritten.length) {
       lijst.appendChild(maak('div', 'leeg', 'Er staan nog geen zendingen op uw naam.'));
       return;
     }
-    ritten.forEach(function (r) { lijst.appendChild(tekenZending(r)); });
+    ritten.forEach(function (r) {
+      lijst.appendChild(tekenZending(r, r.sleutel && r.sleutel === openHouden));
+    });
   }
 
-  function tekenZending(r) {
+  function tekenZending(r, openHouden) {
     var kaart = maak('details', 'kaart');
-    kaart.open = r.status !== 'Uitgevoerd';
+    kaart.open = openHouden ||
+      (r.status !== 'Uitgevoerd' && r.status !== 'Geannuleerd');
 
     var kop = maak('summary', 'kaart__kop');
     kop.appendChild(maak('span', 'merk s-' + r.status.toLowerCase(), r.status));
@@ -224,6 +230,19 @@
       b.appendChild(maak('span', '', 'Bedrag'));
       b.appendChild(maak('b', '', euro.format(r.bedrag) + ' excl. btw'));
       lijf.appendChild(b);
+    }
+
+    if (r.magAnnuleren) {
+      lijf.appendChild(annuleerBlok(r));
+    } else if (r.status === 'Geannuleerd') {
+      var af = maak('div', 'afgezegd');
+      af.appendChild(maak('b', '', 'Geannuleerd'));
+      af.appendChild(document.createTextNode(
+        r.geannuleerdOp
+          ? 'Afgezegd op ' + datumKort(r.geannuleerdOp) + ' om ' + klok(r.geannuleerdOp) + '.'
+          : 'Deze zending is afgezegd.'
+      ));
+      lijf.appendChild(af);
     }
 
     if (r.afgeleverd || r.getekend) {
@@ -255,6 +274,69 @@
 
     kaart.appendChild(lijf);
     return kaart;
+  }
+
+  /* Afzeggen kan in het portaal alleen zolang de rit nog gepland staat. Is de
+     chauffeur al vertrokken, dan zegt de Worker dat er gebeld moet worden — dan
+     kost het geld en hoort er een mens aan te pas te komen.
+
+     Twee stappen: eerst een knop, dan pas het echte afzeggen. Eén verkeerde tik
+     op een telefoon mag geen zending afzeggen. */
+  function annuleerBlok(r) {
+    var vak = maak('div', 'afzeggen');
+    var start = maak('button', 'knop knop--rand', 'Deze zending annuleren');
+    start.type = 'button';
+
+    var vraag = maak('div', 'afzeggen__vraag');
+    vraag.hidden = true;
+    vraag.appendChild(maak('p', '', 'Weet u het zeker? Zolang wij nog niet zijn ' +
+      'vertrokken kost annuleren u niets. Wij krijgen er meteen bericht van.'));
+
+    var reden = document.createElement('textarea');
+    reden.rows = 2;
+    reden.maxLength = 500;
+    reden.placeholder = 'Reden (mag u openlaten)';
+    reden.setAttribute('aria-label', 'Reden van annuleren');
+    vraag.appendChild(reden);
+
+    var rij = maak('div', 'knoppen');
+    var door = maak('button', 'knop knop--waarschuwing', 'Ja, annuleren');
+    door.type = 'button';
+    var terug = maak('button', 'knop knop--rand', 'Toch niet');
+    terug.type = 'button';
+    rij.appendChild(door);
+    rij.appendChild(terug);
+    vraag.appendChild(rij);
+
+    start.addEventListener('click', function () {
+      start.hidden = true;
+      vraag.hidden = false;
+      reden.focus();
+    });
+    terug.addEventListener('click', function () {
+      vraag.hidden = true;
+      start.hidden = false;
+    });
+    door.addEventListener('click', function () {
+      door.disabled = true;
+      terug.disabled = true;
+      door.textContent = 'Bezig…';
+      verstuur({ actie: 'klantannuleer', rit: r.sleutel, reden: reden.value })
+        .then(function (data) {
+          meldApp('');
+          toon(data, r.sleutel);
+        })
+        .catch(function (fout) {
+          meldApp(fout.message);
+          door.disabled = false;
+          terug.disabled = false;
+          door.textContent = 'Ja, annuleren';
+        });
+    });
+
+    vak.appendChild(start);
+    vak.appendChild(vraag);
+    return vak;
   }
 
   function tekenFacturen() {

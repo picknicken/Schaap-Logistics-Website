@@ -55,7 +55,10 @@ const R = {
   handtek:    'Handtekening',
   getekendD:  'Getekend door',
   getekendO:  'Getekend op',
-  onderweg:   'Onderweg sinds'
+  onderweg:   'Onderweg sinds',
+  annulDoor:  'Geannuleerd door klant',
+  annulOp:    'Geannuleerd op',
+  annulReden: 'Reden annulering'
 };
 
 const O = {
@@ -645,7 +648,7 @@ function verzinCode() {
   return uit;
 }
 
-const KLANT_ACTIES = ['klantoverzicht'];
+const KLANT_ACTIES = ['klantoverzicht', 'klantannuleer'];
 
 async function klantPoort(env, code, body, origin) {
   const schoon = schoneCode(code);
@@ -660,11 +663,15 @@ async function klantPoort(env, code, body, origin) {
     return antwoord(401, { fout: 'Onjuiste toegangscode' }, origin, true);
   }
 
-  const [alleRitten, facturen] = await Promise.all([
+  if (body.actie === 'klantannuleer') {
+    const uit = await klantAnnuleert(env, klant, body);
+    if (uit.fout) { return antwoord(uit.code || 400, { fout: uit.fout }, origin, true); }
+  }
+
+  const [ritten, facturen] = await Promise.all([
     klantRitten(env, klant.id),
     klantFacturen(env, klant.id)
   ]);
-  const ritten = alleRitten.filter((r) => r.status !== 'Geannuleerd');
 
   return antwoord(200, {
     ok: true,
@@ -672,6 +679,44 @@ async function klantPoort(env, code, body, origin) {
     ritten,
     facturen
   }, origin, true);
+}
+
+/* Een klant mag zijn eigen rit afzeggen, en alleen die. Daarom zoeken we de
+   rit niet op het nummer dat hij meestuurt, maar in de lijst die aan hém
+   hangt: staat de sleutel daar niet tussen, dan bestaat de rit voor hem niet.
+   Een klant die met de sleutel van een ander komt, komt dus nergens.
+
+   Alleen een rit die nog op Gepland staat. Zijn we al onderweg, dan kost het
+   geld (artikel 9 van de voorwaarden) en hoort daar een telefoontje bij, geen
+   knop op een website waar niemand naar kijkt. */
+async function klantAnnuleert(env, klant, body) {
+  const sleutel = String(body.rit || '');
+  if (!/^[a-f0-9]{16}$/.test(sleutel)) { return { code: 400, fout: 'Onbekende zending' }; }
+
+  const ids = await klantRitIds(env, klant.id);
+  const id = ids.find((r) => ritSleutel(r) === sleutel);
+  if (!id) { return { code: 404, fout: 'Onbekende zending' }; }
+
+  const rit = await airtable(env, `${env.AIRTABLE_RITTEN}/${id}`);
+  const status = keuze((rit.fields || {})[R.status]) || 'Gepland';
+  if (status === 'Geannuleerd') { return { code: 409, fout: 'Deze zending is al geannuleerd.' }; }
+  if (status !== 'Gepland') {
+    return {
+      code: 409,
+      fout: 'Wij zijn al onderweg met deze zending. Bel ons even, dan regelen ' +
+            'wij het samen.'
+    };
+  }
+
+  const velden = {
+    [R.status]:    'Geannuleerd',
+    [R.annulDoor]: true,
+    [R.annulOp]:   new Date().toISOString()
+  };
+  const reden = String(body.reden || '').trim().slice(0, 500);
+  if (reden) { velden[R.annulReden] = reden; }
+  await patch(env, env.AIRTABLE_RITTEN, id, velden);
+  return {};
 }
 
 async function klantBijCode(env, code) {
@@ -691,10 +736,7 @@ async function klantBijCode(env, code) {
    nooit een rit van iemand anders opleveren: die staat simpelweg niet in de
    lijst waar we mee beginnen. */
 async function klantRecords(env, klantId, koppelveld, tabel, omzetter) {
-  const klant = await airtable(env, `${env.AIRTABLE_KLANTEN}/${klantId}`);
-  const ids = ((klant.fields || {})[koppelveld] || [])
-    .map((r) => (r && r.id) || r)
-    .filter((id) => /^rec[A-Za-z0-9]{14}$/.test(String(id)));
+  const ids = await klantLinkIds(env, klantId, koppelveld);
   if (!ids.length) { return []; }
 
   const uit = [];
@@ -710,8 +752,36 @@ async function klantRecords(env, klantId, koppelveld, tabel, omzetter) {
   return uit;
 }
 
+async function klantLinkIds(env, klantId, koppelveld) {
+  const klant = await airtable(env, `${env.AIRTABLE_KLANTEN}/${klantId}`);
+  return ((klant.fields || {})[koppelveld] || [])
+    .map((r) => (r && r.id) || r)
+    .filter((id) => /^rec[A-Za-z0-9]{14}$/.test(String(id)));
+}
+
 function klantRitten(env, klantId) {
   return klantRecords(env, klantId, 'Ritten', env.AIRTABLE_RITTEN, naarKlantRit);
+}
+
+function klantRitIds(env, klantId) {
+  return klantLinkIds(env, klantId, 'Ritten');
+}
+
+/* Een klant krijgt nooit een record-id van ons te zien; die horen bij de
+   binnenkant van de administratie. Om toch een knop te kunnen maken die
+   zegt "annuleer déze rit", krijgt elke rit een vaste, betekenisloze sleutel.
+   Wij rekenen hem terug door de sleutels van zijn eigen ritten uit te rekenen
+   en te kijken welke past — er hoeft dus niets ontcijferd te worden, en een
+   sleutel op zichzelf opent niets. */
+function ritSleutel(id) {
+  const tekst = 'schaap-rit:' + String(id);
+  let a = 0x811c9dc5;
+  let b = 0x01000193;
+  for (let i = 0; i < tekst.length; i++) {
+    a = Math.imul(a ^ tekst.charCodeAt(i), 0x01000193) >>> 0;
+    b = Math.imul(b + tekst.charCodeAt(i) + i, 0x85ebca6b) >>> 0;
+  }
+  return a.toString(16).padStart(8, '0') + b.toString(16).padStart(8, '0');
 }
 
 function klantFacturen(env, klantId) {
@@ -729,10 +799,16 @@ function inBrokken(lijst, maat) {
    bedrijfsvoering en niet die van je klant. */
 function naarKlantRit(record) {
   const f = record.fields || {};
+  const status = keuze(f[R.status]) || 'Gepland';
   return {
+    /* Geen record-id, maar de betekenisloze sleutel. Genoeg om er een knop
+       aan te hangen, te weinig om iets mee te doen. */
+    sleutel:    ritSleutel(record.id),
+    magAnnuleren: status === 'Gepland',
+    geannuleerdOp: f[R.annulOp] || '',
     datum:      f[R.datum] || '',
     type:       keuze(f[R.type]),
-    status:     keuze(f[R.status]) || 'Gepland',
+    status:     status,
     ophaal:     f[R.ophaal] || '',
     aflever:    f[R.aflever] || '',
     km:         f[R.km] || 0,
@@ -953,6 +1029,11 @@ function naarRit(record) {
     getekend:   f[R.getekendD] || '',
     getekendOp: f[R.getekendO] || '',
     onderweg:   f[R.onderweg] || '',
+    /* Heeft de klant zelf afgezegd, dan wil je dat op de ritkaart zien staan,
+       met zijn reden erbij. Anders sta je te raden waarom die rit weg is. */
+    afgezegdDoorKlant: f[R.annulDoor] === true,
+    afgezegdOp: f[R.annulOp] || '',
+    afzegreden: f[R.annulReden] || '',
     handtekening: Array.isArray(f[R.handtek]) && f[R.handtek].length > 0,
     /* De krabbel zelf. Zonder deze link kun je hem nergens terugzien behalve
        in Airtable, en dan is het geen afleverbewijs dat je even laat zien. */

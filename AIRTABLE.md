@@ -293,6 +293,19 @@ Het moesten twee losse automatiseringen worden omdat een trigger geen
 samengestelde voorwaarde aankan — *uitgevoerd* óf *geannuleerd én doorbelasten*
 past niet in één filter.
 
+**De klant zegt zelf af.** In het klantportaal staat bij elke zending die nog op
+*Gepland* staat een knop om te annuleren. Dan zet het portaal de rit op
+*Geannuleerd*, vult `Geannuleerd op` en `Reden annulering`, en vinkt
+`Geannuleerd door klant` aan. Op dat vinkje gaat de automatisering **Seintje bij
+een annulering door de klant** (`wflt0t7LtWvQDpj5d`) af, zodat je het weet
+voordat je in de auto stapt. Dat vinkje zet je nooit zelf aan; het is het
+signaal, niet een instelling.
+
+Zo'n annulering is per definitie kosteloos — het portaal laat het alleen toe
+zolang de rit gepland staat — dus `Annulering doorbelasten` laat je uit. Is een
+rit al *Onderweg*, dan kan de klant niet meer zelf afzeggen en krijgt hij te
+zien dat hij moet bellen.
+
 ### Het seintje aan jezelf
 
 De klant krijgt een ontvangstbevestiging; jij kreeg niets, en wist dus pas van een
