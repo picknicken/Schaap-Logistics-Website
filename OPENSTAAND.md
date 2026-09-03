@@ -172,11 +172,26 @@ of marge ooit meegaan.
 **Het chauffeursportaal** doet planning, statussen, handtekening, kosten, korting,
 een rit buiten de website om, en het versturen van een portaaluitnodiging.
 
-**Alle elf automatiseringen in Airtable staan gepubliceerd**, gecontroleerd: het
-concept is gelijk aan wat er draait. Bevestigingsmail, aanvraag omzetten, rit
-bevestigen, rit factureren, geannuleerde rit doorbelasten, creditfactuur maken,
-factuur versturen, betalingsherinnering, facturen te laat markeren, seintje bij
-een aanvraag, seintje bij een annulering.
+**Je klant hoort het zodra zijn zending is afgeleverd.** Zet je een rit op
+Uitgevoerd, dan gaat er een bericht uit met wie er getekend heeft en wanneer, en
+een verwijzing naar het afleverbewijs in zijn portaal.
+
+**De algemene voorwaarden zijn bindend gemaakt.** Een verplicht vinkje bij de
+aanvraag, een PDF om te bewaren, een tussenlaag die geen aanvraag zonder akkoord
+doorlaat, en een bevestigingsmail die de aanvaarde versie noemt. Welke versie
+iemand accepteerde en wanneer staat in `Voorwaarden geaccepteerd`.
+
+**Twaalf automatiseringen in Airtable draaien.** Bevestigingsmail, aanvraag
+omzetten, rit bevestigen, rit factureren, geannuleerde rit doorbelasten,
+creditfactuur maken, factuur versturen, betalingsherinnering, facturen te laat
+markeren, uitnodiging klantportaal, seintje bij een aanvraag, seintje bij een
+annulering.
+
+Twee wachten nog op jou in Airtable, want aanzetten en publiceren kan ik niet:
+**Afleverbericht naar de klant** staat als concept klaar en moet aan, en de
+gewijzigde **Bevestigingsmail naar de aanvrager** heeft een bijgewerkt concept
+dat je met de knop *Update* moet publiceren. Zolang je dat niet doet gaat de oude
+tekst uit, zonder de voorwaarden erin.
 
 **Het domein** `schaaplogistics.nl` is live, met een doorstuur vanaf het oude
 adres zodat verstuurde links blijven werken.

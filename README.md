@@ -373,6 +373,51 @@ Het portaal onthoudt de code op het apparaat van de klant, en haalt hem uit de
 adresbalk zodra de pagina open is — zodat hij niet in schermfoto's of in de
 geschiedenis van een gedeelde computer blijft staan.
 
+## De algemene voorwaarden
+
+Voorwaarden binden een klant alleen als hij ze **vóór of bij** het sluiten van de
+overeenkomst krijgt aangeboden, in een vorm die hij kan bewaren. Een link in de
+voettekst is dat niet: dan kan hij de bepalingen achteraf laten vernietigen, en
+dan valt ook artikel 8 weg — precies de bepaling die de aansprakelijkheid
+beperkt tot €3,40 per kilo. Daarom hangt er een ketting aan vast.
+
+**Op de site.** Boven de voorwaarden staat de versiedatum en een knop *Download
+als PDF*. Op het aanvraagformulier staat een verplicht vinkje met een link naar
+de pagina, naar de PDF en naar de privacyverklaring, en de versie erbij.
+
+**In de tussenlaag.** `worker/aanvragen.js` controleert het akkoord nog een keer:
+wat er in een browser gebeurt is geen bewijs. Ontbreekt het akkoord, dan komt de
+aanvraag niet binnen. De versie moet gelijk zijn aan `VOORWAARDEN_VERSIE` in de
+Worker, zodat een oude pagina uit de cache van een browser geen akkoord kan
+opleveren op een tekst die niet meer geldt. De Worker schrijft zelf
+`Voorwaarden geaccepteerd` in Airtable, met **zijn eigen** tijdstempel.
+
+**In de bevestigingsmail.** Die noemt de geaccepteerde versie en stuurt de PDF-link
+mee. Dat is het aanbod op papier; het vinkje was de aanvaarding.
+
+### De voorwaarden wijzigen
+
+Vier handelingen, en ze horen bij elkaar. Sla je er één over, dan weigert de
+tussenlaag elke aanvraag met "de voorwaarden zijn gewijzigd".
+
+1. Pas de tekst aan in `voorwaarden/index.html` en zet de nieuwe datum in
+   `<span id="vwVersie">`.
+2. Zet dezelfde datum in `CONFIG.voorwaardenVersie` in `assets/site.js`.
+3. Zet dezelfde datum in `VOORWAARDEN_VERSIE` in `worker/aanvragen.js`, en rol
+   die Worker opnieuw uit.
+4. Maak de PDF opnieuw:
+
+   ```sh
+   python3 -m http.server 8080          # in een tweede venster
+   node scripts/maak-voorwaarden-pdf.mjs http://127.0.0.1:8080
+   ```
+
+   Staat Playwright niet in dit project maar globaal, wijs er dan naar met
+   `PLAYWRIGHT_PAD=/pad/naar/playwright/index.js`.
+
+Oude akkoorden blijven staan zoals ze waren: in `Voorwaarden geaccepteerd` staat
+per aanvraag welke versie gold. Dat is precies waarvoor dat veld er is.
+
 ## Formulieren versturen
 
 Eén instelling bepaalt waar een aanvraag heen gaat: `CONFIG.webhookUrl` in
@@ -447,5 +492,5 @@ Blijf bij Strato van de MX- en TXT-records af: daar hangt de e-mail aan.
 Deze plekken dragen het adres en moeten mee als het ooit weer verandert:
 `CNAME`, `robots.txt`, `sitemap.xml`, `TOEGESTANE_ORIGIN` in beide
 `wrangler.toml`-bestanden, de formules `Factuurlink` op `Facturen` en
-`Portaallink` op `Klanten`, en de links in de tekst van vier
+`Portaallink` op `Klanten`, en de links in de tekst van de
 e-mailautomatiseringen.

@@ -238,6 +238,23 @@
           <input type="text" id="r-controle" name="controle" tabindex="-1" autocomplete="off">
         </div>
 
+        <!-- Akkoord met de voorwaarden. Dit is geen formaliteit: voorwaarden
+             binden een klant alleen als hij ze vóór of bij het sluiten van de
+             overeenkomst krijgt aangeboden in een vorm die hij kan bewaren.
+             Vandaar de link naar de pagina én naar de PDF, en vandaar dat het
+             vinkje verplicht is. Wat er is aangevinkt en wanneer, legt de
+             tussenlaag vast bij de aanvraag. -->
+        <div class="akkoord">
+          <input type="checkbox" id="r-akkoord" name="akkoord" required>
+          <label for="r-akkoord">
+            Ik ga akkoord met de
+            <a href="../voorwaarden/" target="_blank" rel="noopener">algemene voorwaarden</a>
+            (<a href="../voorwaarden/algemene-voorwaarden-schaap-logistics.pdf" download>PDF om te bewaren</a>)
+            en met de <a href="../privacy/" target="_blank" rel="noopener">privacyverklaring</a>.
+            <span class="akkoord__versie">Versie <span id="voorwaardenVersie">—</span>.</span>
+          </label>
+        </div>
+
         <button type="submit" class="btn btn--primary btn--wide" style="margin-top:22px">
           Vraag een prijs aan
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>

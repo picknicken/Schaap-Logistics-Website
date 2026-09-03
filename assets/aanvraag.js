@@ -11,6 +11,11 @@
   var CONFIG = window.SL.CONFIG;
   var euro   = window.SL.euro;
 
+  /* De versie van de voorwaarden waarmee deze bezoeker akkoord gaat, zichtbaar
+     naast het vinkje. Staat op een plek: CONFIG.voorwaardenVersie. */
+  var versieVak = document.getElementById('voorwaardenVersie');
+  if (versieVak) { versieVak.textContent = CONFIG.voorwaardenVersie; }
+
   var samRijen = document.getElementById('samRijen');
   var samPrijs = document.getElementById('samPrijs');
   var samNoot  = document.getElementById('samNoot');
@@ -429,6 +434,12 @@
           body: JSON.stringify({
             velden: data,
             fotos: bijlagen,
+            /* Het formulier laat niet versturen zonder dit vinkje, maar de
+               tussenlaag controleert het zelf nog een keer: wat er in de
+               browser gebeurt is geen bewijs. De versie gaat mee, het moment
+               zet de tussenlaag er zelf bij. */
+            voorwaarden: !!(document.getElementById('r-akkoord') || {}).checked,
+            voorwaardenVersie: CONFIG.voorwaardenVersie,
             /* Verborgen veld tegen bots; een mens laat dit leeg. */
             controle: veld('r-controle')
           })

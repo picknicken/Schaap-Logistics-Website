@@ -26,6 +26,24 @@ const TOEGESTANE_VELDEN = [
 /* Zonder deze velden is een aanvraag niet op te volgen. */
 const VERPLICHT = ['Bedrijf', 'Contactpersoon', 'Telefoon', 'E-mail'];
 
+/* ---------------------------------------------------- de voorwaarden
+
+   Algemene voorwaarden binden een klant alleen als hij ze vóór of bij het
+   sluiten van de overeenkomst krijgt aangeboden in een vorm die hij kan
+   bewaren. Het formulier laat daarom niet versturen zonder akkoord, en hier
+   wordt dat nog een keer gecontroleerd: wat er in een browser gebeurt is geen
+   bewijs, want die kan iedereen omzeilen.
+
+   Het moment komt van deze server en niet van de bezoeker. De versie komt wel
+   van de pagina — dat is nu eenmaal de tekst die hij te zien kreeg — maar hij
+   moet gelijk zijn aan wat hieronder staat, zodat een oude pagina uit de cache
+   van een browser geen akkoord kan opleveren op een tekst die niet meer geldt.
+
+   Wijzig je de voorwaarden, dan verander je drie dingen tegelijk: deze regel,
+   CONFIG.voorwaardenVersie in assets/site.js, en de PDF. */
+const VOORWAARDEN_VERSIE = '2026-09-03';
+const VOORWAARDENVELD    = 'Voorwaarden geaccepteerd';
+
 /* ---------------------------------------------------------------- de rem
 
    Dit adres is openbaar: iedereen die het vindt kan het aanroepen. Zonder rem
@@ -134,6 +152,17 @@ export default {
     if (ontbreekt.length) {
       return antwoord(400, { fout: 'Ontbrekende velden: ' + ontbreekt.join(', ') }, origin, true);
     }
+
+    if (body.voorwaarden !== true) {
+      return antwoord(400, { fout: 'Akkoord met de algemene voorwaarden ontbreekt' }, origin, true);
+    }
+    if (String(body.voorwaardenVersie || '') !== VOORWAARDEN_VERSIE) {
+      return antwoord(400, {
+        fout: 'De voorwaarden zijn gewijzigd. Ververs de pagina en probeer het opnieuw.'
+      }, origin, true);
+    }
+    velden[VOORWAARDENVELD] = 'Versie ' + VOORWAARDEN_VERSIE + ', geaccepteerd op ' +
+                              new Date().toISOString();
 
     const fotos = Array.isArray(body.fotos) ? body.fotos.slice(0, 5) : [];
     if (fotos.length) {

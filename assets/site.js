@@ -13,6 +13,13 @@
      ======================================================================= */
   var CONFIG = {
     email: 'info@schaaplogistics.nl',   /* PLACEHOLDER */
+    /* De datum van de algemene voorwaarden zoals ze nu op de site staan.
+       Een klant vinkt bij zijn aanvraag aan dat hij hiermee akkoord gaat, en
+       die versie wordt bij de aanvraag vastgelegd. Verander je iets aan de
+       voorwaarden, zet dan hier de nieuwe datum neer, maak de PDF opnieuw
+       (scripts/maak-voorwaarden-pdf.mjs) EN pas VOORWAARDEN_VERSIE in
+       worker/aanvragen.js aan — anders weigert de tussenlaag de aanvraag. */
+    voorwaardenVersie: '2026-09-03',
     minimum: 75,                         /* minimumtarief per opdracht */
     btw: 0.21,
     /* Per dienst een starttarief en een kilometerprijs. Een dienst mag een

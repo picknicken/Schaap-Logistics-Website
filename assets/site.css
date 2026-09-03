@@ -379,6 +379,27 @@ form{background:#fff;border-radius:16px;padding:28px;box-shadow:var(--shadow-lg)
 [hidden]{display:none!important}
 .form__note{font-size:.78rem;color:var(--muted);margin-top:12px;text-align:center;line-height:1.5}
 
+/* Versieregel boven de algemene voorwaarden. Welke tekst gold op welke dag is
+   geen detail: daar hangt van af wat er is afgesproken. */
+.vw-versie{font-size:.85rem;color:var(--muted);margin:0 0 18px;
+  padding:11px 14px;border:1px solid var(--line);border-radius:10px;background:var(--paper-2)}
+.vw-versie a{color:var(--amber-2);text-decoration:underline;text-underline-offset:2px;font-weight:600}
+/* In de PDF zelf heeft "download als PDF" geen betekenis meer. */
+@media print{.vw-versie__pdf{display:none}}
+
+
+/* Akkoord met de voorwaarden. Het vinkje staat links en blijft op zijn plek
+   staan als de tekst over twee regels loopt; het raakvlak is bewust ruim
+   genoeg voor een duim. */
+.akkoord{display:flex;gap:11px;align-items:flex-start;margin-top:22px;
+  padding:14px 15px;border:1px solid var(--line);border-radius:11px;background:var(--paper-2)}
+.akkoord input{width:19px;height:19px;flex:none;margin-top:1px;accent-color:var(--amber-2);cursor:pointer}
+.akkoord label{font-size:.85rem;line-height:1.55;color:var(--text);cursor:pointer;margin:0}
+.akkoord a{color:var(--amber-2);text-decoration:underline;text-underline-offset:2px}
+.akkoord__versie{display:block;font-size:.76rem;color:var(--muted);margin-top:3px}
+.akkoord:has(input:user-invalid){border-color:#e3b7ae;background:#fdf6f4}
+
+
 /* ---------- footer ---------- */
 footer{background:#070e1a;color:#7f90aa;padding:56px 0 28px;font-size:.88rem}
 .footer__grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:40px;margin-bottom:36px}

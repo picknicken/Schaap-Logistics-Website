@@ -211,19 +211,20 @@ bepalingen achteraf laten vernietigen — inclusief artikel 8, precies de bepali
 die je aansprakelijkheid beperkt tot €3,40 per kilo. Je hebt dan wel voorwaarden,
 maar niet de bescherming waarvoor je ze hebt.
 
-Wat eraan moet gebeuren, en dat is bouwwerk dat ik kan doen:
+**Dit is gebouwd.** Wat er nu staat:
 
-- Een **downloadbare versie** van de voorwaarden (PDF), niet alleen een pagina.
-- Een **vinkje op het aanvraagformulier**: "ik ga akkoord met de algemene
-  voorwaarden", met de link erbij. Verplicht in te vullen.
-- De voorwaarden **meesturen met de bevestigingsmail**, of er in elk geval naar
-  linken.
-- Vastleggen **welke versie** iemand heeft geaccepteerd en wanneer. Verander je
-  later een tarief of een bepaling, dan wil je kunnen laten zien welke tekst gold
-  op de dag van die rit.
+- Een **downloadbare PDF** van de voorwaarden, met de versiedatum erboven.
+- Een **verplicht vinkje op het aanvraagformulier**, met een link naar de
+  pagina, naar de PDF en naar de privacyverklaring, en de versie erbij.
+- De tussenlaag **weigert een aanvraag zonder akkoord**, en legt zelf vast welke
+  versie is aanvaard en op welk moment — met zijn eigen klok, niet met die van
+  de bezoeker. Dat staat in het veld `Voorwaarden geaccepteerd`.
+- De **bevestigingsmail** noemt de geaccepteerde versie en stuurt de PDF-link
+  mee. Dat is het aanbod op papier; het vinkje was de aanvaarding.
 
-Zeg het maar, dan bouw ik het. Het is een halve dag werk en het is het verschil
-tussen voorwaarden hebben en eraan hebben.
+Wat jij nog moet doen: de tekst **laten nakijken door een jurist**, en daarna de
+versiedatum bijwerken. Hoe dat gaat staat in README.md onder "De algemene
+voorwaarden wijzigen" — het zijn vier handelingen die bij elkaar horen.
 
 ### 2. Je moet een echt adres op de site zetten
 
@@ -374,16 +375,20 @@ afgeleverd. Bij spoedtransport is dat het bericht waar je klant de hele dag op
 zit te wachten. Hij heeft een klant die staat te wachten op dat pakket, en nu
 moet hij jou bellen om te weten of het er is.
 
-De handtekening zit al in het systeem — je laat de ontvanger op je telefoon
-tekenen, en in het klantportaal is dat afleverbewijs ook te zien. Alleen krijgt
-niemand er een seintje van. Dat is één automatisering erbij: zodra de rit op
-afgeleverd gaat, een mail naar de klant met het tijdstip, wie er getekend heeft
-en een link naar het bewijs.
+**Dit is gebouwd.** Zodra jij een rit in het chauffeursportaal op Uitgevoerd
+zet, krijgt de klant een bericht: wie er getekend heeft, op welke dag en hoe
+laat, met een verwijzing naar het afleverbewijs in zijn portaal. Heeft hij geen
+portaallink, dan blijft die zin weg. Is er niet getekend, dan meldt het bericht
+alleen dat de zending is afgeleverd — geen handtekening suggereren die er niet
+is.
 
-**Dit is het goedkoopste dat je kunt doen om professioneel over te komen.** Een
-uurtje werk. Zeg het maar.
+De automatisering heet **Afleverbericht naar de klant** en staat als concept
+klaar; hem aanzetten doe jij in Airtable. Let op de teller: dit kost een run per
+afgeleverde rit, dus een rit van aanvraag tot betaalde factuur kost er nu zes à
+zeven in plaats van vijf à zes. Op honderd runs per maand kom je daarmee rond de
+dertien ritten uit in plaats van vijftien.
 
-### De rest, in volgorde van wat ik er zelf van vind
+### Wat er nog ligt, in volgorde van wat ik er zelf van vind
 
 1. **Een volglink per rit, zonder inloggen.** Eén adres dat je klant kan
    doorsturen naar zijn eigen collega of klant, waar alleen op staat: opgehaald,
