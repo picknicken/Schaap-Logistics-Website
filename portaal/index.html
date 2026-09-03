@@ -135,9 +135,28 @@ input{font:inherit}
 }
 
 /* ---------------------------------------------------------------- slot */
-.slot{max-width:400px;margin:0 auto;padding:56px 16px}
-.slot h1{font-size:1.5rem;margin-bottom:8px}
-.slot p{font-size:.93rem;color:var(--muted);margin-bottom:22px}
+/* ---------- inlogscherm ----------
+   Het donkerblauw van de huisstijl, met het woordmerk erboven. Dit is het
+   eerste dat iemand van het portaal ziet en het hoort bij de site te passen.
+   Het vult het hele scherm: als app geopend staat er niets omheen. */
+.slot{
+  min-height:100vh;min-height:100dvh;
+  background:var(--navy);
+  display:flex;flex-direction:column;justify-content:center;
+  padding:calc(40px + env(safe-area-inset-top)) 22px calc(40px + env(safe-area-inset-bottom));
+}
+.slot__binnen{width:100%;max-width:380px;margin:0 auto}
+.slot__merk{height:38px;width:auto;display:block;margin-bottom:30px}
+.slot h1{font-size:1.45rem;color:#fff;margin-bottom:8px}
+.slot p{font-size:.93rem;color:#a9b8cf;margin-bottom:26px;line-height:1.6}
+.slot .veld span{color:#8fa2be}
+.slot .veld input{
+  background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.18);color:#fff;
+}
+.slot .veld input::placeholder{color:#6f7f99}
+.slot .veld input:focus{border-color:var(--amber);background:rgba(255,255,255,.11)}
+.slot .veld small{color:#8296b1}
+.slot .melding{background:rgba(214,1,11,.16);color:#ffc2c2;border-left-color:var(--urgent)}
 .veld{display:block;margin-bottom:14px}
 .veld span{
   display:block;font-size:.75rem;font-weight:700;letter-spacing:.06em;
@@ -412,6 +431,8 @@ input{font:inherit}
 
 <!-- ============================ toegang ============================ -->
 <div id="slot" class="slot">
+  <div class="slot__binnen">
+  <img class="slot__merk" src="../assets/logo-schaap-express-wit.png" alt="Schaap Express Transport" width="1200" height="360">
   <h1>Chauffeursportaal</h1>
   <p>Je ritten van vandaag, statussen en handtekeningen. Alleen voor Schaap&nbsp;Express&nbsp;Transport.</p>
   <div id="slot-melding" class="melding" hidden></div>
@@ -432,6 +453,7 @@ input{font:inherit}
     </label>
     <button class="knop knop--vol" type="submit">Openen</button>
   </form>
+  </div>
 </div>
 
 <!-- ============================= portaal =========================== -->
