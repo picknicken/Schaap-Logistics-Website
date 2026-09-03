@@ -16,18 +16,17 @@ Vier soorten werk, in volgorde van hoe hard het knelt:
 
 ---
 
-## 0. De naamswissel is halverwege
+## 0. De naamswissel: nog één ronde te gaan
 
-De naam is **Schaap Express Transport**. De teksten op de site zijn om; het logo
-en het domein volgen nog, en daar hangt een tweede ronde aan vast:
+De naam is **Schaap Express Transport** en het logo staat erin. Wat nog wacht op
+het domein:
 
 | Wat | Waarom het nog niet kan |
 | --- | --- |
-| **Het logo** | `logo-sl*.png` en `logo-volledig*.png` tonen nog het SL-monogram. Jij maakt een nieuw beeldmerk |
-| **`assets/deelkaart.jpg`** | Het deelplaatje draagt het oude logo én het oude domein. Maak ik opnieuw zodra beide er zijn |
 | **Het domein** | `schaaplogistics.nl` staat nog in 21 bestanden, in `CNAME`, in de DNS bij Strato, in twee `wrangler.toml`, en in de Airtable-formules `Factuurlink` en `Portaallink` |
 | **`info@schaaplogistics.nl`** | Hangt aan het domein |
 | **De mailteksten in Airtable** | Alle dertien automatiseringen ondertekenen met de oude naam en linken naar het oude domein. Die twee dingen zitten in dezelfde regels, dus ik doe ze in één ronde zodra het domein bekend is |
+| **Het deelplaatje** | `assets/deelkaart.jpg` draagt het nieuwe logo maar nog geen adres; het domein komt links onderin te staan |
 
 Laat `schaaplogistics.nl` daarna aflopen. Dat adres is precies wat botst met
 Schaap Logistics B.V. in Breda, en zolang je het aanhoudt houd je die botsing in

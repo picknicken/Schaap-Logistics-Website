@@ -44,11 +44,14 @@ assets/
   contact.js              het berichtformulier
   portaal.js              het chauffeursportaal
   klant.js                het klantportaal
-  logo-sl-wit.png         beeldmerk, wit — in de donkere header en footer
-  logo-sl.png             beeldmerk, zwart
-  logo-volledig-wit.png   beeldmerk plus woordmerk, wit
-  logo-volledig.png       beeldmerk plus woordmerk, zwart — bovenaan de factuur
-  favicon.png             het tabbladpictogram
+  logo-schaap-express-wit.png      het hele woordmerk, wit — de voettekst en
+                                   de twee portalen
+  logo-schaap-express.png          hetzelfde, donker — bovenaan de factuur
+  logo-schaap-express-kop-wit.png  zonder de regel TRANSPORT, voor de menubalk;
+                                   die regel is op 32 pixels hoog niet leesbaar
+  logo-schaap-express-kop.png      hetzelfde, donker
+  favicon.png                      het tabbladpictogram
+  favicon-bron.html                de bron daarvan, foto maken op 256x256
   deelkaart.jpg           1200x630, het plaatje dat WhatsApp en LinkedIn tonen
   deelkaart-bron.html     de bron daarvan; foto maken op 1200x630 en opslaan
   inter.woff2             het lettertype, op onze eigen server

@@ -91,10 +91,12 @@ header{
 }
 .nav{display:flex;align-items:center;gap:28px;height:72px}
 .brand{display:flex;align-items:center;gap:11px;text-decoration:none;margin-right:30px}
-/* Het beeldmerk uit de huisstijl. Wit, want header en footer zijn donker. */
-.brand__mark{height:34px;width:auto;flex:none;display:block}
-.brand__name{display:block;color:#fff;font-weight:800;font-size:1.06rem;letter-spacing:-.02em;line-height:1.15}
-.brand__sub{display:block;color:#7f90aa;font-size:.68rem;font-weight:600;letter-spacing:.09em;text-transform:uppercase}
+/* Het woordmerk uit de huisstijl, in de witte uitvoering omdat de menubalk en
+   de voettekst donker zijn. In de menubalk staat de korte versie zonder de
+   regel TRANSPORT: die is daar minder dan twee pixels hoog en dan is het geen
+   tekst meer maar vuil. De voettekst heeft de ruimte voor het hele logo. */
+.brand__mark{height:32px;width:auto;flex:none;display:block}
+footer .brand__mark{height:46px}
 /* De links staan links, naast het logo, en duwen de knoppen naar rechts. Een
    menu dat je van links naar rechts leest hoort ook links te beginnen. */
 .nav__links{display:flex;gap:4px;list-style:none;margin-right:auto}
@@ -493,26 +495,24 @@ footer a:hover{color:var(--amber)}
 @media (max-width:620px){
   .grid--3,.grid--4,.grid--2,.field-row{grid-template-columns:1fr}
   .footer__grid{grid-template-columns:1fr}
-  .brand__sub{display:none}
   .nav__phone span{display:none}
-  /* De bovenbalk is hier krap: logo, naam, telefoon en de menuknop met het
-     woord erbij. Zonder deze regels breekt de bedrijfsnaam over twee regels en
-     wordt de balk twee keer zo hoog. */
-  header .brand__name{white-space:nowrap;font-size:.95rem}
+  /* De bovenbalk is hier krap: logo, telefoon en de menuknop met het woord
+     erbij. Het woordmerk krimpt mee zodat er niets af hoeft. */
   header .brand{gap:8px}
-  header .brand__mark{height:28px}
+  header .brand__mark{height:26px}
+  footer .brand__mark{height:40px}
   .nav__toggle{padding:8px 10px;gap:5px}
   .hero{padding:56px 0 52px}
   .calc{padding:22px}
   .step{grid-template-columns:44px 1fr;gap:14px}
 }
 
-/* Een heel smalle telefoon (320px, een oude SE). Logo, naam, telefoon en de
-   menuknop met het woord erbij passen er net niet naast elkaar; met wat minder
-   marge en een iets kleinere naam wel, en dan hoeft er niets weg. */
+/* Een heel smalle telefoon (320px, een oude SE). Logo, telefoon en de menuknop
+   met het woord erbij passen er net niet naast elkaar; met wat minder marge en
+   een iets kleiner woordmerk wel, en dan hoeft er niets weg. */
 @media (max-width:360px){
   header .wrap{padding-left:12px;padding-right:12px}
-  header .brand__name{font-size:.88rem}
+  header .brand__mark{height:22px}
   header .brand{gap:7px}
   header .nav{gap:8px}
   .nav__phone{padding-left:10px;padding-right:10px}
