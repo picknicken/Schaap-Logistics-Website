@@ -376,7 +376,13 @@ tbody td.af{color:#1d7a4c}
   var ref = lees('ref', '');
   zet('v-refregel', ref ? 'Uw referentie: ' + ref : '');
 
-  var termijn = lees('termijn', '14');
+  /* De betalingstermijn heeft altijd een waarde, ook als de adresregel hem niet
+     meestuurt: veertien dagen is wat artikel 10 van de voorwaarden zegt. Zonder
+     deze ondergrens staat er "binnen  dagen" op een factuur die de deur uit
+     gaat, en dat is precies het soort fout waar een klant later op wijst. */
+  var termijnRuw = q.get('termijn');
+  var termijn = (termijnRuw === null || termijnRuw === '' ||
+                 !(parseInt(termijnRuw, 10) > 0)) ? '14' : String(parseInt(termijnRuw, 10));
   zet('v-termijn', termijn + (termijn === '1' ? ' dag' : ' dagen'));
 
   /* ---------- creditnota ----------
