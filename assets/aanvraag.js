@@ -192,7 +192,7 @@
       samRijen.appendChild(samRij(
         isSpoed() ? 'Klaar vanaf' : 'Ophaaltijd', veld('r-tijd')));
     }
-    if (CONFIG.tijden[tKey].toeslag > 0) {
+    if (CONFIG.tijden[tKey].deel > 0) {
       samRijen.appendChild(samRij('Tijdvak', CONFIG.tijden[tKey].naam));
     }
 

@@ -95,7 +95,7 @@ Een ladder van licht naar zwaar, die je zonder nadenken kunt volgen:
 
 | Wat er misging | Wat je weggeeft | Kost je |
 | --- | --- | ---: |
-| Later dan afgesproken, wel dezelfde dag | De toeslag eraf (avond, nacht of weekend) | € 15 – 35 |
+| Later dan afgesproken, wel dezelfde dag | De toeslag eraf (avond, nacht of weekend) | € 25 – 150 |
 | Spoed niet gehaald, wel de volgende dag geleverd | Afrekenen tegen het standaardtarief | € 50 op een rit van 50 km |
 | Helemaal niet geleverd, of moeten terugrijden | De rit niet factureren | de hele rit |
 | Schade aan de zending | Dat is je verzekering, niet je korting | zie artikel 8 |

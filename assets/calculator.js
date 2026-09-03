@@ -83,8 +83,8 @@
     if (b.correctie > 0) {
       rowsBox.appendChild(regel('Aanvulling tot minimumtarief', b.correctie, 'calc__row--minimum'));
     }
-    if (b.tijdstip.toeslag > 0) {
-      rowsBox.appendChild(regel(b.tijdstip.naam, b.tijdstip.toeslag, 'calc__row--toeslag'));
+    if (b.tijdSom > 0) {
+      rowsBox.appendChild(regel(b.tijdstip.naam, b.tijdSom, 'calc__row--toeslag'));
     }
     if (b.stopSom > 0) {
       rowsBox.appendChild(regel(

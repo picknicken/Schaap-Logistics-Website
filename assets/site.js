@@ -33,10 +33,26 @@
       internationaal:{ naam: 'Internationaal transport', start: 150, km: 2.00, minimum: 200,
                        buitenland: true }
     },
+    /* Toeslag voor werken buiten kantooruren: een percentage van de ritprijs,
+       met een ondergrens. Twee dingen tegelijk, en allebei nodig.
+
+       Een vast bedrag is oneerlijk bij lange ritten — vijftien euro op een rit
+       van 375 was vier procent, terwijl die rit de hele avond kost. Een
+       percentage alleen is oneerlijk bij korte ritten — twintig procent van
+       negentig euro is achttien, terwijl je avond net zo goed weg is.
+
+       Met een ondergrens erbij blijft de opslag op het uurtarief ongeveer
+       gelijk, of de rit nu tien of tweehonderd kilometer is. Dat is wat een
+       toeslag hoort te doen.
+
+       Het percentage gaat over de ritprijs (starttarief plus kilometers, na het
+       minimum), niet over de stops of de wachttijd: die hebben hun eigen
+       tarief. Wijzig je hier iets, doe het dan ook in het veld Tijdtoeslag in
+       Airtable en op de tarievenpagina. */
     tijden: {
-      dag:   { naam: 'Overdag',                toeslag: 0  },
-      avond: { naam: 'Avondrit (18:00-23:00)', toeslag: 15 },
-      nacht: { naam: 'Nacht- of weekendrit',   toeslag: 35 }
+      dag:   { naam: 'Overdag',                deel: 0,    bodem: 0  },
+      avond: { naam: 'Avondrit (18:00-23:00)', deel: 0.20, bodem: 25 },
+      nacht: { naam: 'Nacht- of weekendrit',   deel: 0.40, bodem: 50 }
     },
     /* Toeslag per extra adres onderweg. Een stop is omrijden plus laden en
        lossen; dat zit niet in het kilometertarief. */
@@ -137,10 +153,15 @@
     var ritprijs = r.start + kmSom;
     var bodem = r.minimum || CONFIG.minimum;
     var correctie = Math.max(0, bodem - ritprijs);
+    /* De tijdtoeslag rekent over de ritprijs inclusief de aanvulling tot het
+       minimum: dat is wat de rit kost, en dus waar de opslag over hoort te
+       gaan. Afgerond op hele centen, anders staat er 30.000000000000004. */
+    var basis = ritprijs + correctie;
+    var tijdSom = t.deel ? Math.round(Math.max(basis * t.deel, t.bodem) * 100) / 100 : 0;
     return {
       tarief: r, tijdstip: t, kmSom: kmSom, correctie: correctie,
-      stops: n, stopSom: stopSom,
-      totaal: ritprijs + correctie + t.toeslag + stopSom
+      stops: n, stopSom: stopSom, tijdSom: tijdSom,
+      totaal: ritprijs + correctie + tijdSom + stopSom
     };
   }
 

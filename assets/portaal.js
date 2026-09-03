@@ -1300,7 +1300,8 @@
     stopRij.appendChild(tvVeld);
     lijf.appendChild(stopRij);
     lijf.appendChild(maak('div', 'terzijde',
-      '€ 25 per extra adres onderweg. Avond + € 15, nacht of weekend + € 35. ' +
+      '€ 25 per extra adres onderweg. Avond + 20% (minimaal € 25), nacht of ' +
+      'weekend + 40% (minimaal € 50). ' +
       'Zo stond het in de prijs die de klant op de site zag.'));
 
     var opdrachtLink = afstandLink(o.ophaal, o.aflever);
