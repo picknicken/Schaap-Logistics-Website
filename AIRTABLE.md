@@ -209,11 +209,9 @@ tabel `Ritten` (waar je facturen op gebaseerd worden). Wijzig je een tarief, pas
 het dan op alle drie aan — anders factureer je iets anders dan je op je site belooft.
 
 De tabel `Tarieven` is een naslagoverzicht, geen bron: daar iets wijzigen verandert
-niets aan je facturen. Er hoort precies één regel per dienst in te staan. Stonden
-er ooit twee regels *Standaard – Normaal* en *Standaard – Spoed* in — restanten
-van een eerdere naamgeving, met een spoedtarief van €50 in plaats van €75 — dan
-zijn die verwijderd; bij internationaal transport hoort geen kilometerprijs te
-staan, want dat gaat op offerte.
+niets aan je facturen. Er hoort precies één regel per dienst in te staan; bij
+internationaal transport hoort geen kilometerprijs te staan, want dat gaat op
+offerte.
 
 #### Een factuur terugdraaien: de creditnota
 
@@ -274,15 +272,17 @@ Tol, veerpont, parkeergeld of iets dat je onderweg voor de klant moest kopen zij
 wél door te berekenen: die zet je in `Extra kosten`, en dan komt het via de
 `Factuurlink` als eigen regel op de factuur te staan.
 
-De formule volgt de website exact: standaard €50 + €1,50/km, spoed €75 + €2,00/km,
-directe spoed €100 + €2,50/km, minimum €75 per opdracht, en daarna pas de extra
-kosten erbij. Internationaal blijft leeg — dat gaat op offerte, dus vul je
+De formule volgt de website exact: standaard €75 + €1,50/km, spoed €100 + €2,00/km,
+directe spoed €125 + €2,50/km, minimum €75 per opdracht, en daarna pas de extra
+kosten erbij. Dat minimum is sinds de tariefverhoging een dode letter: het laagste
+starttarief is er zelf aan gelijk. Het staat er nog voor het geval je bij een klant
+een lager Starttarief afspreekt. Internationaal blijft leeg — dat gaat op offerte, dus vul je
 `Totaal excl. BTW` met de hand in. Vul je `Starttarief` of `Km-tarief` zelf in,
 dan gaat die afspraak voor op het standaardtarief.
 
 Gecontroleerd tegen de rekenvoorbeelden op `/tarieven/`: 10, 25, 50 en 300 km voor
-alle drie de binnenlandse diensten komen op de cent overeen, inclusief het minimum
-bij korte ritten.
+alle drie de binnenlandse diensten komen op de cent overeen. Een test op de site
+rekent die tabel en de vanaf-prijzen na met de calculator zelf.
 
 ### Betalingsbewaking
 

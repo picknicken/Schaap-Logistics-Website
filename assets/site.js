@@ -16,9 +16,9 @@
     minimum: 75,                         /* minimumtarief per opdracht */
     btw: 0.21,
     ritten: {
-      standaard:     { naam: 'Standaard transport',    start: 50,  km: 1.50 },
-      spoed:         { naam: 'Spoedtransport',         start: 75,  km: 2.00, spoed: true },
-      direct:        { naam: 'Directe spoed',          start: 100, km: 2.50, spoed: true },
+      standaard:     { naam: 'Standaard transport',    start: 75,  km: 1.50 },
+      spoed:         { naam: 'Spoedtransport',         start: 100, km: 2.00, spoed: true },
+      direct:        { naam: 'Directe spoed',          start: 125, km: 2.50, spoed: true },
       internationaal:{ naam: 'Internationaal transport', offerte: true }
     },
     tijden: {
