@@ -8,6 +8,27 @@
 <title>Chauffeursportaal — Schaap Express Transport</title>
 <link rel="icon" href="../assets/favicon.png">
 
+<!-- ===================== Op het beginscherm zetten =====================
+     Hiermee is dit scherm als app te installeren: op een iPhone via Deel ->
+     Zet op beginscherm, op Android biedt de browser het zelf aan. Daarna
+     opent hij schermvullend, zonder adresbalk, met een eigen pictogram.
+
+     De toegangscode staat al op het toestel, dus je komt meteen binnen.
+     Er is geen App Store bij nodig en niets om apart te onderhouden: dit is
+     dezelfde pagina, alleen anders verpakt.
+
+     apple-mobile-web-app-capable is officieel vervangen door
+     mobile-web-app-capable, maar Safari leest voorlopig alleen de eerste.
+     Allebei laten staan tot dat verandert. -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="../assets/app-icoon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Chauffeur">
+<!-- De kop is donker en houdt zelf al rekening met de statusbalk
+     (env(safe-area-inset-top)), dus de tijd en de batterij mogen erover. -->
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
 <style>
 /* Inter staat op onze eigen server; zie assets/inter-OFL.txt voor de licentie. */
 @font-face{font-family:'Inter';font-style:normal;font-weight:400 800;font-display:swap;src:url('../assets/inter.woff2') format('woff2')}
@@ -51,6 +72,26 @@ input{font:inherit}
 .wrap{max-width:680px;margin:0 auto;padding:0 16px}
 
 /* ---------------------------------------------------------------- kop */
+
+/* ---------- tip: zet dit scherm op je beginscherm ----------
+   iOS vraagt daar zelf niet om, dus dan weet je het niet. Hij verschijnt
+   alleen in de browser en niet in de geinstalleerde app, en gaat na een tik
+   op Later voorgoed weg. */
+.zetop{
+  display:none;gap:12px;align-items:flex-start;
+  margin:calc(10px + env(safe-area-inset-top)) 12px 0;padding:13px 14px;
+  background:#16233a;border:1px solid rgba(255,255,255,.14);border-radius:12px;
+  color:#e9eff8;font-size:.84rem;line-height:1.5;
+}
+.zetop[data-toon="ja"]{display:flex}
+.zetop img{width:34px;height:34px;border-radius:8px;flex:none}
+.zetop b{color:#fff}
+.zetop button{
+  margin-top:8px;background:none;border:1px solid rgba(255,255,255,.25);
+  color:#c3ccdb;font:inherit;font-size:.78rem;padding:5px 11px;
+  border-radius:8px;cursor:pointer;
+}
+
 .kop{
   background:var(--navy);color:#fff;
   padding:calc(14px + env(safe-area-inset-top)) 0 14px;
@@ -325,6 +366,17 @@ input{font:inherit}
 </head>
 <body>
 
+<!-- Alleen zichtbaar in de browser, niet in de app zelf. -->
+<div class="zetop" id="zetop">
+  <img src="../assets/app-icoon-180.png" alt="">
+  <div>
+    <b>Zet dit scherm op je beginscherm.</b><br>
+    Dan opent het als app, zonder dit adres op te zoeken. Tik onderin op
+    <b>Deel</b> en daarna op <b>Zet op beginscherm</b>.
+    <br><button type="button" id="zetop-weg">Later</button>
+  </div>
+</div>
+
 <!-- ============================ toegang ============================ -->
 <div id="slot" class="slot">
   <h1>Chauffeursportaal</h1>
@@ -566,6 +618,24 @@ input{font:inherit}
   </div>
 </div>
 
+<script>
+/* De tip alleen laten zien in een browser op een telefoon, en niet meer nadat
+   je hem hebt weggeklikt of de app hebt geinstalleerd. */
+(function () {
+  var vak = document.getElementById('zetop');
+  if (!vak) { return; }
+  var appModus = window.matchMedia('(display-mode: standalone)').matches ||
+                 window.navigator.standalone === true;
+  var telefoon = window.matchMedia('(max-width: 820px)').matches;
+  var weg = false;
+  try { weg = localStorage.getItem('sl-zetop-weg') === '1'; } catch (e) { /* privemodus */ }
+  if (!appModus && telefoon && !weg) { vak.setAttribute('data-toon', 'ja'); }
+  document.getElementById('zetop-weg').addEventListener('click', function () {
+    vak.removeAttribute('data-toon');
+    try { localStorage.setItem('sl-zetop-weg', '1'); } catch (e) { /* privemodus */ }
+  });
+}());
+</script>
 <script src="../assets/portaal.js"></script>
 </body>
 </html>

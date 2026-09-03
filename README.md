@@ -323,6 +323,31 @@ Onder 360px (een oude iPhone SE) wordt de bovenbalk krap: daar staan wat
 kleinere marges en een iets kleinere bedrijfsnaam, zodat alles op één regel past
 en er niets weg hoeft.
 
+### Het portaal op je beginscherm zetten
+
+Het chauffeursportaal is te installeren als app. Op een iPhone: open
+`/portaal/` in Safari, tik onderin op **Deel** en daarna op **Zet op
+beginscherm**. Op Android biedt Chrome het zelf aan.
+
+Daarna staat er een pictogram tussen je andere apps, opent het scherm
+schermvullend zonder adresbalk, en ben je meteen binnen omdat de toegangscode al
+op het toestel staat. Het is dezelfde pagina, alleen anders verpakt: geen App
+Store, geen ontwikkelaarsaccount, en niets aparts om te onderhouden.
+
+Wat het mogelijk maakt: `portaal/manifest.webmanifest`, een `apple-touch-icon`,
+en de vier `meta`-regels in de kop van `portaal/index.html`. De pictogrammen
+staan in `assets/app-icoon-*.png` en komen uit `assets/favicon-bron.html`; die
+met `-masker` in de naam heeft extra ruimte rondom omdat Android een pictogram
+bijsnijdt tot een cirkel.
+
+In de browser staat er bovenaan eenmalig een tip die uitlegt hoe je hem
+installeert, want iOS vraagt daar zelf niet om. Die verschijnt niet in de
+geinstalleerde app en verdwijnt voorgoed na een tik op *Later*.
+
+Twee dingen die het **niet** is: er is geen offline modus, en pushmeldingen op
+je telefoon zitten er niet in. Dat laatste kan op een geinstalleerde webapp
+(iOS 16.4 en hoger) maar is apart werk; nu gaat het spoedseintje per mail.
+
 ## Het klantportaal
 
 `/klant/` is de kant die je klanten zien. Elke klant krijgt een eigen code en
