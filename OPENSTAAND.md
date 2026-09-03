@@ -22,15 +22,12 @@ versturen die klopt.
 Er staan in totaal **30 plaatsen** in de HTML gemarkeerd met `data-placeholder`;
 die vallen geel op als je de pagina bekijkt, dus je kunt ze niet missen.
 
-**De domeinnaam is er** — `schaaplogistics.nl`, geregistreerd bij Strato en
-geactiveerd. Hij wijst alleen nog naar Strato's eigen parkeerpagina. Wat er nog
-moet gebeuren staat in `README.md` onder *Verhuizen naar schaaplogistics.nl*:
-eerst de DNS omzetten, dan pas het bestand `CNAME` in de repo, en daarna de
-absolute adressen in `robots.txt`, `sitemap.xml` en Airtable.
-
-Daarmee vallen ook twee andere punten om: het `noreply@`-adres dat nu nergens
-naar wijst, en `info@schaaplogistics.nl` op je facturen in plaats van een
-gmail-adres.
+**De domeinnaam doet het.** De site staat op `https://schaaplogistics.nl/`. Het
+oude adres stuurt door, dus links die al verstuurd zijn blijven werken. Twee
+kleine dingen staan nog open: zet in de repo-instellingen onder Pages
+*Enforce HTTPS* aan zodra GitHub het certificaat heeft aangemaakt, en voeg bij
+Strato de overige drie A- en drie AAAA-records van GitHub toe — nu staat er van
+elk maar één, en heeft dat ene adres een storing dan is de site onbereikbaar.
 
 ---
 

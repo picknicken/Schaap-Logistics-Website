@@ -8,4 +8,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://picknicken.github.io/Schaap-Logistics-Website/sitemap.xml
+Sitemap: https://schaaplogistics.nl/sitemap.xml
