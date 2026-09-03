@@ -102,6 +102,9 @@ th:first-child,td:first-child{padding-left:0;width:44px}
 th:last-child,td:last-child{padding-right:0;text-align:right}
 .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 tbody tr.leeg td{color:var(--zacht)}
+/* Een regel die eraf gaat in plaats van erbij. Groen zou feestelijk zijn maar
+   verwarrend op een factuur; dit is dezelfde inkt, iets zachter. */
+tbody td.af{color:#1d7a4c}
 
 /* ---------- totalen ---------- */
 .totalen{display:flex;justify-content:flex-end;margin:18px 0 30px}
@@ -335,6 +338,8 @@ tbody tr.leeg td{color:var(--zacht)}
   var tijdvak     = lees('tijdvak', '');
   var wacht       = Math.round(getal('wacht', 0));
   var wachttoeslag= getal('wachttoeslag', 0);
+  var korting     = getal('korting', 0);
+  var kortingOms  = lees('kortingoms', '');
   var van       = lees('van', '3011 AA 12, Rotterdam');
   var naar      = lees('naar', '5611 AB 5, Eindhoven');
 
@@ -440,6 +445,19 @@ tbody tr.leeg td{color:var(--zacht)}
       bedrag: toeslag
     });
   }
+  /* De korting gaat er als laatste af, na alles. Een negatief bedrag dus, en
+     daarom een eigen regel en geen stil lager totaal: een klant die korting
+     krijgt moet dat kunnen zien staan. De btw rekent er vanzelf overheen,
+     want die volgt uit het subtotaal. */
+  if (korting > 0) {
+    regels.push({
+      oms: kortingOms ? 'Korting — ' + kortingOms : 'Korting',
+      aantal: '1 stuk',
+      prijs: -korting,
+      bedrag: -korting,
+      min: true
+    });
+  }
 
   var lijf = document.getElementById('regels');
   if (!regels.length) {
@@ -468,6 +486,7 @@ tbody tr.leeg td{color:var(--zacht)}
       var td = document.createElement('td');
       td.textContent = cel[0];
       if (cel[1]) { td.className = cel[1]; }
+      if (r.min) { td.classList.add('af'); }
       /* Op een telefoon vervalt de kolomkop; dan zet de stijl hem hier voor. */
       td.setAttribute('data-kop', KOPPEN[k]);
       tr.appendChild(td);

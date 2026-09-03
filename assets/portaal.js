@@ -363,6 +363,41 @@
     return veld;
   }
 
+  /* Waarom je korting geeft. Vrije tekst, maar met een lijstje suggesties
+     eronder: je typt dit met een telefoon in je hand, vaak op straat, en dan
+     wil je niet drie woorden hoeven uitspellen. */
+  var KORTINGREDENEN = [
+    'Te laat aangekomen',
+    'Zending kon niet in een keer mee',
+    'Schade aan de zending',
+    'Coulance'
+  ];
+
+  function redenVeld(waarde) {
+    var veld = maak('label', 'veld');
+    veld.style.margin = '0';
+    veld.appendChild(maak('span', '', 'Reden (komt op de factuur)'));
+    var invoer = document.createElement('input');
+    invoer.type = 'text';
+    invoer.maxLength = 120;
+    invoer.value = waarde || '';
+    invoer.placeholder = 'Bijvoorbeeld: te laat aangekomen';
+    invoer.setAttribute('list', 'kortingredenen');
+    veld.appendChild(invoer);
+    if (!document.getElementById('kortingredenen')) {
+      var lijst = document.createElement('datalist');
+      lijst.id = 'kortingredenen';
+      KORTINGREDENEN.forEach(function (r) {
+        var o = document.createElement('option');
+        o.value = r;
+        lijst.appendChild(o);
+      });
+      document.body.appendChild(lijst);
+    }
+    veld.invoer = invoer;
+    return veld;
+  }
+
   /* Hetzelfde, maar met een keuzelijst. De drie tijdvakken staan hier bewust
      letterlijk: het zijn dezelfde namen als in Airtable en op de website, en
      aan elk hangt een bedrag. */
@@ -567,6 +602,21 @@
         'dat komt als losse regel op de factuur. Brandstof niet: die zit al in het ' +
         'kilometertarief. Jouw eigen kosten horen hieronder.'));
 
+      /* Korting staat apart van de rest. Alles hierboven maakt de rit duurder;
+         dit is het enige dat er geld af haalt, en het hoort een bewuste
+         handeling te zijn en geen veld waar je per ongeluk in typt. */
+      var kortRij = maak('div', 'velrij');
+      var kortVeld = euroVeld('Korting', rit.korting);
+      var redenVeldRit = redenVeld(rit.kortingRe);
+      kortRij.appendChild(kortVeld);
+      kortRij.appendChild(redenVeldRit);
+      lijf.appendChild(kortRij);
+      lijf.appendChild(maak('div', 'terzijde',
+        'Ging er iets mis — te laat aangekomen, of niet alles kon mee — dan haal ' +
+        'je hier wat van de prijs af. Het komt als eigen regel op de factuur, met ' +
+        'jouw reden erbij, zodat de klant ziet dat je het hebt rechtgezet. Vul het ' +
+        'in vóórdat je de rit op Uitgevoerd zet: dan wordt de factuur gemaakt.'));
+
       var kmKnop = maak('button', 'knop knop--rand', 'Gegevens van de rit opslaan');
       kmKnop.type = 'button';
       kmKnop.addEventListener('click', function () {
@@ -577,7 +627,9 @@
             stops: stopVeldRit.invoer.value,
             tijdvak: tvVeldRit.invoer.value,
             wachttijd: wachtVeld.invoer.value,
-            doorbereken: doorVeld.invoer.value
+            doorbereken: doorVeld.invoer.value,
+            korting: kortVeld.invoer.value,
+            kortingRe: redenVeldRit.invoer.value
           }).then(function (data) {
             ververs(data.rit);
             meldApp('');

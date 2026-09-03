@@ -48,6 +48,8 @@ const R = {
   bevestigd:  'Bevestiging verstuurd op',
   wachttijd:  'Wachttijd (minuten)',
   doorbereken:'Extra kosten',
+  korting:    'Korting',
+  kortingRe:  'Reden korting',
   klant:      'Klantnaam',
   telefoon:   'Klant telefoon',
   opmerking:  'Opmerkingen',
@@ -623,6 +625,15 @@ async function zetRitKm(env, body, origin) {
   const doorbereken = euroBedrag(body.doorbereken);
   if (doorbereken !== null) { velden[R.doorbereken] = doorbereken; }
 
+  /* Korting is het enige bedrag hier dat de prijs omlaag brengt, dus de reden
+     hoort erbij: die komt op de factuur te staan. De reden is vrije tekst van
+     jou, geen klant, maar hij gaat wel naar buiten — vandaar een lengtegrens. */
+  const korting = euroBedrag(body.korting);
+  if (korting !== null) { velden[R.korting] = korting; }
+  if (body.kortingRe !== undefined) {
+    velden[R.kortingRe] = String(body.kortingRe || '').trim().slice(0, 120);
+  }
+
   const rit = naarRit(await patch(env, env.AIRTABLE_RITTEN, id, velden));
   return antwoord(200, { ok: true, rit }, origin, true);
 }
@@ -1035,6 +1046,8 @@ function naarRit(record) {
     bevestigd:  f[R.bevestigd] || '',
     wachttijd:  f[R.wachttijd] || 0,
     doorbereken:f[R.doorbereken] || 0,
+    korting:    f[R.korting] || 0,
+    kortingRe:  f[R.kortingRe] || '',
     klant:      eerste(f[R.klant]),
     telefoon:   eerste(f[R.telefoon]),
     opmerking:  f[R.opmerking] || '',

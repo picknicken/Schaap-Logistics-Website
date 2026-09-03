@@ -211,6 +211,22 @@ het dan op alle drie aan — anders factureer je iets anders dan je op je site b
 De tabel `Tarieven` is een naslagoverzicht, geen bron: daar iets wijzigen verandert
 niets aan je facturen.
 
+#### Korting geven
+
+Ging er iets mis — te laat aangekomen, niet alles kon in één keer mee — dan haal
+je met het veld `Korting` op de rit een bedrag van de prijs af. Er hoort een
+`Reden korting` bij: die komt letterlijk op de factuur te staan, als eigen regel
+*Korting — te laat aangekomen*. Dat is met opzet zichtbaar en niet stilletjes
+een lager totaal: een klant die je tegemoetkomt, moet dat kunnen zien.
+
+De korting gaat er helemaal aan het eind af, ná het minimumtarief en alle
+toeslagen, en mag de rit dus onder de €75 brengen. De btw wordt over het
+verlaagde bedrag gerekend. Onder nul kan niet: dan wordt het nul.
+
+Invullen doe je in het chauffeursportaal, op de ritkaart onder Doorberekenen,
+**voordat** je de rit op *Uitgevoerd* zet — dat is het moment waarop de factuur
+wordt gemaakt. Ben je te laat, dan pas je het bedrag op de factuur zelf nog aan.
+
 #### Wat er wel en niet op de factuur mag
 
 Je eigen kosten en de kosten van de klant zijn twee verschillende dingen:
