@@ -100,6 +100,10 @@ pas het dan op allebei aan.
 Er staan nog placeholder-gegevens in de site, en door de opsplitsing staan ze nu
 in meerdere bestanden. Zoek op `PLACEHOLDER` om ze te vinden.
 
+Deze lijst gaat alleen over de website. Het volledige overzicht van wat er nog
+open staat — ook aan de kant van Airtable, de mail en de zakelijke keuzes die nog
+gemaakt moeten worden — staat in `OPENSTAAND.md`.
+
 - [ ] **Zet de site weer op indexeerbaar.** Zolang het een concept is met
       voorbeeldgegevens staat er op alle zeven pagina's
       `<meta name="robots" content="noindex,nofollow">`, zodat Google geen
@@ -115,12 +119,13 @@ in meerdere bestanden. Zoek op `PLACEHOLDER` om ze te vinden.
       `factuur/`, `portaal/` en `klant/` blijven bewust op `noindex`: dat zijn
       besloten schermen met klantgegevens en die horen niet in Google.
 
-- [ ] **Algemene voorwaarden en privacyverklaring.** De footer stelt nu dat er
-      algemene voorwaarden van toepassing zijn, maar er staat nergens een link
-      naar zo'n document. Voeg ze toe, of haal die zin weg zolang ze er niet zijn.
-      Een privacyverklaring hoort er sowieso te komen: het formulier verzamelt
-      naam, telefoonnummer, e-mailadres, adressen en foto's en zet die door naar
-      Cloudflare en Airtable.
+- [ ] **Algemene voorwaarden en privacyverklaring laten nakijken.** Ze staan er
+      (`/voorwaarden/` en `/privacy/`, gelinkt vanuit elke voettekst), maar het
+      zijn concepten met gaten erin — dat zegt de pagina zelf ook. Het gat dat er
+      het meest toe doet is de keuze tussen AVC 2002 en CMR: dat bepaalt waar je
+      aansprakelijk voor bent als er lading beschadigt. Zonder die keuze ben je
+      onbeperkt aansprakelijk. Laat ze nakijken door iemand die er verstand van
+      heeft voordat de site live gaat.
 
 - [ ] **Telefoonnummer** — nu `06 - 12 34 56 78` / `tel:+31612345678`, verspreid
       over alle zeven HTML-bestanden: header en footer van elke pagina, plus de
