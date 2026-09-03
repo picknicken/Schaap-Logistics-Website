@@ -67,6 +67,65 @@
             : 'Datum en gewenste ophaaltijd';
   }
 
+  /* Zet het tweede blok in de stand die bij de gekozen dienst hoort.
+
+     Binnenlands is postcode en huisnummer genoeg: daaruit schat de site de
+     afstand en dus de prijs. Naar het buitenland kan die schatting niet, dus
+     rekenen wij de route met de hand na — en daarvoor is een postcode alleen te
+     weinig. Vandaar dat het formulier dan om het hele adres vraagt, met de
+     reden erbij, en het ook echt controleert. */
+  var VOORBEELD = {
+    binnen: ['3011 AA 12, Rotterdam', '5611 AB 5, Eindhoven'],
+    buiten: ['Meir 1, 2000 Antwerpen, Belgi\u00eb', 'K\u00f6nigsallee 1, 40212 D\u00fcsseldorf, Duitsland']
+  };
+
+  /* Deze functie wordt bij elke toetsaanslag aangeroepen, samen met de
+     samenvatting. Alleen bij een echte dienstwissel iets doen: anders wist hij
+     de melding over een onvolledig adres weer weg zodra je verder typt. */
+  var laatsteDienst = null;
+
+  function ververAdres() {
+    var dienst = gekozenDienst();
+    if (dienst === laatsteDienst) { return; }
+    laatsteDienst = dienst;
+
+    var buitenland = !!(CONFIG.ritten[dienst] || {}).buitenland;
+    var op = document.getElementById('r-opPc');
+    var af = document.getElementById('r-afPc');
+    var paar = buitenland ? VOORBEELD.buiten : VOORBEELD.binnen;
+
+    document.getElementById('buitenlandNoot').hidden = !buitenland;
+    document.getElementById('waarNoot').textContent = buitenland
+      ? 'Volledig adres, met straat en huisnummer'
+      : 'Postcode en huisnummer is genoeg';
+    op.placeholder = paar[0];
+    af.placeholder = paar[1];
+
+    /* Een melding van de vorige dienst hoort niet bij de nieuwe. */
+    [op, af].forEach(function (v) { v.setCustomValidity(''); });
+  }
+
+  /* Een adres waarmee je een route kunt opzoeken: een huisnummer of postcode,
+     en meer dan een enkel woord. Bewust ruim — een aanvraagformulier dat te
+     streng is kost je de aanvraag, en jij belt toch na. */
+  function adresIsCompleet(tekst) {
+    var t = String(tekst || '').trim();
+    return t.length >= 10 && /\d/.test(t) && t.split(/[\s,]+/).filter(Boolean).length >= 3;
+  }
+
+  function keurAdressen() {
+    var buitenland = !!(CONFIG.ritten[gekozenDienst()] || {}).buitenland;
+    ['r-opPc', 'r-afPc'].forEach(function (id) {
+      var v = document.getElementById(id);
+      if (buitenland && v.value.trim() && !adresIsCompleet(v.value)) {
+        v.setCustomValidity('Vul het volledige adres in: straat, huisnummer, ' +
+                            'postcode, plaats en land.');
+      } else {
+        v.setCustomValidity('');
+      }
+    });
+  }
+
   /* ===================== keuzes overnemen van de calculator ===================== */
 
   /* De knop onder de calculator op de homepage linkt hierheen met de gemaakte
@@ -114,6 +173,7 @@
     var af     = veld('r-afPc');
 
     ververWanneer();
+    ververAdres();
 
     samRijen.innerHTML = '';
     samRijen.appendChild(samRij('Dienst', rit.naam));
@@ -398,6 +458,7 @@
 
   ritForm.addEventListener('submit', function (e) {
     e.preventDefault();
+    keurAdressen();
     if (!ritForm.checkValidity()) { ritForm.reportValidity(); return; }
 
     var data = bouwAanvraag();
@@ -418,6 +479,19 @@
 
   ritForm.addEventListener('input', ververSamenvatting);
   ritForm.addEventListener('change', ververSamenvatting);
+
+  /* Ook nakijken zodra je het adresveld verlaat. Bij het versturen gebeurt het
+     ook, maar dan hoor je het pas als je al klaar dacht te zijn. Niet tijdens
+     het typen: dan staat het veld halverwege je eerste woord al op fout. */
+  ['r-opPc', 'r-afPc'].forEach(function (id) {
+    var v = document.getElementById(id);
+    if (v) {
+      v.addEventListener('blur', function () {
+        keurAdressen();
+        if (v.validationMessage) { v.reportValidity(); }
+      });
+    }
+  });
 
   neemKeuzesOver();
   ververSamenvatting();

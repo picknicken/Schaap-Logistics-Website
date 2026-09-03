@@ -283,6 +283,23 @@ De vier soorten rit staan als vaste lijst in de Worker. Een verzonnen naam zou
 in Airtable een nieuwe keuze aanmaken die stilletjes geen tarief heeft —
 dezelfde reden waarom het tijdvak een keuzelijst is en geen tekstveld.
 
+### Het aanvraagformulier bij een rit naar het buitenland
+
+Binnenlands is postcode en huisnummer genoeg: daaruit schat de site de afstand en
+dus de prijs. Naar België en Duitsland kan dat niet — die schatting werkt op
+Nederlandse postcodes, en een Belgische postcode van vier cijfers zou daar een
+Nederlandse regio uit halen. Een verzonnen afstand is erger dan geen, dus voor
+het buitenland wordt er niets geschat.
+
+Kies je *Internationaal transport*, dan schakelt het tweede blok om: het vraagt
+om het volledige adres, de voorbeelden in de velden worden buitenlands, en er
+staat een regel onder waarom. Een adres dat te weinig zegt (`2000 Antwerpen`)
+wordt geweigerd zodra je het veld verlaat en opnieuw bij het versturen. De grens
+is ruim gehouden — een huisnummer of postcode en minstens drie woorden — want een
+formulier dat te streng is kost je de aanvraag.
+
+Binnenlands blijft alles zoals het was: `3011 AA 12` komt er gewoon door.
+
 ### Het menu op een telefoon
 
 Onder 1040px klapt de menubalk in. De knop rechtsboven draagt het woord **Menu**

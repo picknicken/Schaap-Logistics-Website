@@ -96,7 +96,7 @@
         <div class="stap">
           <div class="stap__kop">
             <span class="stap__num">2</span>
-            <div><h3>Waar moet het heen?</h3><p>Postcode en huisnummer is genoeg</p></div>
+            <div><h3>Waar moet het heen?</h3><p id="waarNoot">Postcode en huisnummer is genoeg</p></div>
           </div>
           <div class="field-row">
             <div class="field">
@@ -108,6 +108,13 @@
               <input type="text" id="r-afPc" name="aflever" placeholder="5611 AB 5, Eindhoven" required>
             </div>
           </div>
+          <!-- Alleen bij Belgi&euml; en Duitsland: daar rekenen wij de route met de
+               hand na, en dan is een postcode alleen niet genoeg. -->
+          <p class="veldnoot" id="buitenlandNoot" style="margin-bottom:18px" hidden>
+            Voor Belgi&euml; en Duitsland hebben wij het <b>volledige adres</b> nodig &mdash;
+            straat, huisnummer, postcode, plaats en land. Wij rekenen de route namelijk met
+            de hand na om u een exacte prijs te kunnen geven.
+          </p>
           <div class="field" style="margin-bottom:0">
             <label for="r-stops">Extra stops onderweg</label>
             <input type="number" id="r-stops" name="stops" min="0" max="10" step="1" placeholder="0"
