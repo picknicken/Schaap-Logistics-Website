@@ -33,9 +33,57 @@ Laat `schaaplogistics.nl` daarna aflopen. Dat adres is precies wat botst met
 Schaap Logistics B.V. in Breda, en zolang je het aanhoudt houd je die botsing in
 stand.
 
-**En nog niet vergeten:** laat toetsen of *Schaap Express Transport* voldoende
-afstand houdt tot Schaap Logistics B.V. voordat je hem bij de KvK vastlegt. Het
-blijft Schaap plus een transportwoord in dezelfde branche.
+### De naam toetsen — een half uur werk
+
+Doe dit voordat je bij de KvK inschrijft, en zeker voordat je een bus laat
+beletteren. Je toetst drie dingen die los van elkaar staan.
+
+**1. Bestaande handelsnamen — Handelsregister van de KvK, gratis zoeken.**
+Zoek niet alleen op de hele naam maar ook op de delen: *Schaap Express*,
+*Schaap Transport*, *Schaap Koeriers*, en gewoon *Schaap* in combinatie met de
+branchecodes voor goederenvervoer over de weg (49.41) en expediteurs en
+bevrachters (52.29). Noteer per treffer drie dingen: welke activiteit, welke
+plaats, en sinds wanneer.
+
+**2. Merken — het merkenregister van het BOIP (Benelux) en eSearch van het
+EUIPO (Europees), allebei gratis.** Een Europees merk geldt ook hier, dus kijk
+in allebei. Let op klasse 39: transport, verpakking en opslag van goederen.
+Staat de naam daar op naam van een ander, dan is er niets te bespreken.
+
+**3. De praktijk — Google en de domeinnamen.** Zoek de naam tussen
+aanhalingstekens en bekijk drie pagina's resultaten. Kijk wie de .nl en de .com
+heeft (whois via SIDN voor .nl). Staat er al een vervoerder op die naam
+bovenaan, dan is de verwarring er in het echt, wat een register ook zegt.
+
+**Hoe je de uitkomst leest.** Drie vragen bepalen het:
+
+- Zit de ander in transport of logistiek? Zelfde branche betekent dat verwarring
+  al snel wordt aangenomen.
+- Waar werkt hij? Landelijk telt overal; alleen bij een echt plaatselijk bedrijf
+  helpt afstand.
+- Wie was eerder? De oudere handelsnaam wint, en jij bent de nieuwkomer.
+
+Drie keer ongunstig betekent: die naam houdt geen stand.
+
+**Wat de KvK je níét vertelt.** Ze controleren bij inschrijving niet of je naam
+mag, en inschrijven geeft je geen recht op de naam. Een groen licht van de balie
+is dus geen groen licht. Hetzelfde geldt voor het BOIP: die toetst bij
+registratie niet op oudere merken, bezwaar komt later van de merkhouder zelf.
+
+**Wanneer je ervoor betaalt.** Twijfel je na stap 1 tot 3, laat dan een
+merkgemachtigde een beschikbaarheidsonderzoek doen. Reken op een paar honderd
+euro voor de Benelux; vraag vooraf een prijs. Dat is goedkoop naast opnieuw
+beletteren, opnieuw drukken en klanten die je onder een andere naam kennen.
+
+**En als de naam wel houdt:** leg hem dan zelf vast als Benelux-woordmerk in
+klasse 39. Rond de €250 voor tien jaar. Dan moet de volgende opzij, en niet jij.
+
+**Voor deze naam specifiek.** Het deel dat in het hoofd van een klant blijft
+hangen is *Schaap*; *Express* en *Transport* zijn allebei soortwoorden die
+iedereen in deze branche gebruikt. "Schaap Express Transport" en "Schaap
+Logistics" komen daarmee allebei neer op Schaap plus vervoer. Een soortwoord
+ertussen schuiven maakt zelden genoeg verschil. Houd er rekening mee dat de
+uitkomst is dat het niet mag.
 
 ---
 
