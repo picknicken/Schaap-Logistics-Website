@@ -15,8 +15,15 @@
 <meta property="og:site_name" content="Schaap Logistics">
 <meta property="og:title" content="Tarieven — Schaap Logistics">
 <meta property="og:description" content="Starttarief plus een vaste kilometerprijs, geen brandstoftoeslagen achteraf. Rekenvoorbeelden per afstand en een volledig overzicht van de toeslagen.">
+<meta property="og:url" content="https://schaaplogistics.nl/tarieven/">
+<meta property="og:image" content="https://schaaplogistics.nl/assets/deelkaart.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Schaap Logistics &mdash; vandaag opgehaald, vandaag bezorgd">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://schaaplogistics.nl/tarieven/">
 <link rel="icon" href="../assets/favicon.png" type="image/png">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preload" href="../assets/inter.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="../assets/site.css">
 </head>
 <body>
@@ -65,7 +72,7 @@
 
     <div class="grid grid--3" style="margin-bottom:36px">
       <div class="price-card">
-        <h3>Standaard transport</h3>
+        <h2>Standaard transport</h2>
         <p class="price-card__sub">Reguliere zakelijke transportopdracht</p>
         <div class="price-card__amount"><b>vanaf &euro;75</b></div>
         <p class="price-card__plus">+ <b>&euro;1,50</b> per kilometer &middot; excl. btw</p>
@@ -78,7 +85,7 @@
 
       <div class="price-card">
         <span class="price-card__tag" style="background:var(--amber);color:#22160a">Met prioriteit</span>
-        <h3>Spoedtransport</h3>
+        <h2>Spoedtransport</h2>
         <p class="price-card__sub">Versnelde levering met voorrang</p>
         <div class="price-card__amount"><b>vanaf &euro;100</b></div>
         <p class="price-card__plus">+ <b>&euro;2,00</b> per kilometer &middot; excl. btw</p>
@@ -91,7 +98,7 @@
 
       <div class="price-card price-card--urgent">
         <span class="price-card__tag">Snelst</span>
-        <h3>Directe spoed</h3>
+        <h2>Directe spoed</h2>
         <p class="price-card__sub">Direct beschikbaar, zo snel mogelijk vertrek</p>
         <div class="price-card__amount"><b>vanaf &euro;125</b></div>
         <p class="price-card__plus">+ <b>&euro;2,50</b> per kilometer &middot; excl. btw</p>
@@ -103,7 +110,7 @@
       </div>
     </div>
 
-    <h3 style="font-size:1.1rem;margin-bottom:14px">Rekenvoorbeelden</h3>
+    <h2 style="font-size:1.1rem;margin-bottom:14px">Rekenvoorbeelden</h2>
     <div class="table-wrap" style="margin-bottom:10px">
       <table>
         <caption class="sr-only">Voorbeeldprijzen per afstand en type rit, exclusief btw en toeslagen</caption>
@@ -120,11 +127,12 @@
         </tbody>
       </table>
     </div>
+<p class="veegtip">Veeg de tabel opzij voor de kolommen die er niet op passen.</p>
     <p style="font-size:.82rem;color:var(--muted);margin-bottom:28px">
       Bedragen zijn exclusief btw en exclusief eventuele toeslagen.
     </p>
 
-    <h3 style="font-size:1.1rem;margin-bottom:14px">Toeslagen en aanvullende kosten</h3>
+    <h2 style="font-size:1.1rem;margin-bottom:14px">Toeslagen en aanvullende kosten</h2>
     <div class="table-wrap">
       <table>
         <thead><tr><th scope="col">Post</th><th scope="col">Tarief</th><th scope="col">Toelichting</th></tr></thead>
@@ -139,12 +147,13 @@
         </tbody>
       </table>
     </div>
+<p class="veegtip">Veeg de tabel opzij voor de kolommen die er niet op passen.</p>
 
     <!-- Internationaal -->
     <div class="intl">
       <div>
         <span class="eyebrow" style="color:var(--amber)">Internationaal</span>
-        <h3>België en Duitsland</h3>
+        <h2>België en Duitsland</h2>
         <p>
           Ook over de grens rekenen wij op dezelfde manier: een starttarief van
           &euro;&nbsp;150 plus &euro;&nbsp;2,00 per kilometer, met een minimum van
@@ -183,7 +192,7 @@
     <div class="footer__grid">
       <div>
         <a href="../" class="brand" style="margin-bottom:14px">
-          <img class="brand__mark" src="../assets/logo-sl-wit.png" alt="" width="240" height="177">
+          <img class="brand__mark" loading="lazy" decoding="async" src="../assets/logo-sl-wit.png" alt="" width="240" height="177">
           <span><span class="brand__name">Schaap Logistics</span><span class="brand__sub">Spoedtransport</span></span>
         </a>
         <p style="max-width:38ch">
@@ -193,7 +202,7 @@
       </div>
 
       <div>
-        <h4>Diensten</h4>
+        <h2>Diensten</h2>
         <ul>
           <li><a href="../diensten/">Standaard transport</a></li>
           <li><a href="../diensten/">Spoedtransport</a></li>
@@ -204,7 +213,7 @@
       </div>
 
       <div>
-        <h4>Contact</h4>
+        <h2>Contact</h2>
         <ul>
           <!-- PLACEHOLDER contactgegevens -->
           <li><a href="tel:+31612345678">06 - 12 34 56 78</a></li>

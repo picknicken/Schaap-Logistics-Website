@@ -1,3 +1,18 @@
+/* Het lettertype staat op onze eigen server en niet meer bij Google Fonts.
+   Twee redenen: de browser hoeft geen verbinding met een tweede domein op te
+   zetten voordat hij weet welk bestand hij nodig heeft (dat scheelt een halve
+   seconde op een trage telefoon), en het IP-adres van een bezoeker gaat
+   nergens meer heen. Eén bestand dekt alle diktes van 400 tot 800.
+   Inter, SIL Open Font License 1.1 — de licentie staat in inter-OFL.txt. */
+@font-face{
+  font-family:'Inter';
+  font-style:normal;
+  font-weight:400 800;
+  font-display:swap;
+  src:url('inter.woff2') format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
 :root{
@@ -78,8 +93,8 @@ header{
 .brand{display:flex;align-items:center;gap:11px;text-decoration:none;margin-right:30px}
 /* Het beeldmerk uit de huisstijl. Wit, want header en footer zijn donker. */
 .brand__mark{height:34px;width:auto;flex:none;display:block}
-.brand__name{color:#fff;font-weight:800;font-size:1.06rem;letter-spacing:-.02em;line-height:1.15}
-.brand__sub{color:#7f90aa;font-size:.68rem;font-weight:600;letter-spacing:.09em;text-transform:uppercase}
+.brand__name{display:block;color:#fff;font-weight:800;font-size:1.06rem;letter-spacing:-.02em;line-height:1.15}
+.brand__sub{display:block;color:#7f90aa;font-size:.68rem;font-weight:600;letter-spacing:.09em;text-transform:uppercase}
 /* De links staan links, naast het logo, en duwen de knoppen naar rechts. Een
    menu dat je van links naar rechts leest hoort ook links te beginnen. */
 .nav__links{display:flex;gap:4px;list-style:none;margin-right:auto}
@@ -160,7 +175,7 @@ header{
   box-shadow:var(--shadow-lg);color:var(--text);
 }
 .calc__head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:20px}
-.calc__head h3{font-size:1.16rem}
+.calc__head h2,.calc__head h3{font-size:1.16rem}
 .calc__head span{font-size:.78rem;color:var(--muted);font-weight:500}
 .calc__label{
   display:block;font-size:.75rem;font-weight:700;text-transform:uppercase;
@@ -229,7 +244,7 @@ input[type=range]:focus-visible{outline:2px solid var(--amber);outline-offset:4p
   padding:26px;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
 }
 .card:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:#cfd8e6}
-.card h3{font-size:1.05rem;margin-bottom:8px}
+.card h2,.card h3{font-size:1.05rem;margin-bottom:8px}
 .card p{font-size:.92rem;color:var(--text)}
 .card__icon{
   width:42px;height:42px;border-radius:11px;display:grid;place-items:center;
@@ -241,7 +256,7 @@ input[type=range]:focus-visible{outline:2px solid var(--amber);outline-offset:4p
 
 /* segment cards */
 .seg-card{display:flex;gap:16px;align-items:flex-start}
-.seg-card__body h3{font-size:1rem;margin-bottom:4px}
+.seg-card__body h2,.seg-card__body h3{font-size:1rem;margin-bottom:4px}
 .seg-card__body p{font-size:.88rem;color:var(--muted)}
 .pill{
   display:inline-block;font-size:.68rem;font-weight:700;letter-spacing:.06em;
@@ -252,8 +267,30 @@ input[type=range]:focus-visible{outline:2px solid var(--amber);outline-offset:4p
 .pill--norm{background:rgba(46,102,190,.12);color:#28568f}
 
 /* ---------- pricing table ---------- */
-.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:#fff}
+/* De tabel is breder dan een telefoonscherm. Zonder aanwijzing ziet niemand
+   dat er nog een kolom rechts staat, dus tekenen we een schaduwrandje aan de
+   kant waar nog iets te zien is. Hij verdwijnt vanzelf zodra je aan het eind
+   bent. Twee witte vlakken dekken de schaduw af als er niets te schuiven valt;
+   die schuiven mee (local), de schaduwen blijven staan (scroll). */
+.table-wrap{
+  overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);
+  background:
+    linear-gradient(to right,#fff 35%,rgba(255,255,255,0)) left center,
+    linear-gradient(to left,#fff 35%,rgba(255,255,255,0)) right center,
+    radial-gradient(farthest-side at 0 50%,rgba(11,21,38,.15),rgba(11,21,38,0)) left center,
+    radial-gradient(farthest-side at 100% 50%,rgba(11,21,38,.15),rgba(11,21,38,0)) right center;
+  background-color:#fff;
+  background-repeat:no-repeat;
+  background-size:44px 100%,44px 100%,15px 100%,15px 100%;
+  background-attachment:local,local,scroll,scroll;
+}
 table{width:100%;border-collapse:collapse;min-width:520px}
+/* Op een breed scherm past de tabel gewoon; dan is de tip alleen maar ruis.
+   De grens: 520px tabel plus 2x24px marge van .wrap = 568px. */
+.veegtip{display:none}
+@media (max-width:568px){
+  .veegtip{display:block;font-size:.8rem;color:var(--muted);margin:8px 2px 0}
+}
 th,td{padding:15px 20px;text-align:left;font-size:.93rem;border-bottom:1px solid var(--line)}
 th{
   background:var(--paper-2);font-size:.72rem;font-weight:700;text-transform:uppercase;
@@ -276,7 +313,7 @@ tbody tr:hover{background:#fbfcfe}
   font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
   padding:4px 12px;border-radius:99px;
 }
-.price-card h3{font-size:1.12rem;margin-bottom:4px}
+.price-card h2,.price-card h3{font-size:1.12rem;margin-bottom:4px}
 .price-card__sub{font-size:.86rem;color:var(--muted);margin-bottom:18px}
 .price-card__amount{display:flex;align-items:baseline;gap:6px;margin-bottom:2px}
 .price-card__amount b{font-size:2.4rem;font-weight:800;color:var(--heading);letter-spacing:-.03em}
@@ -299,7 +336,7 @@ tbody tr:hover{background:#fbfcfe}
   background:rgba(255,176,32,.13);border:1px solid rgba(255,176,32,.3);
   color:var(--amber);font-weight:800;font-size:1.02rem;
 }
-.step h3{font-size:1.02rem;margin-bottom:4px}
+.step h2,.step h3{font-size:1.02rem;margin-bottom:4px}
 .step p{font-size:.93rem;color:#9fb0c9;max-width:70ch}
 
 /* ---------- stats ---------- */
@@ -345,7 +382,7 @@ form{background:#fff;border-radius:16px;padding:28px;box-shadow:var(--shadow-lg)
 /* ---------- footer ---------- */
 footer{background:#070e1a;color:#7f90aa;padding:56px 0 28px;font-size:.88rem}
 .footer__grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:40px;margin-bottom:36px}
-footer h4{color:#fff;font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px}
+footer h2{color:#fff;font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px}
 footer ul{list-style:none;display:grid;gap:9px}
 footer a{color:#7f90aa;text-decoration:none}
 footer a:hover{color:var(--amber)}
@@ -500,7 +537,7 @@ footer a:hover{color:var(--amber)}
   display:grid;grid-template-columns:1.25fr .75fr;gap:32px;align-items:center;
   background:var(--navy-2);border-radius:var(--r);padding:34px;color:#a8b8d0;margin-top:32px;
 }
-.intl h3{color:#fff;font-size:1.25rem;margin-bottom:10px}
+.intl h2,.intl h3{color:#fff;font-size:1.25rem;margin-bottom:10px}
 .intl p{font-size:.95rem;max-width:56ch}
 .intl__price{text-align:right}
 .intl__price b{display:block;font-size:2.1rem;font-weight:800;color:#fff;letter-spacing:-.03em;line-height:1.1}
@@ -515,7 +552,7 @@ footer a:hover{color:var(--amber)}
   width:30px;height:30px;border-radius:50%;flex:none;display:grid;place-items:center;
   background:var(--navy);color:var(--amber);font-size:.85rem;font-weight:700;
 }
-.stap__kop h3{font-size:1rem}
+.stap__kop h2,.stap__kop h3{font-size:1rem}
 .stap__kop p{font-size:.82rem;color:var(--muted);margin-top:1px}
 
 .keuze{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
@@ -560,7 +597,7 @@ footer a:hover{color:var(--amber)}
 .samenvatting{
   position:sticky;top:92px;background:var(--navy);border-radius:16px;padding:26px;color:#a8b8d0;
 }
-.samenvatting h3{color:#fff;font-size:1.05rem;margin-bottom:4px}
+.samenvatting h2,.samenvatting h3{color:#fff;font-size:1.05rem;margin-bottom:4px}
 .samenvatting > p{font-size:.85rem;color:#8fa2bd;margin-bottom:18px}
 .sam__rij{display:flex;justify-content:space-between;gap:14px;padding:8px 0;font-size:.88rem;border-bottom:1px solid var(--line-dark)}
 .sam__rij:last-of-type{border-bottom:0}
@@ -586,7 +623,7 @@ footer a:hover{color:var(--amber)}
   border:1px solid rgba(255,176,32,.28);border-radius:var(--r);
   padding:36px 40px;display:grid;grid-template-columns:1fr auto;gap:32px;align-items:center;
 }
-.zakelijk h3{color:#fff;font-size:1.35rem;margin-bottom:8px}
+.zakelijk h2,.zakelijk h3{color:#fff;font-size:1.35rem;margin-bottom:8px}
 .zakelijk p{color:#a8b8d0;font-size:.95rem;max-width:60ch}
 
 @media (max-width:940px){
@@ -622,9 +659,9 @@ footer a:hover{color:var(--amber)}
   padding:36px 0;border-top:1px solid var(--line);
 }
 .dienst:first-of-type{border-top:0;padding-top:8px}
-.dienst h3{font-size:1.35rem;margin-bottom:10px}
+.dienst h2,.dienst h3{font-size:1.35rem;margin-bottom:10px}
 .dienst__kop{display:flex;align-items:center;gap:14px;margin-bottom:14px}
-.dienst__kop h3{margin-bottom:0}
+.dienst__kop h2,.dienst__kop h3{margin-bottom:0}
 .dienst p{margin-bottom:14px;max-width:62ch}
 .dienst ul{list-style:none;display:grid;gap:9px;font-size:.93rem}
 .dienst li{display:flex;gap:10px;align-items:flex-start}

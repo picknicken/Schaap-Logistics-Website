@@ -9,7 +9,7 @@
 <!-- Deze pagina hoort nooit in Google: hij toont klantgegevens uit de URL. -->
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="../assets/favicon.png" type="image/png">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preload" href="../assets/inter.woff2" as="font" type="font/woff2" crossorigin>
 <style>
 /* =========================================================================
    Factuur van Schaap Logistics, opgemaakt naar de Word-mal.
@@ -17,6 +17,9 @@
    Factuurlink in de tabel Facturen. Zonder gegevens toont de pagina een
    voorbeeldfactuur, zodat je altijd ziet hoe hij eruitziet.
    ========================================================================= */
+/* Inter staat op onze eigen server; zie assets/inter-OFL.txt voor de licentie. */
+@font-face{font-family:'Inter';font-style:normal;font-weight:400 800;font-display:swap;src:url('../assets/inter.woff2') format('woff2')}
+
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
 :root{

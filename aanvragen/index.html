@@ -15,8 +15,15 @@
 <meta property="og:site_name" content="Schaap Logistics">
 <meta property="og:title" content="Rit aanvragen — Schaap Logistics">
 <meta property="og:description" content="Vraag in vijf korte stappen een rit aan. U ziet de prijsindicatie meelopen terwijl u invult en krijgt zo snel mogelijk een bevestiging met prijs en ophaaltijd.">
+<meta property="og:url" content="https://schaaplogistics.nl/aanvragen/">
+<meta property="og:image" content="https://schaaplogistics.nl/assets/deelkaart.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Schaap Logistics &mdash; vandaag opgehaald, vandaag bezorgd">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://schaaplogistics.nl/aanvragen/">
 <link rel="icon" href="../assets/favicon.png" type="image/png">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preload" href="../assets/inter.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="../assets/site.css">
 </head>
 <body>
@@ -71,7 +78,7 @@
         <div class="stap">
           <div class="stap__kop">
             <span class="stap__num">1</span>
-            <div><h3>Wat heeft u nodig?</h3><p>Bepaalt de urgentie en het tarief</p></div>
+            <div><h2>Wat heeft u nodig?</h2><p>Bepaalt de urgentie en het tarief</p></div>
           </div>
           <div class="keuze">
             <label>
@@ -96,7 +103,7 @@
         <div class="stap">
           <div class="stap__kop">
             <span class="stap__num">2</span>
-            <div><h3>Waar moet het heen?</h3><p id="waarNoot">Postcode en huisnummer is genoeg</p></div>
+            <div><h2>Waar moet het heen?</h2><p id="waarNoot">Postcode en huisnummer is genoeg</p></div>
           </div>
           <div class="field-row">
             <div class="field">
@@ -126,7 +133,7 @@
         <div class="stap">
           <div class="stap__kop">
             <span class="stap__num">3</span>
-            <div><h3>Wanneer?</h3><p id="wanneerNoot">Datum en gewenste ophaaltijd</p></div>
+            <div><h2>Wanneer?</h2><p id="wanneerNoot">Datum en gewenste ophaaltijd</p></div>
           </div>
           <div class="field-row">
             <div class="field">
@@ -157,7 +164,7 @@
         <div class="stap">
           <div class="stap__kop">
             <span class="stap__num">4</span>
-            <div><h3>Wat vervoeren we?</h3><p>Hoe concreter, hoe scherper de prijs</p></div>
+            <div><h2>Wat vervoeren we?</h2><p>Hoe concreter, hoe scherper de prijs</p></div>
           </div>
           <div class="field">
             <label for="r-omschrijving">Omschrijving van de goederen</label>
@@ -195,7 +202,7 @@
         <div class="stap">
           <div class="stap__kop">
             <span class="stap__num">5</span>
-            <div><h3>Uw gegevens</h3><p>Zodat wij u kunnen bevestigen</p></div>
+            <div><h2>Uw gegevens</h2><p>Zodat wij u kunnen bevestigen</p></div>
           </div>
           <div class="field-row">
             <div class="field">
@@ -243,7 +250,7 @@
       </form>
 
       <aside class="samenvatting" aria-live="polite">
-        <h3>Uw aanvraag</h3>
+        <h2>Uw aanvraag</h2>
         <p>Wordt bijgewerkt terwijl u invult.</p>
         <div id="samRijen">
           <div class="sam__rij"><span>Dienst</span><span>Standaard transport</span></div>
@@ -265,7 +272,7 @@
     <div class="footer__grid">
       <div>
         <a href="../" class="brand" style="margin-bottom:14px">
-          <img class="brand__mark" src="../assets/logo-sl-wit.png" alt="" width="240" height="177">
+          <img class="brand__mark" loading="lazy" decoding="async" src="../assets/logo-sl-wit.png" alt="" width="240" height="177">
           <span><span class="brand__name">Schaap Logistics</span><span class="brand__sub">Spoedtransport</span></span>
         </a>
         <p style="max-width:38ch">
@@ -275,7 +282,7 @@
       </div>
 
       <div>
-        <h4>Diensten</h4>
+        <h2>Diensten</h2>
         <ul>
           <li><a href="../diensten/">Standaard transport</a></li>
           <li><a href="../diensten/">Spoedtransport</a></li>
@@ -286,7 +293,7 @@
       </div>
 
       <div>
-        <h4>Contact</h4>
+        <h2>Contact</h2>
         <ul>
           <!-- PLACEHOLDER contactgegevens -->
           <li><a href="tel:+31612345678">06 - 12 34 56 78</a></li>

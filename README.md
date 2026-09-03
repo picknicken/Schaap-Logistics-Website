@@ -4,7 +4,7 @@ Statische site voor Schaap Logistics: zakelijk koeriers- en spoedtransport.
 Geen build-stap, geen framework, geen dependencies — platte HTML met één
 stylesheet en vier scriptbestanden.
 
-**Live:** https://picknicken.github.io/Schaap-Logistics-Website/
+**Live:** https://schaaplogistics.nl/
 
 ## Lokaal bekijken
 
@@ -49,6 +49,10 @@ assets/
   logo-volledig-wit.png   beeldmerk plus woordmerk, wit
   logo-volledig.png       beeldmerk plus woordmerk, zwart — bovenaan de factuur
   favicon.png             het tabbladpictogram
+  deelkaart.jpg           1200x630, het plaatje dat WhatsApp en LinkedIn tonen
+  deelkaart-bron.html     de bron daarvan; foto maken op 1200x630 en opslaan
+  inter.woff2             het lettertype, op onze eigen server
+  inter-OFL.txt           de licentie die daarbij hoort (SIL Open Font License)
 worker/
   aanvragen.js    Cloudflare Worker die aanvragen in Airtable zet
   wrangler.toml   instellingen voor het uitrollen (zonder geheimen)
