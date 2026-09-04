@@ -309,6 +309,40 @@ gedaan. Schadelijk is het niet — hij zet dezelfde status — maar het is preci
 besparing die je wilde. Uitzetten kan alleen met de schakelaar in Airtable; via de
 koppeling kan ik dat niet.
 
+### Eenmalige klanten en vaste klanten
+
+Op `Klanten` staat `Soort klant` (`fldSLJJ5sdfsZrUzI`): **Eenmalig** of **Vaste
+klant**. Nieuwe klanten beginnen op *Eenmalig* — dat zet het portaal zelf, en
+het is de veilige stand.
+
+**Wat het niet verandert: de factuur.** Die gaat altijd per e-mail, naar het
+adres in `Factuuradres`. Een portaal is nergens voor nodig, en de
+orderbevestiging noemt het portaal alleen als die klant er een link voor heeft
+(dat regelt het veld `Volgzin`). Een klant die je één keer rijdt merkt van het
+hele portaal niets.
+
+**Wat het wel verandert:**
+
+| | Eenmalig | Vaste klant |
+| --- | --- | --- |
+| Factuur | per mail | per mail |
+| Klantportaal | geen | uitnodiging mogelijk |
+| Betalingstermijn | wat je invult, anders 14 dagen | 30 bij het omzetten, tenzij je zelf iets afsprak |
+| Eigen tarief of korting | niet doen | hier hoort het thuis |
+
+Het portaal weigert een eenmalige klant uit te nodigen, met de reden erbij. Dat
+is geen betutteling maar een rem: een inlog die iemand één keer gebruikt is voor
+allebei alleen maar werk, en een portaalcode die rondzwerft is een risico dat je
+er niet voor terugkrijgt.
+
+**Het veld verwatert niet.** Zonder tegenkracht zou je niemand omzetten en bleef
+iedereen voor eeuwig eenmalig. Daarom kijkt het portaal naar `Aantal ritten`: bij
+vier of meer komt er een melding dat deze klant geen eenmalige meer is. Vier,
+omdat drie toeval kan zijn en vier een gewoonte.
+
+`Status` op `Klanten` (*Todo / In progress / Done*) is een restje van het
+Airtable-sjabloon en doet niets. Dat mag weg.
+
 ### De rittenregistratie: waarom `Dagstaten` een eigen tabel is
 
 De tabel `Dagstaten` (`tbldVdLrOMjjCJex9`) houdt per dag de kilometerstand bij:

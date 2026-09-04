@@ -609,6 +609,23 @@
       ritten.forEach(function (r) { if (!bekend[r.id]) { alle.push(r); } });
     }
 
+    /* Een klant die vier keer heeft gereden is geen eenmalige meer. Zonder dit
+       seintje verwatert het onderscheid: je zet niemand om, iedereen blijft
+       eenmalig, en het veld zegt niets meer. */
+    klanten.forEach(function (k) {
+      if (k.soort === 'Vaste klant' || (k.ritten || 0) < 4) { return; }
+      uit.push({
+        sleutel: 'vasteklant:' + k.id + ':' + k.ritten,
+        klasse: 'meld--let',
+        titel: 'Geen eenmalige klant meer',
+        regel: k.naam + ' heeft ' + k.ritten + ' ritten gereden en staat nog ' +
+               'als eenmalig. Als vaste klant krijgt hij een eigen overzicht ' +
+               'en een langere betalingstermijn.',
+        wanneer: '',
+        tab: 'planning'
+      });
+    });
+
     aanvragen.forEach(function (a) {
       uit.push({
         sleutel: 'aanvraag:' + a.id,
@@ -1939,18 +1956,56 @@
      De mail met zijn persoonlijke link gaat niet vanaf deze telefoon de deur
      uit: de Worker zet een vinkje om en Airtable verstuurt hem. Daardoor komt
      de toegangscode van de klant hier nooit langs. */
+  function vervangKlant(nieuw) {
+    if (!nieuw) { return; }
+    klanten = klanten.map(function (k) { return k.id === nieuw.id ? nieuw : k; });
+  }
+
   function tekenUitnodiging(lijf, klantId) {
     var klant = klanten.filter(function (k) { return k.id === klantId; })[0];
 
+    /* Het ontbreken van een e-mailadres gaat vóór. Dat is niet alleen een
+       portaal dat niet kan, maar een factuur die niet kan: die gaat per mail,
+       vaste klant of niet. Zonder adres krijg je geen geld binnen. */
     if (klant && !klant.email) {
       var mist = maak('div', 'bewijs bewijs--mist');
       var mt = maak('div');
       mt.appendChild(maak('b', '', 'Geen e-mailadres'));
       mt.appendChild(document.createTextNode(
-        'Zonder e-mailadres kan deze klant geen uitnodiging voor zijn eigen ' +
-        'overzicht krijgen. Vul het aan in Airtable bij de klant.'));
+        'Zonder e-mailadres kan deze klant geen factuur ontvangen, en ook geen ' +
+        'uitnodiging voor zijn eigen overzicht. Vul het aan in Airtable bij de klant.'));
       mist.appendChild(mt);
       lijf.appendChild(mist);
+      return;
+    }
+
+    /* Een eenmalige klant hoeft geen portaal: zijn factuur komt gewoon per
+       mail. Pas als hij terugkomt is een eigen overzicht iets waard, en dat is
+       een besluit dat jij neemt — vandaar een knop en geen automatisme. */
+    if (klant && klant.soort !== 'Vaste klant') {
+      var eenmalig = maak('div', 'terzijde');
+      eenmalig.appendChild(maak('b', '', 'Eenmalige klant. '));
+      eenmalig.appendChild(document.createTextNode(
+        'Zijn factuur gaat per mail; een portaal heeft hij niet nodig.' +
+        (klant.ritten >= 4
+          ? ' Al ' + klant.ritten + ' ritten — dit lijkt geen eenmalige meer.'
+          : '')));
+      lijf.appendChild(eenmalig);
+
+      var maakVast = maak('button', 'knop knop--rand', 'Vaste klant maken');
+      maakVast.type = 'button';
+      maakVast.addEventListener('click', function () {
+        bezig(maakVast, 'Omzetten\u2026', function (klaar) {
+          verstuur('klantsoort', { klantId: klantId, soort: 'Vaste klant' })
+            .then(function (data) {
+              vervangKlant(data.klant);
+              meldApp('');
+              tekenPlanning();
+            })
+            .catch(function (fout) { meldApp(fout.message); klaar(false); });
+        });
+      });
+      lijf.appendChild(maakVast);
       return;
     }
 
@@ -1978,11 +2033,7 @@
     knop.addEventListener('click', function () {
       bezig(knop, 'Versturen\u2026', function (klaar) {
         verstuur('uitnodiging', { klantId: klantId }).then(function (data) {
-          if (data.klant) {
-            klanten = klanten.map(function (k) {
-              return k.id === data.klant.id ? data.klant : k;
-            });
-          }
+          vervangKlant(data.klant);
           uitnodigingen[klantId] = data.email || 'de klant';
           meldApp('');
           tekenPlanning();

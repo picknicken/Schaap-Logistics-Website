@@ -317,6 +317,19 @@ Zodra de proefmelding werkt kun je `Seintje bij een nieuwe aanvraag` en
 `Seintje bij een annulering door de klant` uitzetten in Airtable. Niet eerder:
 zolang push niet bewezen werkt is die mail je enige seintje.
 
+### Eenmalige klanten en vaste klanten
+
+Nieuwe klanten beginnen als **eenmalig**. Hun factuur gaat per mail, precies
+zoals altijd — een portaal is daar nergens voor nodig. Komt iemand terug, dan
+zet je hem in het portaal onder Planning om naar **vaste klant**; dan pas krijgt
+hij een uitnodiging, een termijn van dertig dagen en is een eigen tarief zinvol.
+
+Bij vier ritten of meer meldt het portaal dat iemand geen eenmalige klant meer
+is, zodat het onderscheid niet verwatert.
+
+Wat je zelf nog kunt opruimen: het veld `Status` op `Klanten` staat nog op
+*Todo / In progress / Done* uit het Airtable-sjabloon en doet niets.
+
 ### De aanvrager houdt zijn mail
 
 Afgesproken: `Bevestigingsmail naar de aanvrager` blijft aan. Iemand die het
@@ -363,7 +376,7 @@ netjes van h1 naar h2 zonder gaten, en de foutpagina werkt weer — die verwees 
 de domeinverhuizing nog naar het oude adres en kwam daardoor zonder opmaak en met
 dode links binnen.
 
-**173 portaaltests, 140 schermtests, 153 portaal-Workertests, 43 klanttests en
+**181 portaaltests, 140 schermtests, 160 portaal-Workertests, 43 klanttests en
 alle overige Worker-tests** draaien groen, waaronder controles dat de prijzen op de site kloppen met de calculator, dat een klant nooit een cent van
 jouw kosten te zien krijgt, en dat een creditnota naar de oorspronkelijke factuur
 verwijst.

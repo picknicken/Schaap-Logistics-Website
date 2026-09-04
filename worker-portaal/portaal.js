@@ -181,8 +181,18 @@ const K = {
   nummer:    'Klantnummer',
   code:      'Portaalcode',
   uitnodigen:'Uitnodiging versturen',
-  uitgenodigd:'Uitnodiging verstuurd op'
+  uitgenodigd:'Uitnodiging verstuurd op',
+  soort:     'Soort klant',
+  ritten:    'Aantal ritten'
 };
+
+/* Precies de twee keuzes die in Airtable bestaan. Een verzonnen naam zou daar
+   een derde soort aanmaken die nergens iets doet. */
+const KLANTSOORTEN = ['Eenmalig', 'Vaste klant'];
+
+/* Vanaf hoeveel ritten het portaal zegt dat iemand geen eenmalige klant meer
+   is. Vier: bij drie kan het toeval zijn, bij vier is het een gewoonte. */
+const VAST_VANAF = 4;
 
 /* Precies de statussen die in Airtable bestaan. Een status die de telefoon
    verzint mag nooit doorgeschreven worden. */
@@ -437,6 +447,7 @@ async function schakel(env, body, origin, wie) {
     case 'koppelklant':  return await koppelKlant(env, body, origin);
     case 'nieuweklant':  return await nieuweKlant(env, body, origin);
     case 'uitnodiging':  return await stuurUitnodiging(env, body, origin);
+    case 'klantsoort':   return await zetKlantsoort(env, body, origin);
     case 'leesbericht':  return await leesBericht(env, body, origin);
     case 'dagstaat':     return await zetDagstaat(env, body, origin, wie);
     case 'pushaan':      return await meldPushAan(env, body, origin, wie);
@@ -887,7 +898,10 @@ async function nieuweKlant(env, body, origin) {
     return antwoord(400, { fout: 'Vul een klantnaam in' }, origin, true);
   }
 
-  const velden = { [K.naam]: naam, [K.code]: verzinCode() };
+  /* Nieuwe klanten beginnen als eenmalig. Dat is de veilige stand: korte
+     betalingstermijn, geen portaal, en geen eigen tarief. Omzetten doe je zelf
+     zodra iemand terugkomt — en vergeet je dat, dan zegt het portaal het. */
+  const velden = { [K.naam]: naam, [K.code]: verzinCode(), [K.soort]: 'Eenmalig' };
   if (body.adres)    { velden[K.adres]    = String(body.adres).slice(0, 500); }
   if (body.email)    { velden[K.email]    = String(body.email).slice(0, 200); }
   if (body.telefoon) { velden[K.telefoon] = String(body.telefoon).slice(0, 50); }
@@ -960,12 +974,50 @@ async function stuurUitnodiging(env, body, origin) {
       fout: 'Deze klant heeft geen e-mailadres. Vul dat eerst in bij de klant.'
     }, origin, true);
   }
+  /* Een eenmalige klant hoeft geen portaal. Zijn factuur komt gewoon per mail
+     en een inlog die hij één keer gebruikt is voor allebei alleen maar werk.
+     Wil je hem toch uitnodigen, maak hem dan eerst vaste klant — dan is het
+     een besluit en geen vergissing. */
+  if ((keuze(f[K.soort]) || 'Eenmalig') !== 'Vaste klant') {
+    return antwoord(400, {
+      fout: 'Dit is een eenmalige klant. Zijn factuur gaat per mail; ' +
+            'een portaal heeft hij niet nodig. Maak hem eerst vaste klant.'
+    }, origin, true);
+  }
 
   const velden = { [K.uitnodigen]: true };
   if (!f[K.code]) { velden[K.code] = verzinCode(); }
 
   const klant = naarKlant(await patch(env, env.AIRTABLE_KLANTEN, id, velden));
   return antwoord(200, { ok: true, klant, email: f[K.email] }, origin, true);
+}
+
+/* Een klant omzetten van eenmalig naar vast, of terug.
+
+   Waarom dit een eigen actie is en niet een vinkje in Airtable: het verandert
+   drie dingen tegelijk. Een vaste klant krijgt een portaal, mag een langere
+   betalingstermijn hebben, en is de enige bij wie een eigen tarief zin heeft.
+   Dat is een besluit, geen administratie, en het hoort dus op de plek waar je
+   het besluit neemt. */
+async function zetKlantsoort(env, body, origin) {
+  const id = recordId(body.klantId);
+  if (!id) { return antwoord(400, { fout: 'Ongeldig klant-id' }, origin, true); }
+  if (!KLANTSOORTEN.includes(body.soort)) {
+    return antwoord(400, { fout: 'Onbekende klantsoort' }, origin, true);
+  }
+
+  const velden = { [K.soort]: body.soort };
+
+  /* Een vaste klant zonder afgesproken termijn krijgt er een van dertig dagen:
+     dat is wat een bedrijf verwacht en het scheelt jou een gesprek. Staat er al
+     iets, dan blijft die afspraak staan — die heb jij gemaakt, niet ik. */
+  if (body.soort === 'Vaste klant') {
+    const nu = await airtable(env, `${env.AIRTABLE_KLANTEN}/${id}`);
+    if (!((nu.fields || {})[K.termijn] > 0)) { velden[K.termijn] = 30; }
+  }
+
+  const klant = naarKlant(await patch(env, env.AIRTABLE_KLANTEN, id, velden));
+  return antwoord(200, { ok: true, klant }, origin, true);
 }
 
 /* De werkelijk gereden kilometers. De schatting van de website komt van
@@ -2128,6 +2180,8 @@ function naarKlant(record) {
     telefoon: f[K.telefoon] || '',
     termijn:  f[K.termijn] || 0,
     nummer:   f[K.nummer] || '',
+    soort:    keuze(f[K.soort]) || 'Eenmalig',
+    ritten:   f[K.ritten] || 0,
     /* Wanneer deze klant voor het laatst een uitnodiging kreeg. De portaalcode
        zelf blijft hier bewust buiten: die hoeft de telefoon niet te weten. */
     uitgenodigd: f[K.uitgenodigd] || ''

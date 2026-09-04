@@ -292,6 +292,13 @@ facturen, en dat is jouw bedrijfsvoering.
 
 - **Inplannen** maakt de rit, met de gewenste datum van de klant al ingevuld, en
   neemt klant, adressen, soort transport en opmerkingen over.
+- **Eenmalig of vast.** Een nieuwe klant begint als eenmalige klant. Zijn
+  factuur gaat gewoon per mail — daar is geen portaal voor nodig — en een
+  uitnodiging voor het klantportaal krijgt hij niet. Komt hij terug, dan zet je
+  hem met één knop om naar vaste klant: dan kan hij zijn eigen zendingen en
+  facturen volgen, staat de betalingstermijn op dertig dagen, en is een eigen
+  tarief pas iets om over na te denken. Vergeet je het, dan zegt het tabblad
+  Meldingen het bij de vierde rit.
 - **Klant koppelen** bij een opdracht zonder klant: kies een bestaande, of maak
   er een aan met naam, adres, telefoon, e-mail en betalingstermijn. De klant gaat
   meteen mee naar de ritten die er al onder hangen — anders staat de opdracht wel
