@@ -208,7 +208,9 @@ je telefoon, met knoppen om de status om te zetten, een route te starten en de
 ontvanger te laten tekenen. Nergens naartoe gelinkt vanaf de site — zet hem op je
 beginscherm als snelkoppeling.
 
-Vier tabbladen, met een teller erop zodat je in één blik ziet waar iets ligt.
+Vijf tabbladen, met een teller erop zodat je in één blik ziet waar iets ligt. Op
+een telefoon passen ze niet allemaal naast elkaar; de balk schuift dan mee en het
+tabblad dat je kiest schuift vanzelf in beeld.
 
 **Ritten** — de dag die je rijdt.
 
@@ -236,6 +238,27 @@ Vier tabbladen, met een teller erop zodat je in één blik ziet waar iets ligt.
   bijtelling. Het verschil hoort verklaarbaar te zijn; daar is het tekstvakje
   voor. Staat het op een negatief getal, dan klopt de eindstand niet of staan er
   te veel kilometers op een rit.
+
+**Klanten** — opzoeken wie iemand is terwijl je aan de telefoon zit.
+
+Zoeken gaat op naam, klantnummer, adres, telefoonnummer of e-mailadres, en op
+losse woorden door elkaar heen: *bakker eindhoven* vindt hem ook. Er wordt niets
+extra's opgehaald — de klantenlijst komt al mee met het dagoverzicht, dus zoeken
+gebeurt in de telefoon zelf en gaat mee terwijl je typt.
+
+Per klant: het klantnummer, hoeveel ritten je voor hem reed, wanneer voor het
+laatst, en zijn betalingstermijn. Telefoon, e-mail en adres staan er elk met een
+kopieerknop achter — dat knopje is de reden dat dit tabblad bestaat, want een
+adres overtypen vanaf een telefoon is waar het misgaat. Daaronder knoppen om te
+bellen, te mailen of de route te starten.
+
+**Wie geld openstaan heeft, staat bovenaan**, met een rode balk en het bedrag.
+Dat is het eerste wat je wilt weten als iemand belt om een volgende rit.
+
+De vier cijfers eronder — omzet, winst, winst per rit en marge — staan er alleen
+als er werkelijk iets gereden is. Dat is waar een tariefafspraak op hoort te
+rusten; zie `KORTINGEN.md`. Een chauffeur ziet dit tabblad niet, en zijn
+klantenlijst wordt niet eens opgehaald.
 
 **Meldingen** — wat vroeger per mail kwam.
 

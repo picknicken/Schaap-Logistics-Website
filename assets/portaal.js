@@ -278,11 +278,12 @@
     var alleenRitten = !!ik && ik.rol !== 'Eigenaar';
     /* Meldingen gaan over aanvragen, klanten en facturen — jouw bedrijfsvoering.
        Een chauffeur heeft daar niets te zoeken, dus dat tabblad gaat mee weg. */
-    ['tab-aanvragen', 'tab-planning', 'tab-meldingen'].forEach(function (id) {
+    ['tab-aanvragen', 'tab-planning', 'tab-meldingen', 'tab-klanten'].forEach(function (id) {
       var t = el(id);
       if (t) { t.hidden = alleenRitten; }
     });
     if (alleenRitten && tabblad !== 'ritten') { kiesTab('ritten'); }
+    meetTabbalk();
 
     var wieVak = el('kop-wie');
     if (wieVak) {
@@ -297,6 +298,7 @@
     if (data.opdrachten) { opdrachten = data.opdrachten; }
     if (data.klanten)    {
       klanten = data.klanten;
+      if (tabblad === 'klanten') { tekenKlanten(); }
       /* Verse klantgegevens uit Airtable: daar staat nu in wanneer een
          uitnodiging werkelijk verstuurd is. Ons eigen "zojuist aangevraagd"
          heeft dan afgedaan en moet weg, anders blijft die melding staan bij
@@ -343,7 +345,7 @@
     b.hidden = !aantal;
   }
 
-  var TABBLADEN = ['ritten', 'aanvragen', 'planning', 'meldingen'];
+  var TABBLADEN = ['ritten', 'aanvragen', 'planning', 'meldingen', 'klanten'];
 
   function kiesTab(naam) {
     tabblad = naam;
@@ -352,15 +354,35 @@
       el('paneel-' + t).hidden = (t !== naam);
     });
     window.scrollTo(0, 0);
+    /* Past de balk niet, dan schuift het gekozen tabblad in beeld. Anders druk
+       je op iets wat half buiten het scherm staat en zie je daarna niet waar je
+       bent. */
+    var knop = el('tab-' + naam);
+    if (knop && knop.scrollIntoView) {
+      knop.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
+    meetTabbalk();
+
     /* Meldingen halen een ruimer venster op dan de dag die op het scherm
        staat: een rit die volgende week is afgezegd hoor je nu te zien, niet
        pas als je die dag opzoekt. */
     if (naam === 'meldingen') { haalMeldingen(); }
+    if (naam === 'klanten') { tekenKlanten(); }
   }
 
   TABBLADEN.forEach(function (t) {
     el('tab-' + t).addEventListener('click', function () { kiesTab(t); });
   });
+
+  /* Alleen vervagen als er werkelijk meer is dan past. Een vervaagde rand op
+     een balk die helemaal past ziet eruit als een weergavefout. */
+  function meetTabbalk() {
+    var balk = document.querySelector('.tabs');
+    if (!balk) { return; }
+    if (balk.scrollWidth - balk.clientWidth > 4) { balk.setAttribute('data-meer', ''); }
+    else { balk.removeAttribute('data-meer'); }
+  }
+  window.addEventListener('resize', meetTabbalk);
 
   /* De kilometers die je deze dag factureert: van ophaaladres naar
      afleveradres, en niets daarbuiten. Een geannuleerde rit is niet gereden. */
@@ -1524,6 +1546,184 @@
   }
 
   /* -------------------------------------------------------- planning */
+
+  /* ---------------------------------------------------------- klanten
+
+     Opzoeken wie iemand is terwijl je aan de telefoon zit. Er wordt niets
+     extra's opgehaald: de klantenlijst komt al mee met het dagoverzicht, dus
+     zoeken gaat hier in de telefoon en niet over het netwerk. Dat is meteen
+     het snelste wat er is — je typt en het staat er.
+
+     Wat een chauffeur betreft: dit tabblad is voor hem verborgen, en de
+     tussenlaag haalt zijn klantenlijst niet eens op. */
+
+  function zoekterm() {
+    var v = el('klant-zoek');
+    return v ? v.value.trim().toLowerCase() : '';
+  }
+
+  /* Zoeken over alles wat je van een klant zou kunnen weten als je hem
+     opzoekt: de naam, maar ook het nummer op zijn factuur, het adres waar je
+     hebt gestaan, of het nummer waarvan hij belt. */
+  function klantPast(k, term) {
+    if (!term) { return true; }
+    var hooi = [k.naam, k.nummer, k.adres, k.email, k.telefoon, k.soort]
+      .join(' ').toLowerCase();
+    /* Losse woorden, allemaal ergens: "bakker eindhoven" vindt hem ook. */
+    return term.split(/\s+/).every(function (w) { return hooi.indexOf(w) >= 0; });
+  }
+
+  function tekenKlanten() {
+    var lijst = el('lijst-klanten');
+    if (!lijst) { return; }
+    var term = zoekterm();
+    var leegknop = el('klant-zoek-leeg');
+    if (leegknop) { leegknop.hidden = !term; }
+
+    lijst.innerHTML = '';
+
+    if (!klanten.length) {
+      lijst.appendChild(maak('div', 'leeg',
+        'Nog geen klanten. Ze komen er vanzelf bij zodra je er een koppelt ' +
+        'aan een opdracht.'));
+      return;
+    }
+
+    var gevonden = klanten.filter(function (k) { return klantPast(k, term); });
+    if (!gevonden.length) {
+      lijst.appendChild(maak('div', 'leeg', 'Niemand gevonden op \u201c' + term + '\u201d.'));
+      return;
+    }
+
+    /* Wie geld openstaan heeft eerst, daarna op naam. Als je iemand opzoekt
+       terwijl hij belt, is dat het eerste wat je wilt weten. */
+    gevonden.sort(function (a, b) {
+      var v = (Number(b.openstaand) || 0) - (Number(a.openstaand) || 0);
+      return v !== 0 ? v : String(a.naam).localeCompare(String(b.naam), 'nl');
+    });
+
+    gevonden.forEach(function (k) { lijst.appendChild(tekenKlantkaart(k)); });
+  }
+
+  /* Een regel met een kopieerknop erachter. Dat knopje is de hele reden dat
+     dit tabblad bestaat: een adres of telefoonnummer overtypen vanaf een
+     telefoon is waar het misgaat. */
+  function regel(label, waarde, kopieerbaar) {
+    if (!waarde) { return null; }
+    var r = maak('div', 'regel');
+    r.appendChild(maak('span', 'regel__label', label));
+    r.appendChild(maak('span', 'regel__waarde', String(waarde)));
+    if (kopieerbaar) {
+      var knop = maak('button', 'regel__kopie', 'Kopieer');
+      knop.type = 'button';
+      knop.addEventListener('click', function () { kopieer(String(waarde), knop); });
+      r.appendChild(knop);
+    }
+    return r;
+  }
+
+  function kopieer(tekst, knop) {
+    var klaar = function () {
+      knop.textContent = 'Gekopieerd';
+      knop.setAttribute('data-klaar', '');
+      setTimeout(function () {
+        knop.textContent = 'Kopieer';
+        knop.removeAttribute('data-klaar');
+      }, 1500);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(tekst).then(klaar, function () {
+        knop.textContent = 'Lukt niet';
+      });
+    } else {
+      knop.textContent = 'Lukt niet';
+    }
+  }
+
+  function tekenKlantkaart(k) {
+    var kaart = maak('div', 'klantkaart');
+
+    var kop = maak('div', 'klantkaart__kop');
+    var titel = maak('div');
+    titel.appendChild(maak('div', 'klantkaart__naam', k.naam || 'Naamloos'));
+    var onder = [];
+    if (k.nummer) { onder.push('Klant ' + k.nummer); }
+    onder.push(k.ritten === 1 ? '1 rit' : (k.ritten || 0) + ' ritten');
+    if (k.laatste) { onder.push('laatst ' + datumKort(k.laatste)); }
+    if (k.termijn) { onder.push(k.termijn + ' dagen'); }
+    titel.appendChild(maak('div', 'klantkaart__sub', onder.join(' \u00b7 ')));
+    kop.appendChild(titel);
+
+    var soort = maak('span', 'klantkaart__soort', k.soort === 'Vaste klant' ? 'Vast' : 'Eenmalig');
+    if (k.soort === 'Vaste klant') { soort.setAttribute('data-vast', ''); }
+    kop.appendChild(soort);
+    kaart.appendChild(kop);
+
+    /* Het enige cijfer waar je meteen iets mee moet. */
+    if (Number(k.openstaand) > 0) {
+      var open = maak('div', 'klantkaart__open');
+      open.appendChild(maak('b', '', euroCent.format(k.openstaand)));
+      open.appendChild(document.createTextNode(
+        ' staat nog open. Kijk daarnaar voordat je de volgende rit inplant.'));
+      kaart.appendChild(open);
+    }
+
+    var regels = maak('div', 'regels');
+    [regel('Telefoon', k.telefoon, true),
+     regel('E-mail', k.email, true),
+     regel('Adres', k.adres, true)
+    ].forEach(function (r) { if (r) { regels.appendChild(r); } });
+    if (regels.childNodes.length) { kaart.appendChild(regels); }
+
+    /* Wat hij oplevert. Staat er alleen als er werkelijk iets gereden is —
+       nullen op een verse klant zeggen niets en leiden af. */
+    if (k.ritten) {
+      var cijfers = maak('div', 'cijfers');
+      [[euro.format(k.omzet || 0), 'Omzet'],
+       [euro.format(k.winst || 0), 'Winst'],
+       [euro.format(k.winstRit || 0), 'Per rit'],
+       [Math.round((Number(k.marge) || 0) * 100) + '%', 'Marge']
+      ].forEach(function (paar) {
+        var vak = maak('div');
+        vak.appendChild(maak('b', '', paar[0]));
+        vak.appendChild(maak('span', '', paar[1]));
+        cijfers.appendChild(vak);
+      });
+      kaart.appendChild(cijfers);
+    }
+
+    var knoppen = maak('div', 'klantkaart__knoppen');
+    if (k.telefoon) {
+      var bel = maak('a', 'knop knop--rand', 'Bellen');
+      bel.href = 'tel:' + String(k.telefoon).replace(/\s/g, '');
+      knoppen.appendChild(bel);
+    }
+    if (k.email) {
+      var mail = maak('a', 'knop knop--rand', 'Mailen');
+      mail.href = 'mailto:' + k.email;
+      knoppen.appendChild(mail);
+    }
+    if (k.adres) {
+      var route = maak('a', 'knop knop--rand', 'Route');
+      route.href = 'https://www.google.com/maps/dir/?api=1&destination=' +
+                   encodeURIComponent(k.adres);
+      route.target = '_blank';
+      route.rel = 'noopener';
+      knoppen.appendChild(route);
+    }
+    if (knoppen.childNodes.length) { kaart.appendChild(knoppen); }
+
+    return kaart;
+  }
+
+  if (el('klant-zoek')) {
+    el('klant-zoek').addEventListener('input', tekenKlanten);
+    el('klant-zoek-leeg').addEventListener('click', function () {
+      el('klant-zoek').value = '';
+      el('klant-zoek').focus();
+      tekenKlanten();
+    });
+  }
 
   function tekenPlanning() {
     var lijst = el('lijst-planning');

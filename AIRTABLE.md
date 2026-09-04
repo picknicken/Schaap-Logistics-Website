@@ -309,6 +309,21 @@ gedaan. Schadelijk is het niet — hij zet dezelfde status — maar het is preci
 besparing die je wilde. Uitzetten kan alleen met de schakelaar in Airtable; via de
 koppeling kan ik dat niet.
 
+### Wat er per klant wordt bijgehouden
+
+Naast naam en contactgegevens rekent `Klanten` zelf een paar dingen uit, en die
+komen alle vier terug in het tabblad Klanten van het chauffeursportaal:
+
+| Veld | Waar het vandaan komt | Waarvoor |
+| --- | --- | --- |
+| `Openstaand totaal` (`fldS4imvL0uShQNRe`) | som van `Openstaand` over zijn facturen | Kijken vóór je de volgende rit inplant |
+| `Laatste rit` (`fldTCiDpE31Z5wXql`) | de hoogste `Ritdatum` van zijn ritten | Een klant die je een half jaar niet zag is een telefoontje |
+| `Omzet totaal`, `Winst totaal`, `Winst per rit`, `Winstmarge` | zijn ritten | De grond onder een tariefafspraak — zie `KORTINGEN.md` |
+
+Deze velden dragen geld, dus ze gaan door dezelfde zeef als de ritvelden: een
+chauffeur krijgt geen klantenlijst opgehaald, en mocht een latere actie er toch
+een meesturen dan haalt `zonderBedragen` ze eruit.
+
 ### Eenmalige klanten en vaste klanten
 
 Op `Klanten` staat `Soort klant` (`fldSLJJ5sdfsZrUzI`): **Eenmalig** of **Vaste

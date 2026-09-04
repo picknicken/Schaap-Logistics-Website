@@ -55,10 +55,13 @@ Dat scheelt kiezen op het moment dat je in de auto zit.
 **Wat je bedoelt.** Adres, telefoonnummer, referentie, bedrag — kunnen aantikken
 en kopiëren, in plaats van overtypen of naar een ander scherm gaan.
 
-**Wat erbij moet.** Een kopieerknopje achter elk veld dat het waard is, en op de
-ritkaart alles wat je onderweg nodig hebt in één blok. Ook: het volledige adres
-in één keer kopieerbaar, zodat je het in een ander navigatieprogramma kunt
-plakken.
+**Half gebouwd.** In het tabblad Klanten staat achter telefoon, e-mail en adres
+een kopieerknop, en het adres komt er in één keer uit zodat je het in een ander
+navigatieprogramma kunt plakken.
+
+**Wat er nog bij moet.** Hetzelfde op de ritkaart: het ophaal- en afleveradres,
+de referentie en het telefoonnummer van de klant, in één blok met alles wat je
+onderweg nodig hebt.
 
 **Klein**, en waarschijnlijk het meest dagelijkse gemak van deze hele lijst.
 
@@ -270,8 +273,8 @@ varianten op wat hierboven staat maar dingen die in geen enkele lijst voorkwamen
   RIT-14") is niet moeilijk en verdient zichzelf in één rit terug.
 
 - **Klanten die je niet meer ziet.** Wie drie maanden geleden nog reed en sindsdien
-  niet meer, is geen verloren klant maar een telefoontje. Dat lijstje rolt zo uit
-  wat er al in `Klanten` staat.
+  niet meer, is geen verloren klant maar een telefoontje. Het veld `Laatste rit`
+  staat er nu; er hoeft alleen nog een lijstje omheen dat ze eruit vist.
 
 - **Een aanvraag die blijft liggen.** Je stuurt een prijs en hoort niets. Na twee
   dagen een seintje aan jezelf is het verschil tussen een opdracht en een
@@ -300,8 +303,8 @@ varianten op wat hierboven staat maar dingen die in geen enkele lijst voorkwamen
 
 ## Wat ik als eerste zou doen
 
-1. **De inlogschermen en het kopieerbaar maken.** Klein, zichtbaar, en je hebt er
-   elke dag wat aan.
+1. **Het kopieerbaar maken doortrekken naar de ritkaart.** In het tabblad
+   Klanten staat het al; onderweg heb je het net zo hard nodig.
 2. **Inspreken doortrekken naar een rit.** Bouwt voort op wat er nu al staat.
 3. **Navigeren die met de rit meegaat.**
 4. ~~**Winst per klant.**~~ Staat er, op de tabel `Klanten`.

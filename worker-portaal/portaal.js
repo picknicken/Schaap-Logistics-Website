@@ -183,7 +183,16 @@ const K = {
   uitnodigen:'Uitnodiging versturen',
   uitgenodigd:'Uitnodiging verstuurd op',
   soort:     'Soort klant',
-  ritten:    'Aantal ritten'
+  ritten:    'Aantal ritten',
+  /* Wat het opzoeken van een klant pas de moeite waard maakt: wat hij nog
+     openstaan heeft, wanneer je hem voor het laatst reed, en wat hij oplevert. */
+  openstaand:'Openstaand totaal',
+  laatste:   'Laatste rit',
+  omzet:     'Omzet totaal',
+  winst:     'Winst totaal',
+  winstRit:  'Winst per rit',
+  marge:     'Winstmarge',
+  km:        'Kilometers totaal'
 };
 
 /* Precies de twee keuzes die in Airtable bestaan. Een verzonnen naam zou daar
@@ -409,7 +418,9 @@ const RIT_ACTIES = new Set(['status', 'handtekening', 'notitie', 'ritkm', 'ritko
 /* Wat een chauffeur nooit terugkrijgt, ook niet als een actie het per ongeluk
    meestuurt. Dit zijn de velden waar geld in staat. */
 const GELDVELDEN = ['bedrag', 'korting', 'kortingRe', 'doorbereken',
-                    'brandstof', 'tol', 'overig', 'kosten', 'winst'];
+                    'brandstof', 'tol', 'overig', 'kosten', 'winst',
+                    /* En wat er bij een klant aan geld hangt. */
+                    'openstaand', 'omzet', 'winstRit', 'marge'];
 
 async function zonderBedragen(res, origin) {
   let data;
@@ -426,6 +437,12 @@ async function zonderBedragen(res, origin) {
   if (data && typeof data === 'object') {
     if (data.rit) { schoon(data.rit); }
     if (Array.isArray(data.ritten)) { data.ritten.forEach(schoon); }
+    /* Een chauffeur krijgt geen klantenlijst — die wordt voor hem niet eens
+       opgehaald. Maar het klantoverzicht draagt nu omzet en winst met zich mee,
+       en dan wil je niet dat één nieuwe actie die per ongeluk meestuurt de
+       enige drempel is. */
+    if (data.klant) { schoon(data.klant); }
+    if (Array.isArray(data.klanten)) { data.klanten.forEach(schoon); }
   }
   return antwoord(res.status, data, origin, true);
 }
@@ -2182,6 +2199,15 @@ function naarKlant(record) {
     nummer:   f[K.nummer] || '',
     soort:    keuze(f[K.soort]) || 'Eenmalig',
     ritten:   f[K.ritten] || 0,
+    laatste:  f[K.laatste] ? String(f[K.laatste]).slice(0, 10) : '',
+    /* Geld. Alleen de eigenaar krijgt dit te zien; zonderBedragen haalt het
+       er voor iedereen anders weer uit. */
+    openstaand: f[K.openstaand] || 0,
+    omzet:    f[K.omzet] || 0,
+    winst:    f[K.winst] || 0,
+    winstRit: f[K.winstRit] || 0,
+    marge:    f[K.marge] || 0,
+    km:       f[K.km] || 0,
     /* Wanneer deze klant voor het laatst een uitnodiging kreeg. De portaalcode
        zelf blijft hier bewust buiten: die hoeft de telefoon niet te weten. */
     uitgenodigd: f[K.uitgenodigd] || ''

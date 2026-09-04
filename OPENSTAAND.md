@@ -376,7 +376,7 @@ netjes van h1 naar h2 zonder gaten, en de foutpagina werkt weer — die verwees 
 de domeinverhuizing nog naar het oude adres en kwam daardoor zonder opmaak en met
 dode links binnen.
 
-**181 portaaltests, 140 schermtests, 160 portaal-Workertests, 43 klanttests en
+**202 portaaltests, 140 schermtests, 163 portaal-Workertests, 43 klanttests en
 alle overige Worker-tests** draaien groen, waaronder controles dat de prijzen op de site kloppen met de calculator, dat een klant nooit een cent van
 jouw kosten te zien krijgt, en dat een creditnota naar de oorspronkelijke factuur
 verwijst.

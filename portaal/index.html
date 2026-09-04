@@ -200,13 +200,26 @@ input{font:inherit}
 /* ------------------------------------------------------------ tabbladen */
 /* De rij past zich aan: een chauffeur heeft er maar een, en dan hoort die
    de hele breedte te krijgen in plaats van een derde. */
+/* Vijf tabbladen passen op een telefoon niet meer naast elkaar. Met flex in
+   plaats van een raster verdelen ze zich over de breedte zolang het kan, en
+   schuiven ze zodra het niet meer kan — in plaats van dat de laatste half van
+   het scherm valt. Op een breed scherm verandert er niets. */
 .tabs{
-  display:grid;grid-auto-flow:column;grid-auto-columns:1fr;
+  display:flex;overflow-x:auto;overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;
   background:var(--navy);border-top:1px solid rgba(255,255,255,.08);
   position:sticky;top:0;z-index:19;
 }
+.tabs::-webkit-scrollbar{display:none}
+/* Een randje schaduw rechts zodra er meer is dan past; anders lijkt een
+   afgesneden tabblad een fout in plaats van een hint. */
+.tabs[data-meer]{
+  -webkit-mask-image:linear-gradient(to right,#000 calc(100% - 26px),transparent);
+  mask-image:linear-gradient(to right,#000 calc(100% - 26px),transparent);
+}
 .tab{
-  padding:11px 6px 10px;color:#8fa2be;font-size:.8rem;font-weight:600;
+  flex:1 0 auto;white-space:nowrap;
+  padding:11px 13px 10px;color:#8fa2be;font-size:.8rem;font-weight:600;
   display:flex;align-items:center;justify-content:center;gap:6px;
   border-bottom:2.5px solid transparent;
 }
@@ -291,6 +304,90 @@ input{font:inherit}
   text-transform:uppercase;color:var(--muted);
 }
 .teller__uitleg{margin:0;font-size:.8rem;color:var(--muted);line-height:1.5}
+
+/* -------------------------------------------------------------- klanten */
+.zoekvak{
+  position:relative;display:flex;align-items:center;margin:16px 0 0;
+}
+.zoekvak__loep{
+  position:absolute;left:13px;color:var(--muted);pointer-events:none;flex:none;
+}
+.zoekvak input{
+  width:100%;font:inherit;font-size:1rem;padding:12px 40px 12px 38px;
+  border:1px solid var(--line);border-radius:11px;background:var(--paper);
+  color:inherit;-webkit-appearance:none;appearance:none;
+}
+.zoekvak input:focus{border-color:var(--amber-2);outline:none}
+.zoekvak input::-webkit-search-cancel-button{display:none}
+.zoekvak__leeg{
+  position:absolute;right:8px;border:0;background:none;color:var(--muted);
+  font-size:1.5rem;line-height:1;cursor:pointer;padding:4px 9px;
+}
+
+.klantkaart{
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--r);
+  overflow:hidden;
+}
+.klantkaart__kop{padding:14px 16px 12px;display:flex;gap:10px;align-items:flex-start}
+.klantkaart__naam{font-weight:700;color:var(--heading);font-size:1.02rem}
+.klantkaart__sub{font-size:.82rem;color:var(--muted);margin-top:2px}
+.klantkaart__soort{
+  margin-left:auto;flex:none;font-size:.66rem;font-weight:700;letter-spacing:.05em;
+  text-transform:uppercase;border-radius:999px;padding:4px 9px;
+  border:1px solid var(--line);color:var(--muted);
+}
+.klantkaart__soort[data-vast]{
+  color:#11603c;background:var(--ok-vlak);border-color:var(--ok);
+}
+/* Rood zodra er geld openstaat. Dat is het enige cijfer hier waar je
+   onmiddellijk iets mee moet. */
+.klantkaart__open{
+  margin:0 16px 12px;border-radius:10px;padding:9px 12px;font-size:.88rem;
+  background:#fff1f1;border-left:3px solid var(--urgent);color:#8a1015;
+}
+.klantkaart__open b{font-variant-numeric:tabular-nums}
+
+.regels{border-top:1px solid var(--line)}
+.regel{
+  display:flex;align-items:center;gap:10px;padding:9px 16px;
+  border-bottom:1px solid var(--line);
+}
+.regel:last-child{border-bottom:0}
+.regel__label{
+  flex:none;width:88px;font-size:.7rem;font-weight:700;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--muted);
+}
+.regel__waarde{flex:1;min-width:0;font-size:.92rem;word-break:break-word}
+.regel__kopie{
+  flex:none;border:1px solid var(--line);background:var(--paper-2);color:var(--muted);
+  border-radius:7px;padding:5px 9px;font-size:.72rem;font-weight:600;cursor:pointer;
+}
+.regel__kopie:hover{border-color:var(--amber-2);color:var(--amber-2)}
+.regel__kopie[data-klaar]{color:var(--ok);border-color:var(--ok)}
+
+.cijfers{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+  background:var(--line);border-top:1px solid var(--line);
+}
+.cijfers div{background:var(--paper-2);padding:10px 6px;text-align:center}
+.cijfers b{
+  display:block;font-size:.98rem;font-weight:700;color:var(--heading);
+  font-variant-numeric:tabular-nums;
+}
+.cijfers span{
+  font-size:.62rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--muted);
+}
+.klantkaart__knoppen{
+  display:flex;gap:8px;padding:12px 16px;flex-wrap:wrap;
+  border-top:1px solid var(--line);
+}
+.klantkaart__knoppen .knop{flex:1 1 auto;text-align:center;text-decoration:none}
+
+@media (max-width:420px){
+  .cijfers{grid-template-columns:repeat(2,1fr)}
+  .regel__label{width:70px}
+}
 
 /* --------------------------------------------------------- pushmeldingen */
 .pushvak{
@@ -562,6 +659,9 @@ input{font:inherit}
     <button class="tab" id="tab-meldingen" role="tab" aria-selected="false" type="button">
       Meldingen <span class="tab__badge" id="badge-meldingen" hidden>0</span>
     </button>
+    <button class="tab" id="tab-klanten" role="tab" aria-selected="false" type="button">
+      Klanten
+    </button>
   </div>
 
   <div id="paneel-ritten">
@@ -647,6 +747,24 @@ input{font:inherit}
        dat van de klant. Daar staan nu de waarschuwingen bij die er nooit waren:
        een rit zonder klant kun je niet factureren, en een rit die op Onderweg
        blijft staan levert nooit een factuur op. -->
+  <!-- Opzoeken wie iemand is, wat hij nog openstaan heeft en wanneer je hem
+       voor het laatst reed. Alles wat je onderweg zou willen bellen, mailen of
+       overtypen staat hier met een kopieerknop erachter. -->
+  <div id="paneel-klanten" class="wrap" hidden>
+    <div class="zoekvak">
+      <svg class="zoekvak__loep" width="17" height="17" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/>
+      </svg>
+      <input id="klant-zoek" type="search" autocomplete="off"
+             placeholder="Naam, klantnummer, adres, telefoon of e-mail"
+             aria-label="Klant opzoeken">
+      <button class="zoekvak__leeg" id="klant-zoek-leeg" type="button" hidden
+              aria-label="Zoekopdracht wissen">&times;</button>
+    </div>
+    <div id="lijst-klanten" class="lijst"></div>
+  </div>
+
   <div id="paneel-meldingen" class="wrap" hidden>
     <!-- Een melding in dit lijstje zie je pas als je het portaal opent. Voor
          een spoedaanvraag is dat te laat, dus kan de telefoon zelf piepen. -->
