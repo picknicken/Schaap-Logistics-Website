@@ -223,6 +223,20 @@ Drie tabbladen, met een teller erop zodat je in één blik ziet waar iets ligt.
   naam. Die gaan als afleverbewijs bij de rit in Airtable, en de rit springt op
   *Uitgevoerd* — waarmee de conceptfactuur zichzelf aanmaakt.
 
+- **Kilometerstand.** Onder die vier getallen zit een blok dat dichtgeklapt één
+  regel is: de beginstand bij vertrek en de eindstand bij thuiskomst. Ernaast
+  staat wat er die dag gefactureerd is, en het verschil.
+
+  Die twee getallen zijn met opzet niet één getal. De kilometers van een rit
+  lopen van ophaaladres naar afleveradres — dat is wat de klant betaalt. De
+  teller telt daarnaast het rijden naar de eerste klant, het rijden naar huis,
+  omrijden en tanken: bij een koerier al gauw een derde van de dag. Een optelsom
+  van de ritten kan daarom nooit aantonen dat je onder de 500 privékilometers
+  blijft, want die telt alleen wat je hebt verkocht. Zonder dat bewijs betaal je
+  bijtelling. Het verschil hoort verklaarbaar te zijn; daar is het tekstvakje
+  voor. Staat het op een negatief getal, dan klopt de eindstand niet of staan er
+  te veel kilometers op een rit.
+
 **Aanvragen** — wat er via de site binnenkomt en nog niet is afgehandeld.
 
 - Alles wat de bezoeker invulde: route, zending, colli, gewicht, de

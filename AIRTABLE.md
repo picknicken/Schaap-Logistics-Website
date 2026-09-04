@@ -236,6 +236,33 @@ taal waarin automatiseringen geschreven zijn zelf niet kan rekenen: ze zetten er
 een minteken voor, zodat de automatisering het negatieve bedrag kan overnemen.
 Kijk er verder niet naar.
 
+### De rittenregistratie: waarom `Dagstaten` een eigen tabel is
+
+De tabel `Dagstaten` (`tbldVdLrOMjjCJex9`) houdt per dag de kilometerstand bij:
+`Beginstand` bij vertrek, `Eindstand` bij thuiskomst. Het portaal schrijft die
+weg en zet er `Gefactureerde km` naast — de optelsom van de kilometers van de
+ritten van die dag.
+
+Dat zijn met opzet twee getallen en niet één. De kilometers van een rit lopen van
+het ophaaladres naar het afleveradres: dat is wat de klant betaalt en meer hoort
+er ook niet op de factuur. De teller in de bus telt daarnaast alles eromheen —
+het rijden naar het eerste ophaaladres, het rijden naar huis na de laatste
+aflevering, omrijden voor een file, tanken, de garage. Bij een koerier is dat al
+gauw een derde van de dag.
+
+Juist dat verschil is waar de Belastingdienst naar kijkt. Een sluitende
+rittenregistratie begint bij de beginstand en eindigt bij de eindstand; een
+optelsom van de ritten kan nooit aantonen dat je onder de 500 privékilometers
+blijft, want die telt per definitie alleen wat je hebt verkocht. Zonder dat
+bewijs is het bijtelling, en dat loopt in de duizenden euro's per jaar.
+
+De twee formulevelden `Gereden` (`fld23iudeVuhP8aWH`) en `Onverklaard`
+(`fld2zTzwK6Ha3Nxr6`) rekenen het uit. `Onverklaard` hoort verklaarbaar te zijn —
+daar is het veld `Opmerking` voor. Is het negatief, dan klopt de eindstand niet of
+staan er te veel kilometers op een rit.
+
+Eén regel per dag per chauffeur: ze rijden ieder een eigen bus.
+
 #### Korting geven
 
 Ging er iets mis — te laat aangekomen, niet alles kon in één keer mee — dan haal

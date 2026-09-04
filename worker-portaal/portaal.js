@@ -19,6 +19,7 @@
      AIRTABLE_AANVRAGEN   tblhvOATDAfvBmabA
      AIRTABLE_KLANTEN     tbluCJAsTFXdB2ZeR
      AIRTABLE_FACTUREN    tblDA2m46PWhhiFnC
+     AIRTABLE_DAGSTATEN   tbldVdLrOMjjCJex9
      TOEGESTANE_ORIGIN    https://schaaplogistics.nl,https://picknicken.github.io
 
    De token heeft data.records:read én data.records:write nodig. Alleen
@@ -115,6 +116,18 @@ const A = {
   binnen:     'Binnengekomen'
 };
 
+/* De dagstaat: de kilometerteller aan het begin en het eind van de dag. Wat
+   je optelt uit de ritten is iets anders — zie de uitleg bij dagstaatLezen. */
+const D = {
+  dag:        'Dag',
+  datum:      'Datum',
+  begin:      'Beginstand',
+  eind:       'Eindstand',
+  gefactureerd:'Gefactureerde km',
+  chauffeur:  'Chauffeur',
+  opmerking:  'Opmerking'
+};
+
 const K = {
   naam:      'Klantnaam',
   adres:     'Adres',
@@ -190,7 +203,8 @@ function magVanOrigin(origin, toegestaan) {
    Kilometers en ritkosten mag hij wel invullen — die weet hij als enige, en hij
    krijgt ze niet terug als winstcijfer. */
 const CHAUFFEUR_MAG = new Set([
-  'overzicht', 'ritten', 'status', 'handtekening', 'notitie', 'ritkm', 'ritkosten'
+  'overzicht', 'ritten', 'status', 'handtekening', 'notitie', 'ritkm', 'ritkosten',
+  'dagstaat'
 ]);
 
 export default {
@@ -354,6 +368,7 @@ async function schakel(env, body, origin, wie) {
     case 'nieuweklant':  return await nieuweKlant(env, body, origin);
     case 'uitnodiging':  return await stuurUitnodiging(env, body, origin);
     case 'leesbericht':  return await leesBericht(env, body, origin);
+    case 'dagstaat':     return await zetDagstaat(env, body, origin, wie);
     default:
       return antwoord(400, { fout: 'Onbekende actie' }, origin, true);
   }
@@ -374,9 +389,10 @@ async function haalOverzicht(env, body, origin, wie) {
      ophaalt kun je ook niet per ongeluk meesturen. */
   if (wie.rol !== 'Eigenaar') {
     const ritten = await rittenOphalen(env, dag, dag, wie);
+    const dagstaat = await dagstaatLezen(env, dag, wie, ritten);
     await noteerBezoek(env, wie);
     return antwoord(200, {
-      ok: true, dag, ritten, aanvragen: [], opdrachten: [], klanten: [],
+      ok: true, dag, ritten, aanvragen: [], opdrachten: [], klanten: [], dagstaat,
       kan: { leesbericht: false },
       ik: { naam: wie.naam, rol: wie.rol }
     }, origin, true);
@@ -391,10 +407,11 @@ async function haalOverzicht(env, body, origin, wie) {
   /* Het portaal moet weten of het de knop "vul het formulier in" mag laten
      zien. Alleen of er een sleutel staat, nooit de sleutel zelf. */
   const kan = { leesbericht: !!env.ANTHROPIC_API_KEY };
+  const dagstaat = await dagstaatLezen(env, dag, wie, ritten);
   await noteerBezoek(env, wie);
 
   return antwoord(200, { ok: true, dag, ritten, aanvragen, opdrachten, klanten, kan,
-                         ik: { naam: wie.naam, rol: wie.rol } },
+                         dagstaat, ik: { naam: wie.naam, rol: wie.rol } },
                   origin, true);
 }
 
@@ -834,6 +851,162 @@ async function zetRitKm(env, body, origin) {
 
   const rit = naarRit(await patch(env, env.AIRTABLE_RITTEN, id, velden));
   return antwoord(200, { ok: true, rit }, origin, true);
+}
+
+/* ------------------------------------------------------ de kilometerteller
+
+   Waarom dit een eigen tabel is en niet gewoon de som van de ritkilometers.
+
+   De kilometers van een rit lopen van het ophaaladres naar het afleveradres.
+   Dat is wat de klant betaalt, en meer hoort er ook niet op de factuur. De
+   teller in de bus telt daarnaast alles eromheen: het rijden naar het eerste
+   ophaaladres, het rijden naar huis na de laatste aflevering, omrijden voor
+   een file, tanken, de garage. Bij een koerier is dat al gauw een derde van
+   de dag.
+
+   Juist dat verschil is waar de Belastingdienst naar kijkt. Een sluitende
+   rittenregistratie begint bij de beginstand en eindigt bij de eindstand;
+   zonder dagtotaal kun je niet aantonen dat je onder de 500 privékilometers
+   blijft, en dan betaal je bijtelling. Een optelsom van de ritten kan dat
+   nooit aantonen, want die telt per definitie alleen wat je hebt verkocht.
+
+   Vandaar twee getallen naast elkaar: wat de teller zegt, en wat er die dag
+   gefactureerd is. Het verschil hoort verklaarbaar te zijn — daar is het
+   vakje Opmerking voor. */
+
+/* Onder welke naam de dagstaat wordt weggeschreven. Twee chauffeurs op
+   dezelfde dag zijn twee dagstaten: ze rijden ieder een eigen bus. */
+function dagstaatNaam(wie) {
+  return (wie && wie.naam) ? wie.naam : 'Eigenaar';
+}
+
+/* De gefactureerde kilometers van een dag. Een geannuleerde rit is niet
+   gereden en telt dus niet mee. */
+function telKilometers(ritten) {
+  const som = (ritten || []).reduce((op, r) => {
+    if (!r || r.status === 'Geannuleerd') { return op; }
+    return op + (Number(r.km) || 0);
+  }, 0);
+  return Math.round(som);
+}
+
+async function dagstaatZoeken(env, dag, naam) {
+  const zoek = new URLSearchParams();
+  /* dag is al door datum() gehaald en bestaat alleen uit cijfers en streepjes.
+     Op de chauffeursnaam filteren we hier en niet in de formule: die naam is
+     vrije tekst uit Airtable en hoort niet in een formule geplakt te worden.
+     Het gaat om hoogstens een handvol regels per dag. */
+  zoek.set('filterByFormula', `{${D.dag}} = '${dag}'`);
+  zoek.set('pageSize', '20');
+  const data = await airtable(env, `${env.AIRTABLE_DAGSTATEN}?${zoek}`);
+  return (data.records || []).find(
+    (r) => String((r.fields || {})[D.chauffeur] || '') === naam) || null;
+}
+
+function naarDagstaat(dag, naam, record, gefactureerd) {
+  const f = (record && record.fields) || {};
+  const getal = (v) => (typeof v === 'number' ? v : null);
+  const begin = getal(f[D.begin]);
+  const eind  = getal(f[D.eind]);
+  const gereden = (begin !== null && eind !== null) ? eind - begin : null;
+  return {
+    dag,
+    chauffeur:    naam,
+    begin,
+    eind,
+    gereden,
+    gefactureerd,
+    onverklaard:  gereden === null ? null : gereden - gefactureerd,
+    opmerking:    f[D.opmerking] || ''
+  };
+}
+
+/* Lezen mag nooit iets kapotmaken. Ontbreekt de tabel of hapert Airtable,
+   dan komt het portaal gewoon op zonder kilometerblok — je ritten van
+   vandaag zijn belangrijker dan je teller. */
+async function dagstaatLezen(env, dag, wie, ritten) {
+  if (!env.AIRTABLE_DAGSTATEN) { return null; }
+  const naam = dagstaatNaam(wie);
+  try {
+    const record = await dagstaatZoeken(env, dag, naam);
+    return naarDagstaat(dag, naam, record, telKilometers(ritten));
+  } catch (fout) {
+    console.log('Dagstaat lezen mislukt: ' + fout.message);
+    return null;
+  }
+}
+
+/* Een kilometerstand is een heel getal van de teller. Nul bestaat niet op een
+   bus die al gereden heeft, maar wordt hier niet geweigerd: dat is een
+   afweging voor de gebruiker, niet voor de invoercontrole. */
+function tellerstand(w) {
+  const n = Number(String(w).replace(',', '.').trim());
+  if (!isFinite(n) || n < 0 || n > 2000000) { return null; }
+  return Math.round(n);
+}
+
+async function zetDagstaat(env, body, origin, wie) {
+  const dag = datum(body.dag);
+  if (!dag) {
+    return antwoord(400, { fout: 'Geef een datum als JJJJ-MM-DD' }, origin, true);
+  }
+  if (!env.AIRTABLE_DAGSTATEN) {
+    return antwoord(501, { fout: 'De dagstatentabel is nog niet ingesteld' }, origin, true);
+  }
+
+  const velden = {};
+  for (const [sleutel, veld] of [['begin', D.begin], ['eind', D.eind]]) {
+    if (body[sleutel] === undefined) { continue; }
+    /* Leeg opsturen is wissen: een verkeerd overgetypte stand moet je weer
+       weg kunnen halen zonder de hele dag opnieuw in te voeren. */
+    if (body[sleutel] === null || body[sleutel] === '') { velden[veld] = null; continue; }
+    const stand = tellerstand(body[sleutel]);
+    if (stand === null) {
+      return antwoord(400, { fout: 'Een kilometerstand is een heel getal' }, origin, true);
+    }
+    velden[veld] = stand;
+  }
+  if (body.opmerking !== undefined) {
+    velden[D.opmerking] = String(body.opmerking || '').trim().slice(0, 500);
+  }
+
+  const naam = dagstaatNaam(wie);
+  let record;
+  try {
+    record = await dagstaatZoeken(env, dag, naam);
+  } catch (fout) {
+    return antwoord(502, { fout: fout.message }, origin, true);
+  }
+
+  /* De controle gaat over de dag als geheel, niet over wat er net getypt is:
+     wie alleen de eindstand invult moet die vergeleken zien met de beginstand
+     die er al stond. */
+  const bestaand = (record && record.fields) || {};
+  const begin = velden[D.begin] !== undefined ? velden[D.begin] : (bestaand[D.begin] ?? null);
+  const eind  = velden[D.eind]  !== undefined ? velden[D.eind]  : (bestaand[D.eind]  ?? null);
+  if (typeof begin === 'number' && typeof eind === 'number' && eind < begin) {
+    return antwoord(400, { fout: 'De eindstand kan niet lager zijn dan de beginstand' },
+                    origin, true);
+  }
+
+  const gefactureerd = telKilometers(await rittenOphalen(env, dag, dag, wie));
+
+  /* Zonder invoer en zonder bestaande regel wordt er niets aangemaakt. Anders
+     zou elk bezoek aan het portaal een lege dagstaat achterlaten. */
+  if (Object.keys(velden).length || record) {
+    velden[D.gefactureerd] = gefactureerd;
+    if (record) {
+      record = await patch(env, env.AIRTABLE_DAGSTATEN, record.id, velden);
+    } else {
+      velden[D.dag] = dag;
+      velden[D.datum] = dag;
+      velden[D.chauffeur] = naam;
+      record = await maak(env, env.AIRTABLE_DAGSTATEN, velden);
+    }
+  }
+
+  return antwoord(200, { ok: true, dagstaat: naarDagstaat(dag, naam, record, gefactureerd) },
+                  origin, true);
 }
 
 /* ==========================================================================

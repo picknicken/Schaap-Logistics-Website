@@ -93,8 +93,8 @@ Ideeën die je niet noemde maar die in dezelfde hoek zitten:
 - **Wachttijd met een knop.** Start bij aankomst, stop bij vertrek, en hij rondt
   zelf af op het kwartier zoals je tarief het rekent. Nu typ je minuten.
 - **Foto bij aflevering**, naast de handtekening. Het sterkste bewijs dat er is.
-- **Kilometerstand aan het begin en eind van de dag.** Twee getallen, en je
-  rittenregistratie voor de Belastingdienst vult zichzelf.
+- ~~**Kilometerstand aan het begin en eind van de dag.**~~ Gebouwd — zie het
+  blok Kilometerstand onder de vier getallen in de Ritten-tab.
 - **Tankbeurt vastleggen** bij de pomp, in plaats van bonnetjes bewaren.
 - **Offline doorwerken.** In een kelder of parkeergarage werkt het portaal nu
   niet. Statussen en handtekeningen lokaal bewaren en versturen zodra er weer

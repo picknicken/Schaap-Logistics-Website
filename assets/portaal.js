@@ -40,6 +40,9 @@
      zet het moment pas neer als de mail werkelijk weg is, en dat kan een
      tel duren; zonder dit zou de knop meteen weer staan alsof je niets deed. */
   var uitnodigingen = {};
+  /* De kilometerstand van de dag die op het scherm staat. Null zolang de
+     tussenlaag er nog niet van weet: dan blijft het hele blok weg. */
+  var dagstaat = null;
   var tabblad = 'ritten';
   var klantVoor = null;
   var tekentVoor = null;
@@ -275,6 +278,13 @@
          een klant die inmiddels gewoon een datum heeft. */
       uitnodigingen = {};
     }
+    /* Alleen bij een dagwissel komt de dagstaat mee. Bij een losse
+       rittenoproep niet — dan houden we wat we al hadden staan, zodat een
+       half ingetypte stand niet onder je handen wegvalt. */
+    if (data.dagstaat !== undefined) {
+      dagstaat = data.dagstaat || null;
+      vulTeller();
+    }
     el('dag-naam').textContent = dagNaam(dag);
     el('dag-datum').textContent = datumLang(dag);
     tekenAlles();
@@ -282,6 +292,7 @@
 
   function tekenAlles() {
     tekenTegels();
+    tekenTeller();
     tekenLijst();
     tekenAanvragen();
     tekenPlanning();
@@ -318,21 +329,130 @@
     el('tab-' + t).addEventListener('click', function () { kiesTab(t); });
   });
 
+  /* De kilometers die je deze dag factureert: van ophaaladres naar
+     afleveradres, en niets daarbuiten. Een geannuleerde rit is niet gereden. */
+  function dagKilometers() {
+    return Math.round(ritten.reduce(function (t, r) {
+      return r.status === 'Geannuleerd' ? t : t + (Number(r.km) || 0);
+    }, 0));
+  }
+
   function tekenTegels() {
     var open = ritten.filter(function (r) {
       return r.status === 'Gepland' || r.status === 'Onderweg';
     }).length;
-    var km = ritten.reduce(function (t, r) {
-      return r.status === 'Geannuleerd' ? t : t + (Number(r.km) || 0);
-    }, 0);
     var omzet = ritten.reduce(function (t, r) {
       return r.status === 'Geannuleerd' ? t : t + (Number(r.bedrag) || 0);
     }, 0);
 
     el('t-ritten').textContent = ritten.length;
     el('t-open').textContent = open;
-    el('t-km').textContent = Math.round(km);
+    el('t-km').textContent = dagKilometers();
     el('t-omzet').textContent = omzet ? euro.format(omzet) : '–';
+  }
+
+  /* ------------------------------------------------------ kilometerstand
+
+     De tegel Km hierboven telt de ritkilometers op: dat is precies wat er
+     gefactureerd wordt. De teller in de bus telt meer — het aanrijden naar de
+     eerste klant, het naar huis rijden, omrijden, tanken. Voor een sluitende
+     rittenregistratie moeten die twee getallen naast elkaar staan en moet het
+     verschil te verklaren zijn. Vandaar dat dit blok het optelsommetje niet
+     vervangt maar ernaast zet. */
+
+  function tellerGetal(id) {
+    var v = String(el(id).value || '').trim();
+    if (!v) { return null; }
+    var n = Number(v.replace(',', '.'));
+    return isFinite(n) && n >= 0 ? Math.round(n) : null;
+  }
+
+  /* De velden bijwerken met wat er is opgeslagen. Alleen na een dagwissel of
+     na het opslaan — niet bij elke hertekening, want dan zou je eigen typen
+     eronder vandaan gepoetst worden. */
+  function vulTeller() {
+    var vak = el('teller');
+    if (!vak) { return; }
+    vak.hidden = !dagstaat;
+    if (!dagstaat) { return; }
+    el('teller-begin').value = dagstaat.begin === null || dagstaat.begin === undefined
+      ? '' : dagstaat.begin;
+    el('teller-eind').value = dagstaat.eind === null || dagstaat.eind === undefined
+      ? '' : dagstaat.eind;
+    el('teller-opmerking').value = dagstaat.opmerking || '';
+    meldTeller('');
+    tekenTeller();
+  }
+
+  function tekenTeller() {
+    var vak = el('teller');
+    if (!vak || vak.hidden) { return; }
+
+    var begin = tellerGetal('teller-begin');
+    var eind = tellerGetal('teller-eind');
+    var gereden = (begin !== null && eind !== null && eind >= begin) ? eind - begin : null;
+    var gefactureerd = dagKilometers();
+    var verschil = gereden === null ? null : gereden - gefactureerd;
+
+    el('teller-gereden').textContent = gereden === null ? '–' : gereden;
+    el('teller-gefactureerd').textContent = gefactureerd;
+    el('teller-onverklaard').textContent = verschil === null ? '–' : verschil;
+
+    /* De regel die je ziet als het blok dicht is. Die moet in één oogopslag
+       zeggen of de dag af is. */
+    var kop = gereden !== null ? gereden + ' km gereden'
+      : begin !== null ? 'begin ' + begin + ', eind nog open'
+      : 'nog niet ingevuld';
+    el('teller-stand').textContent = kop;
+
+    el('teller-uitleg').textContent = verschil === null
+      ? 'Vul begin- en eindstand in, dan zie je hoeveel er naast de ritten is gereden.'
+      : verschil < 0
+        ? 'De teller zegt minder dan er is gefactureerd. Controleer de eindstand of de ' +
+          'kilometers van een rit — dit kan niet kloppen.'
+        : 'Die ' + verschil + ' km zijn het aanrijden naar de eerste klant, het rijden ' +
+          'naar huis, omrijden en tanken. Leg hieronder vast wat opvalt.';
+  }
+
+  function meldTeller(tekst, isFout) {
+    var m = el('teller-melding');
+    if (!m) { return; }
+    m.textContent = tekst || '';
+    m.hidden = !tekst;
+    m.className = 'melding' + (tekst && !isFout ? ' melding--goed' : '');
+  }
+
+  if (el('teller-kop')) {
+    el('teller-kop').addEventListener('click', function () {
+      var open = this.getAttribute('aria-expanded') === 'true';
+      this.setAttribute('aria-expanded', open ? 'false' : 'true');
+      el('teller-body').hidden = open;
+      if (!open) { tekenTeller(); }
+    });
+    ['teller-begin', 'teller-eind'].forEach(function (id) {
+      el(id).addEventListener('input', tekenTeller);
+    });
+    el('teller-opslaan').addEventListener('click', function () {
+      var knop = this;
+      knop.disabled = true;
+      knop.textContent = 'Opslaan…';
+      meldTeller('');
+      verstuur('dagstaat', {
+        dag: dag,
+        begin: el('teller-begin').value.trim(),
+        eind: el('teller-eind').value.trim(),
+        opmerking: el('teller-opmerking').value
+      }).then(function (data) {
+        dagstaat = data.dagstaat || null;
+        vulTeller();
+        meldTeller('Kilometerstand opgeslagen.');
+      }).catch(function (fout) {
+        meldTeller(fout.message, true);
+      }).then(function () {
+        knop.disabled = false;
+        knop.textContent = 'Opslaan';
+      });
+    });
   }
 
   /* -------------------------------------------------------------- lijst */

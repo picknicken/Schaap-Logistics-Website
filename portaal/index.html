@@ -248,6 +248,50 @@ input{font:inherit}
 }
 .tegel span{font-size:.68rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
 
+/* ------------------------------------------------------- kilometerstand
+   De teller van de bus, onder de vier getallen van de dag. Dichtgeklapt is
+   het één regel; pas als je op de regel drukt komen de invoervakjes. Dat is
+   met opzet: op een dag dat je vergeet in te vullen mag dit blok niet in de
+   weg zitten. */
+.teller{
+  background:var(--paper);border-bottom:1px solid var(--line);
+}
+.teller__kop{
+  display:flex;align-items:center;gap:8px;width:100%;
+  background:none;border:0;font:inherit;color:inherit;cursor:pointer;
+  padding:11px 16px;text-align:left;
+}
+.teller__kop b{font-weight:700;color:var(--heading);font-size:.9rem}
+.teller__stand{
+  margin-left:auto;font-variant-numeric:tabular-nums;color:var(--muted);
+  font-size:.85rem;font-weight:600;
+}
+.teller__pijl{transition:transform .15s;color:var(--muted);flex:none}
+.teller__kop[aria-expanded="true"] .teller__pijl{transform:rotate(90deg)}
+.teller__body{padding:0 16px 14px;display:flex;flex-direction:column;gap:10px}
+.teller__rij{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.teller__rij .veld{margin:0}
+.teller__body textarea{
+  width:100%;font:inherit;padding:10px 12px;border-radius:9px;
+  border:1px solid var(--line);background:var(--paper);color:inherit;resize:vertical;
+}
+/* De rekensom: gereden volgens de teller, gefactureerd volgens de ritten, en
+   het verschil. Dat verschil is waar de Belastingdienst naar vraagt. */
+.teller__som{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
+  background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;
+}
+.teller__som div{background:var(--paper-2);padding:9px 6px;text-align:center}
+.teller__som b{
+  display:block;font-size:1rem;font-weight:700;color:var(--heading);
+  font-variant-numeric:tabular-nums;
+}
+.teller__som span{
+  font-size:.62rem;font-weight:600;letter-spacing:.04em;
+  text-transform:uppercase;color:var(--muted);
+}
+.teller__uitleg{margin:0;font-size:.8rem;color:var(--muted);line-height:1.5}
+
 /* --------------------------------------------------------------- lijst */
 .lijst{padding:16px 0 40px;display:grid;gap:12px}
 
@@ -499,6 +543,48 @@ input{font:inherit}
     <div class="tegel"><b id="t-open">–</b><span>Open</span></div>
     <div class="tegel"><b id="t-km">–</b><span>Km</span></div>
     <div class="tegel"><b id="t-omzet">–</b><span>Omzet</span></div>
+  </div>
+
+  <!-- De kilometerteller van de bus. De vier tegels hierboven tellen de
+       ritkilometers: dat is wat je factureert. Dit telt wat de bus werkelijk
+       heeft gereden — inclusief het aanrijden, het naar huis rijden en het
+       tanken. Zonder die twee naast elkaar is er geen rittenregistratie. -->
+  <div class="teller" id="teller" hidden>
+    <button class="teller__kop" id="teller-kop" type="button"
+            aria-expanded="false" aria-controls="teller-body">
+      <svg class="teller__pijl" width="14" height="14" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+           aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+      <b>Kilometerstand</b>
+      <span class="teller__stand" id="teller-stand">nog niet ingevuld</span>
+    </button>
+    <div class="teller__body" id="teller-body" hidden>
+      <div id="teller-melding" class="melding" hidden></div>
+      <div class="teller__rij">
+        <label class="veld">
+          <span>Beginstand</span>
+          <input id="teller-begin" type="number" inputmode="numeric" min="0" step="1"
+                 placeholder="bij vertrek">
+        </label>
+        <label class="veld">
+          <span>Eindstand</span>
+          <input id="teller-eind" type="number" inputmode="numeric" min="0" step="1"
+                 placeholder="bij thuiskomst">
+        </label>
+      </div>
+      <div class="teller__som">
+        <div><b id="teller-gereden">–</b><span>Gereden</span></div>
+        <div><b id="teller-gefactureerd">–</b><span>Gefactureerd</span></div>
+        <div><b id="teller-onverklaard">–</b><span>Verschil</span></div>
+      </div>
+      <p class="teller__uitleg" id="teller-uitleg">
+        Het verschil is het aanrijden naar de eerste klant, het rijden naar huis,
+        omrijden en tanken. Leg het hieronder vast als het opvalt.
+      </p>
+      <textarea id="teller-opmerking" rows="2"
+                placeholder="Toelichting, bijvoorbeeld: omgereden om te tanken"></textarea>
+      <button class="knop knop--rand" id="teller-opslaan" type="button">Opslaan</button>
+    </div>
   </div>
 
   <div class="wrap">

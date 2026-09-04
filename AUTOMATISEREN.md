@@ -21,13 +21,14 @@ er staat voordat je iets nieuws laat bouwen.
 - **Afleverbewijs** met handtekening, naam en tijdstip, en een waarschuwing
   ("Ontbreekt") zodra een rit op Uitgevoerd staat zonder handtekening.
 
+- **Rittenregistratie voor de Belastingdienst.** Kilometerstand aan het begin en
+  eind van je dag, twee getallen in het portaal. Ernaast staat wat je die dag
+  hebt gefactureerd, en het verschil daartussen. Rijd je met de bus ook privé,
+  dan is dat verschil het bewijs dat je onder de 500 kilometer blijft — en dus
+  het verschil tussen wel of geen bijtelling.
+
 ### Kan erbij
 
-- **Rittenregistratie voor de Belastingdienst.** Kilometerstand aan het begin en
-  eind van je dag, twee getallen in het portaal. Het systeem rekent zelf uit wat
-  zakelijk was en wat niet. Rijd je met de bus ook privé, dan is dit het verschil
-  tussen wel of geen bijtelling — en dat loopt in de duizenden euro's per jaar.
-  **Dit is de belangrijkste van deze lijst.**
 - **Gaten in de factuurnummering opsporen.** Eén keer per maand controleren of er
   geen nummer is overgeslagen. Bij een controle is een gat de eerste vraag die
   je krijgt, en achteraf weet je niet meer waarom.
@@ -173,8 +174,7 @@ Bijna alles wat een klant irriteert is niet weten waar hij aan toe is.
 
 ## Als je er vijf zou kiezen
 
-1. **Kilometerstand aan begin en eind van de dag.** Wettelijk het zwaarst en het
-   duurst als je het niet hebt.
+1. ~~**Kilometerstand aan begin en eind van de dag.**~~ Staat er.
 2. **"Wij zijn onderweg" naar de klant.** Het gat in je berichten waar de meeste
    telefoontjes vandaan komen.
 3. **Wachttijd met een knop.** Elke dag, en nu vergeet je hem.

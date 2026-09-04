@@ -283,6 +283,24 @@ zelfs de betere plek: volgens artikel 4 komt de overeenkomst tot stand op het
 moment dat jij de opdracht bevestigt. Zet punt 1 dus aan vóór punt 2, anders zit
 er een gat waarin er helemaal geen voorwaarden uitgaan.
 
+**De kilometerstand staat in het portaal.** Onder de vier getallen van de dag in
+de Ritten-tab zit een blok *Kilometerstand*: beginstand bij vertrek, eindstand bij
+thuiskomst. Daarnaast staat wat je die dag hebt gefactureerd, en het verschil
+daartussen.
+
+Dat verschil is het punt, en daarom is het niet — zoals je voorstelde — de
+optelsom van de ritten geworden. De kilometers van een rit lopen van ophaaladres
+naar afleveradres: dat is wat de klant betaalt. De teller telt ook het rijden
+naar de eerste klant, het rijden naar huis, omrijden en tanken, en dat is bij een
+koerier al gauw een derde van de dag. Een optelsom van de ritten kan dus nooit
+aantonen dat je onder de 500 privékilometers blijft — hij telt per definitie
+alleen wat je hebt verkocht. Zonder dat bewijs is het bijtelling. Vandaar twee
+getallen naast elkaar in plaats van één, met een vakje om het verschil te
+verklaren.
+
+Het kost je twee keer een getal overtypen per dag. Dat is de goedkoopste
+verzekering in dit hele systeem.
+
 **Het domein** `schaaplogistics.nl` is live, met een doorstuur vanaf het oude
 adres zodat verstuurde links blijven werken.
 
@@ -294,7 +312,7 @@ netjes van h1 naar h2 zonder gaten, en de foutpagina werkt weer — die verwees 
 de domeinverhuizing nog naar het oude adres en kwam daardoor zonder opmaak en met
 dode links binnen.
 
-**112 schermtests en alle Worker-tests** draaien groen, waaronder controles dat de
-prijzen op de site kloppen met de calculator, dat een klant nooit een cent van
+**150 portaaltests, 140 schermtests, 43 klanttests en alle Worker-tests** draaien
+groen, waaronder controles dat de prijzen op de site kloppen met de calculator, dat een klant nooit een cent van
 jouw kosten te zien krijgt, en dat een creditnota naar de oorspronkelijke factuur
 verwijst.
