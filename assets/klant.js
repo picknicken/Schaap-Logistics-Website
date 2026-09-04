@@ -225,6 +225,13 @@
     ]);
     if (dl) { lijf.appendChild(dl); }
 
+    /* De weg die de zending heeft afgelegd. Dit stond eerder in losse mailtjes;
+       nu staat het hier, waar het blijft staan en waar je het kunt terugkijken
+       zonder je postvak door te zoeken. Alleen wat er echt is gebeurd krijgt
+       een tijdstip; de rest is grijs en staat er om te laten zien wat er nog
+       komt. */
+    lijf.appendChild(tijdlijn(r));
+
     if (r.bedrag) {
       var b = maak('div', 'bedrag');
       b.appendChild(maak('span', '', 'Bedrag'));
@@ -282,6 +289,40 @@
 
      Twee stappen: eerst een knop, dan pas het echte afzeggen. Eén verkeerde tik
      op een telefoon mag geen zending afzeggen. */
+  function tijdlijn(r) {
+    var af = r.afgeleverd || r.getekend;
+    var weg = !!r.onderwegOp || af;
+    var stappen = [
+      { naam: 'Aangevraagd', klaar: true, moment: '' },
+      { naam: 'Ingepland',   klaar: !!r.bevestigdOp || weg,
+        moment: r.bevestigdOp, extra: r.datum ? 'voor ' + datumKort(r.datum) : '' },
+      { naam: 'Onderweg',    klaar: weg, moment: r.onderwegOp },
+      { naam: 'Afgeleverd',  klaar: af, moment: r.getekendOp,
+        extra: r.getekend ? 'getekend door ' + r.getekend : '' }
+    ];
+    if (r.status === 'Geannuleerd') {
+      stappen = stappen.slice(0, 2).concat([
+        { naam: 'Geannuleerd', klaar: true, moment: r.geannuleerdOp }
+      ]);
+    }
+
+    var lijst = maak('ol', 'tijdlijn');
+    stappen.forEach(function (st) {
+      var li = maak('li', 'tijdlijn__stap' + (st.klaar ? ' tijdlijn__stap--klaar' : ''));
+      li.appendChild(maak('span', 'tijdlijn__stip'));
+      var tekst = maak('div');
+      tekst.appendChild(maak('b', '', st.naam));
+      var onder = st.moment
+        ? datumKort(st.moment) + ' om ' + klok(st.moment)
+        : (st.klaar ? (st.extra || '') : '');
+      if (st.klaar && st.extra && st.moment) { onder += ' \u00b7 ' + st.extra; }
+      if (onder) { tekst.appendChild(maak('span', 'tijdlijn__wanneer', onder)); }
+      li.appendChild(tekst);
+      lijst.appendChild(li);
+    });
+    return lijst;
+  }
+
   function annuleerBlok(r) {
     var vak = maak('div', 'afzeggen');
     var start = maak('button', 'knop knop--rand', 'Deze zending annuleren');

@@ -1037,6 +1037,11 @@ function naarKlantRit(record) {
     bedrag:     f[R.totaal] || 0,
     getekend:   f[R.getekendD] || '',
     getekendOp: f[R.getekendO] || '',
+    /* Wanneer wij vertrokken en wanneer de rit bevestigd is. Hiermee kan het
+       klantportaal laten zien hoe ver de zending is, in plaats van dat wij
+       daar bij elke stap een mail over sturen. */
+    bevestigdOp: f[R.bevestigd] || '',
+    onderwegOp:  f[R.onderweg] || '',
     afgeleverd: Array.isArray(f[R.handtek]) && f[R.handtek].length > 0,
     /* De klant mag zijn eigen afleverbewijs zien. Het is het bewijs dat zijn
        zending is aangekomen; daar hoeft hij ons niet voor te bellen. */

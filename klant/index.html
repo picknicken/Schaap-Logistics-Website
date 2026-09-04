@@ -169,6 +169,29 @@ input{font:inherit}
 .paar dt{color:var(--muted);font-size:.8rem}
 .paar dd{color:var(--heading)}
 
+/* ---------- de weg die de zending aflegt ----------
+   Wat de klant eerder in losse mailtjes kreeg. Wat gebeurd is krijgt kleur en
+   een tijdstip; wat nog komt blijft grijs, zodat je in een oogopslag ziet waar
+   je zending is zonder ergens op te hoeven klikken. */
+.tijdlijn{list-style:none;margin:14px 0 0;padding:0;position:relative}
+.tijdlijn::before{
+  content:"";position:absolute;left:6px;top:9px;bottom:9px;width:2px;
+  background:var(--line);
+}
+.tijdlijn__stap{
+  position:relative;display:flex;gap:14px;align-items:flex-start;
+  padding:0 0 14px 0;
+}
+.tijdlijn__stap:last-child{padding-bottom:0}
+.tijdlijn__stip{
+  position:relative;z-index:1;flex:none;width:14px;height:14px;border-radius:50%;
+  margin-top:3px;background:var(--paper);border:2px solid var(--line);
+}
+.tijdlijn__stap--klaar .tijdlijn__stip{background:var(--ok);border-color:var(--ok)}
+.tijdlijn__stap b{display:block;font-size:.92rem;color:var(--muted);font-weight:600}
+.tijdlijn__stap--klaar b{color:var(--heading)}
+.tijdlijn__wanneer{display:block;font-size:.82rem;color:var(--muted);margin-top:1px}
+
 .bewijs{
   display:flex;gap:10px;align-items:flex-start;
   background:var(--ok-vlak);border:1px solid var(--ok);border-radius:10px;
