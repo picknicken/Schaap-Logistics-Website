@@ -261,6 +261,16 @@ Dat inplannen was de ontbrekende schakel. Een aanvraag werd een opdracht, maar
 niets maakte daar een rit van — en het portaal toont ritten. Een aangenomen
 aanvraag leek daardoor te verdwijnen.
 
+**Wat het portaal zelf doet in plaats van Airtable.** Drie stukken administratie
+draaien in de tussenlaag en niet meer als automatisering: het omzetten van een
+aanvraag in een opdracht, het maken van de conceptfactuur zodra een rit op
+*Uitgevoerd* gaat, en het markeren van te late facturen (elke ochtend, via een
+cron-trigger op de Worker). Reden: het gratis Airtable-plan geeft honderd
+automatiseringsruns per maand en een rit kostte er zeven. Alles wat geen mail
+verstuurt hoort daarom in de Worker thuis. De volgorde waarin dat gebeurt is
+zorgvuldig gekozen — zie `AIRTABLE.md`, *De volgorde die een dubbele factuur
+onmogelijk maakt*.
+
 Twee dingen die bewust zo zijn:
 
 **Het adres van de Worker hoeft niet in de code.** Laat `CONFIG.portaalUrl` in

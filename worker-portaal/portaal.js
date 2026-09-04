@@ -67,7 +67,14 @@ const R = {
   onderweg:   'Onderweg sinds',
   annulDoor:  'Geannuleerd door klant',
   annulOp:    'Geannuleerd op',
-  annulReden: 'Reden annulering'
+  annulReden: 'Reden annulering',
+  /* De bedragen zoals Airtable ze uitrekent, plus het handmatige bedrag dat
+     bij internationaal transport op offerte wordt ingevuld. Deze drie gaan
+     mee naar de conceptfactuur. */
+  btw:        'BTW bedrag',
+  totaalIncl: 'Automatisch totaal incl. BTW',
+  totaalHand: 'Totaal excl. BTW',
+  facturen:   'Facturen'
 };
 
 const O = {
@@ -85,7 +92,8 @@ const O = {
   km:         'Kilometers',
   stops:      'Extra stops',
   tijdvak:    'Tijdvak',
-  ritten:     'Ritten'
+  ritten:     'Ritten',
+  aanvragen:  'Website-aanvragen'
 };
 
 const A = {
@@ -114,6 +122,21 @@ const A = {
   opdracht:   'Opdracht',
   omzetten:   'Omzetten naar opdracht',
   binnen:     'Binnengekomen'
+};
+
+/* De facturen. Alleen de velden die het portaal zelf schrijft bij het maken van
+   een conceptfactuur; de rest van de tabel rekent zichzelf uit. */
+const FA = {
+  factuur:   'Factuur',
+  rit:       'Rit',
+  klant:     'Klant',
+  opdracht:  'Opdracht',
+  datum:     'Factuurdatum',
+  subtotaal: 'Subtotaal',
+  btw:       'BTW',
+  totaal:    'Totaal',
+  status:    'Status',
+  telaat:    'Dagen te laat'
 };
 
 /* De dagstaat: de kilometerteller aan het begin en het eind van de dag. Wat
@@ -208,6 +231,19 @@ const CHAUFFEUR_MAG = new Set([
 ]);
 
 export default {
+  /* Elke ochtend, zonder dat het een Airtable-run kost.
+
+     Dit deed de automatisering Facturen te laat markeren, elke maandagochtend.
+     Wekelijks, want dagelijks kostte dertig van je honderd runs per maand
+     terwijl er meestal niets te doen was. Hier kost het niets, dus kan het
+     weer dagelijks — en dan is een factuur hoogstens een dag te laat voordat
+     je het ziet, in plaats van een week.
+
+     Het cron-schema staat in wrangler.toml en loopt op UTC. */
+  async scheduled(gebeurtenis, env, ctx) {
+    ctx.waitUntil(markeerTeLateFacturen(env));
+  },
+
   async fetch(verzoek, env) {
     const origin = verzoek.headers.get('Origin') || '';
     const toegestaan = magVanOrigin(origin, env.TOEGESTANE_ORIGIN);
@@ -445,6 +481,8 @@ async function zetStatus(env, body, origin) {
     if (!nu.onderweg) { velden[R.onderweg] = new Date().toISOString(); }
   }
 
+  if (body.status === 'Uitgevoerd') { await zorgVoorFactuur(env, id); }
+
   const rit = naarRit(await patch(env, env.AIRTABLE_RITTEN, id, velden));
   return antwoord(200, { ok: true, rit }, origin, true);
 }
@@ -473,6 +511,8 @@ async function zetHandtekening(env, body, origin) {
     return antwoord(413, { fout: 'Handtekening te groot' }, origin, true);
   }
 
+  await zorgVoorFactuur(env, id);
+
   const rit = naarRit(await patch(env, env.AIRTABLE_RITTEN, id, {
     [R.getekendD]: naam,
     [R.getekendO]: new Date().toISOString(),
@@ -500,16 +540,93 @@ async function zetNotitie(env, body, origin) {
   return antwoord(200, { ok: true, rit }, origin, true);
 }
 
-/* Aanvraag accepteren. We zetten alleen het vinkje om; de automatisering in
-   Airtable maakt de opdracht aan en zet de status. Dat werk hier overdoen
-   zou twee plekken opleveren die hetzelfde doen en uiteen kunnen lopen. */
+/* Aanvraag accepteren: de opdracht wordt hier gemaakt, niet in Airtable.
+
+   Dat was eerst andersom — het portaal zette alleen het vinkje om en een
+   automatisering deed de rest. Dat kostte een automatiseringsrun per aanvraag,
+   en op het gratis plan heb je er honderd per maand. Werk dat geen mail
+   verstuurt hoort hier thuis: de tussenlaag kent geen limiet.
+
+   De volgorde is met opzet. Eerst de opdracht maken (die vult meteen het veld
+   Opdracht op de aanvraag, want een koppeling werkt twee kanten op), pas
+   daarna het vinkje omzetten. Staat de oude automatisering nog aan, dan ziet
+   die bij het vinkje al een gevulde Opdracht en slaat hij over. Andersom zou
+   je twee opdrachten krijgen voor dezelfde aanvraag. */
 async function accepteerAanvraag(env, body, origin) {
   const id = recordId(body.id);
   if (!id) { return antwoord(400, { fout: 'Ongeldig aanvraag-id' }, origin, true); }
-  const aanvraag = naarAanvraag(
-    await patch(env, env.AIRTABLE_AANVRAGEN, id, { [A.omzetten]: true })
-  );
+
+  const ruw = await airtable(env, `${env.AIRTABLE_AANVRAGEN}/${id}`);
+  const f = ruw.fields || {};
+
+  /* Al omgezet? Dan is er niets te doen. Twee keer op Aannemen drukken —
+     omdat het eerste antwoord onderweg bleef hangen, bijvoorbeeld — mag geen
+     tweede opdracht opleveren. */
+  if (koppelIds(f[A.opdracht]).length) {
+    return antwoord(200, { ok: true, aanvraag: naarAanvraag(ruw) }, origin, true);
+  }
+
+  await maak(env, env.AIRTABLE_OPDRACHTEN, opdrachtUitAanvraag(id, f));
+
+  const aanvraag = naarAanvraag(await patch(env, env.AIRTABLE_AANVRAGEN, id, {
+    [A.status]:   'Omgezet naar opdracht',
+    [A.omzetten]: true
+  }));
   return antwoord(200, { ok: true, aanvraag }, origin, true);
+}
+
+/* De vertaling van aanvraag naar opdracht, veld voor veld zoals de
+   automatisering hem deed. Alles waar een prijs aan hangt gaat mee: de
+   geschatte afstand, de extra stops en het tijdvak. Blijft daar iets van
+   achter, dan factureer je minder dan je geoffreerd hebt. */
+function opdrachtUitAanvraag(aanvraagId, f) {
+  const velden = {
+    [O.opdracht]:  f[A.aanvraag] || '',
+    [O.ophaal]:    f[A.ophaal] || '',
+    [O.aflever]:   f[A.aflever] || '',
+    [O.status]:    'Nieuw',
+    [O.aanvragen]: [aanvraagId],
+    [O.opmerking]: aanvraagInHetKort(f)
+  };
+  /* Een keuzeveld met een verzonnen naam maakt in Airtable een nieuwe keuze
+     aan. Alleen doorgeven wat er werkelijk staat. */
+  const dienst = keuze(f[A.dienst]);
+  if (dienst) { velden[O.type] = dienst; }
+  const tijdvak = keuze(f[A.tijdvak]);
+  if (tijdvak) { velden[O.tijdvak] = tijdvak; }
+
+  if (f[A.datum]) { velden[O.datum] = f[A.datum]; }
+  if (f[A.tijd])  { velden[O.tijd] = String(f[A.tijd]); }
+
+  /* Extra stops is op de aanvraag vrije tekst (de bezoeker typt het in) en op
+     de opdracht een getal. Onzin laten we liever weg dan er nul van maken. */
+  const stops = heelGetal(f[A.stops]);
+  if (stops !== null) { velden[O.stops] = stops; }
+  const km = kilometers(f[A.afstand]);
+  if (km !== null) { velden[O.km] = km; }
+
+  return velden;
+}
+
+/* Wat de bezoeker over de zending invulde, in één blok onder de opdracht.
+   Staat er als tekst en niet als losse velden omdat je het onderweg leest en
+   er verder niets mee rekent. */
+function aanvraagInHetKort(f) {
+  const regel = (kop, waarde) => `${kop}: ${waarde === undefined || waarde === null ? '' : waarde}`;
+  return [
+    regel('Bedrijf', f[A.bedrijf]),
+    regel('Zending', f[A.omschrijving]),
+    regel('Colli', f[A.colli]),
+    regel('Gewicht', f[A.gewicht]),
+    regel('Afmetingen', f[A.afmetingen]),
+    regel('Extra stops', f[A.stops]),
+    regel('Tijdvak', keuze(f[A.tijdvak])),
+    '',
+    'Opmerkingen van de klant:',
+    String(f[A.opmerking] || ''),
+    '',
+    `Contact: ${f[A.contact] || ''} · ${f[A.telefoon] || ''} · ${f[A.email] || ''}`
+  ].join('\n');
 }
 
 async function wijsAanvraagAf(env, body, origin) {
@@ -851,6 +968,101 @@ async function zetRitKm(env, body, origin) {
 
   const rit = naarRit(await patch(env, env.AIRTABLE_RITTEN, id, velden));
   return antwoord(200, { ok: true, rit }, origin, true);
+}
+
+/* ------------------------------------------------- facturen die te laat zijn
+
+   Dagen te laat is een formule in Airtable: nul zolang er niets openstaat of
+   de vervaldatum nog niet geweest is. Een gecrediteerde of betaalde factuur
+   valt er dus vanzelf buiten, en een factuur die al op Te laat staat wordt
+   overgeslagen. Precies dezelfde voorwaarde als de automatisering had.
+
+   Wat hier bewust niet gebeurt: een mail sturen. De betalingsherinnering
+   blijft in Airtable, want mail versturen kan de tussenlaag niet. */
+async function markeerTeLateFacturen(env) {
+  try {
+    const zoek = new URLSearchParams();
+    zoek.set('filterByFormula', `AND({${FA.telaat}} > 0, {${FA.status}} != 'Te laat')`);
+    zoek.set('pageSize', '100');
+    const data = await airtable(env, `${env.AIRTABLE_FACTUREN}?${zoek}`);
+    const records = data.records || [];
+    if (!records.length) { return 0; }
+
+    /* Airtable neemt er hoogstens tien tegelijk aan. */
+    for (const brok of inBrokken(records, 10)) {
+      await airtable(env, env.AIRTABLE_FACTUREN, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          records: brok.map((r) => ({ id: r.id, fields: { [FA.status]: 'Te laat' } }))
+        })
+      });
+    }
+    console.log(`Te laat gezet: ${records.length} factuur/facturen`);
+    return records.length;
+  } catch (fout) {
+    console.log('Te late facturen markeren mislukt: ' + fout.message);
+    return 0;
+  }
+}
+
+/* ---------------------------------------------------- de conceptfactuur
+
+   Zodra een rit op Uitgevoerd gaat hoort er een conceptfactuur te staan. Dat
+   deed een automatisering in Airtable; nu doet de tussenlaag het, want het is
+   puur rekenwerk zonder mail en dat scheelt een run per rit.
+
+   De volgorde is het hele punt. De factuur wordt gemaakt VOORDAT de rit op
+   Uitgevoerd gaat, om drie redenen:
+
+   1. Mislukt het maken, dan blijft de rit staan zoals hij stond. Je drukt
+      nog een keer en er is niets half gebeurd.
+   2. Staat de oude automatisering nog aan, dan ziet die op het moment dat de
+      status omgaat dat er al een factuur hangt, en slaat hij over. Andersom
+      zouden allebei tegelijk beginnen en had je twee facturen met twee
+      nummers voor dezelfde rit. Dat is precies wat een factuuradministratie
+      niet mag overkomen.
+   3. Blijft de automatisering aan, dan is hij daarmee een vangnet in plaats
+      van een dubbelganger: valt de tussenlaag om, dan maakt Airtable de
+      factuur alsnog.
+
+   Er wordt nooit een tweede factuur gemaakt bij een rit die er al een heeft. */
+async function zorgVoorFactuur(env, ritId) {
+  try {
+    const rit = await airtable(env, `${env.AIRTABLE_RITTEN}/${ritId}`);
+    const f = rit.fields || {};
+    if (koppelIds(f[R.facturen]).length) { return null; }
+
+    /* Bij internationaal transport blijft de automatische berekening leeg en
+       vul je Totaal excl. BTW zelf in. De oude automatisering nam alleen het
+       automatische veld over en liet het subtotaal dan leeg; hier valt hij
+       terug op het handmatige bedrag, zoals de btw-velden dat al deden. */
+    const subtotaal = f[R.totaal] || f[R.totaalHand] || 0;
+
+    return await maak(env, env.AIRTABLE_FACTUREN, {
+      [FA.factuur]:   'Factuur voor ' + (f[R.rit] || ''),
+      [FA.rit]:       [ritId],
+      [FA.klant]:     koppelIds(f[R.klantlink]),
+      [FA.opdracht]:  koppelIds(f[R.opdracht]),
+      [FA.datum]:     vandaagInNederland(),
+      [FA.subtotaal]: subtotaal,
+      [FA.btw]:       f[R.btw] || 0,
+      [FA.totaal]:    f[R.totaalIncl] || 0,
+      [FA.status]:    'Concept'
+    });
+  } catch (fout) {
+    /* Een factuur die niet lukt mag het aftekenen niet tegenhouden — je staat
+       op dat moment bij de klant op de stoep. Blijft de automatisering in
+       Airtable aan staan, dan vangt die het op. */
+    console.log(`Conceptfactuur bij ${ritId} niet gemaakt: ${fout.message}`);
+    return null;
+  }
+}
+
+/* De record-ids uit een koppelveld. Airtable geeft er meestal gewone strings
+   terug, maar in een enkel antwoord objecten met een id erin. */
+function koppelIds(veld) {
+  if (!Array.isArray(veld)) { return []; }
+  return veld.map((w) => (w && typeof w === 'object' ? w.id : w)).filter(Boolean);
 }
 
 /* ------------------------------------------------------ de kilometerteller

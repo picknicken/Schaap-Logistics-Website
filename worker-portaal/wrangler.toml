@@ -2,6 +2,13 @@ name = "schaap-portaal"
 main = "portaal.js"
 compatibility_date = "2026-09-02"
 
+# Elke ochtend om 05:00 UTC — 07:00 in de zomer, 06:00 in de winter. Zet de
+# facturen die over hun vervaldatum zijn op Te laat. Dat deed een Airtable-
+# automatisering elke maandag; hier kost het geen automatiseringsrun, dus kan
+# het dagelijks. De betalingsherinnering blijft in Airtable: die verstuurt mail.
+[triggers]
+crons = ["0 5 * * *"]
+
 # Geen geheimen in dit bestand — dat staat in git. Twee secrets zet je apart:
 #   wrangler secret put AIRTABLE_TOKEN     (dezelfde als bij schaap-aanvragen)
 #   wrangler secret put PORTAAL_CODE       (je eigen toegangscode)

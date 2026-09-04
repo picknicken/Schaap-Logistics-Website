@@ -257,6 +257,22 @@ creditfactuur maken, factuur versturen, betalingsherinnering, facturen te laat
 markeren, uitnodiging klantportaal, seintje bij een aanvraag, seintje bij een
 annulering.
 
+### Eén klik: zet `Facturen te laat markeren` uit
+
+Die automatisering is naar de tussenlaag verhuisd en draait daar nu elke ochtend
+in plaats van elke maandag, zonder dat het een automatiseringsrun kost. De
+Airtable-versie draait op een klok, dus die blijft afgaan tot je hem uitzet — met
+de schakelaar rechtsboven in de automatisering. Via de koppeling kan ik dat niet.
+
+Schadelijk is het niet, hij zet dezelfde status. Maar het is wel precies de
+besparing die je wilde.
+
+De twee andere verhuisde automatiseringen — *Aanvraag omzetten naar opdracht* en
+*Uitgevoerde rit factureren* — mag je juist **aan laten**. Die draaien op een
+voorwaarde die na de verhuizing nooit meer waar is, dus ze kosten niets en zijn
+een vangnet als de tussenlaag omvalt. Waarom dat veilig is staat in `AIRTABLE.md`
+onder *De volgorde die een dubbele factuur onmogelijk maakt*.
+
 ### Minder mail: gedaan, maar anders dan gepland
 
 De orderbevestiging is gepubliceerd. De twee andere ritberichten —
@@ -301,7 +317,7 @@ netjes van h1 naar h2 zonder gaten, en de foutpagina werkt weer — die verwees 
 de domeinverhuizing nog naar het oude adres en kwam daardoor zonder opmaak en met
 dode links binnen.
 
-**150 portaaltests, 140 schermtests, 43 klanttests en alle Worker-tests** draaien
-groen, waaronder controles dat de prijzen op de site kloppen met de calculator, dat een klant nooit een cent van
+**150 portaaltests, 140 schermtests, 139 portaal-Workertests, 43 klanttests en
+alle overige Worker-tests** draaien groen, waaronder controles dat de prijzen op de site kloppen met de calculator, dat een klant nooit een cent van
 jouw kosten te zien krijgt, en dat een creditnota naar de oorspronkelijke factuur
 verwijst.

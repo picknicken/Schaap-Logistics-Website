@@ -236,6 +236,60 @@ taal waarin automatiseringen geschreven zijn zelf niet kan rekenen: ze zetten er
 een minteken voor, zodat de automatisering het negatieve bedrag kan overnemen.
 Kijk er verder niet naar.
 
+### Werk dat uit Airtable is gehaald
+
+Op het gratis plan heb je **honderd automatiseringsruns per maand**. Een rit van
+aanvraag tot betaalde factuur kostte er zeven, plus negen per maand voor de twee
+maandagochtendklussen. Dat is ongeveer dertien ritten per maand — een halve week
+werk voor een koerier.
+
+Drie stukken zijn daarom naar de tussenlaag verhuisd. De regel waarop gekozen is:
+**alles wat geen mail verstuurt kan weg uit Airtable.** De Worker bij Cloudflare
+kent geen runlimiet; mail versturen kan hij niet, en dat blijft dus staan.
+
+| Wat | Waar het nu draait | Scheelt |
+| --- | --- | --- |
+| Aanvraag omzetten naar opdracht | `accepteerAanvraag` in de portaal-Worker | 1 run per aanvraag |
+| Uitgevoerde rit factureren | `zorgVoorFactuur` in de portaal-Worker | 1 run per rit |
+| Facturen te laat markeren | Cron-trigger op de portaal-Worker, elke ochtend | ~4 runs per maand |
+
+Een rit via de website kost daarmee vijf runs in plaats van zeven, een rit die je
+zelf aanmaakt drie in plaats van vier. Je zit nu rond de twintig tot dertig ritten
+per maand in plaats van dertien tot tweeëntwintig.
+
+Wat in Airtable blijft, en waarom: **Bevestigingsmail naar de aanvrager**,
+**Orderbevestiging naar de klant**, **Afleverbericht naar de klant**, **Factuur
+naar de klant sturen**, **Betalingsherinnering sturen**, **Uitnodiging
+klantportaal** en de twee seintjes aan jezelf sturen allemaal mail.
+**Creditfactuur maken** en **Geannuleerde rit doorbelasten** zouden kunnen
+verhuizen, maar draaien op een vinkje in Airtable en niet op een knop in het
+portaal; ze komen zo weinig voor dat het de moeite niet loont.
+
+#### De volgorde die een dubbele factuur onmogelijk maakt
+
+Dit is het gevaarlijke deel van deze verhuizing, en het is met opzet zo opgelost.
+
+De Worker maakt de conceptfactuur **voordat** hij de rit op *Uitgevoerd* zet, en
+de opdracht **voordat** hij het vinkje *Omzetten naar opdracht* aanzet. Daardoor:
+
+- Mislukt het aanmaken, dan verandert er verder niets. Je drukt nog een keer en
+  er is niets half gebeurd.
+- Staat de oude automatisering nog aan, dan ziet die op het moment dat de status
+  omgaat dat er al een factuur hangt, en slaat hij over. Andersom zouden allebei
+  tegelijk beginnen en had je **twee facturen met twee nummers voor dezelfde
+  rit** — precies wat een factuuradministratie niet mag overkomen.
+
+Daarom mogen *Uitgevoerde rit factureren* en *Aanvraag omzetten naar opdracht*
+gewoon aan blijven staan: ze vuren niet meer, kosten dus geen runs, en zijn een
+vangnet als de tussenlaag omvalt.
+
+**Eén automatisering moet je wel uitzetten: `Facturen te laat markeren`
+(`wflohgkVPefthWWuj`).** Die draait op een klok en niet op een voorwaarde, dus
+hij blijft elke maandag afgaan en runs opeten terwijl de Worker het werk al heeft
+gedaan. Schadelijk is het niet — hij zet dezelfde status — maar het is precies de
+besparing die je wilde. Uitzetten kan alleen met de schakelaar in Airtable; via de
+koppeling kan ik dat niet.
+
 ### De rittenregistratie: waarom `Dagstaten` een eigen tabel is
 
 De tabel `Dagstaten` (`tbldVdLrOMjjCJex9`) houdt per dag de kilometerstand bij:
