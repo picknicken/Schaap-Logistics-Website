@@ -1799,6 +1799,96 @@
     }
   }
 
+  /* Het klantportaal, vanuit de klantkaart. Dit stond eerst alleen bij een
+     opdracht onder Planning, en dat betekende dat je een klant zonder
+     openstaande opdracht nergens kon uitnodigen. Hier hoort het thuis: je zoekt
+     iemand op en regelt het meteen. */
+  function tekenPortaalblok(k) {
+    var vak = maak('div', 'portaalblok');
+
+    if (k.soort !== 'Vaste klant') {
+      vak.appendChild(maak('p', 'portaalblok__uit',
+        'Eenmalige klant. Zijn factuur gaat per mail; een portaal heeft hij ' +
+        'niet nodig.' + (k.ritten >= 4
+          ? ' Al ' + k.ritten + ' ritten \u2014 dit lijkt geen eenmalige meer.' : '')));
+      var vast = maak('button', 'knop knop--rand', 'Vaste klant maken');
+      vast.type = 'button';
+      vast.addEventListener('click', function () {
+        bezig(vast, 'Omzetten\u2026', function (klaar) {
+          verstuur('klantsoort', { klantId: k.id, soort: 'Vaste klant' })
+            .then(function (data) { vervangKlant(data.klant); tekenKlanten(); })
+            .catch(function (fout) { meldApp(fout.message); klaar(false); });
+        });
+      });
+      vak.appendChild(vast);
+      return vak;
+    }
+
+    if (!k.email) {
+      vak.appendChild(maak('p', 'portaalblok__uit',
+        'Zonder e-mailadres kan deze klant geen factuur ontvangen en geen ' +
+        'uitnodiging krijgen. Vul het aan in Airtable bij de klant.'));
+      return vak;
+    }
+
+    var net = uitnodigingen[k.id];
+    if (net) {
+      vak.appendChild(maak('p', 'portaalblok__goed',
+        'Uitnodiging onderweg naar ' + net + '.'));
+    } else if (k.uitgenodigd) {
+      vak.appendChild(maak('p', 'portaalblok__uit',
+        'Uitgenodigd op ' + datumKort(String(k.uitgenodigd).slice(0, 10)) +
+        ' om ' + klok(k.uitgenodigd) + '.'));
+    } else {
+      vak.appendChild(maak('p', 'portaalblok__uit',
+        'Deze klant kan zijn eigen zendingen en facturen volgen.'));
+    }
+
+    var rij = maak('div', 'portaalblok__knoppen');
+
+    /* Per mail: het portaal zet een vinkje om en Airtable verstuurt hem.
+       Daardoor komt de toegangscode van de klant hier nooit langs. */
+    var mail = maak('button', 'knop knop--rand',
+      k.uitgenodigd || net ? 'Opnieuw uitnodigen' : 'Uitnodigen per mail');
+    mail.type = 'button';
+    mail.addEventListener('click', function () {
+      bezig(mail, 'Versturen\u2026', function (klaar) {
+        verstuur('uitnodiging', { klantId: k.id }).then(function (data) {
+          vervangKlant(data.klant);
+          uitnodigingen[k.id] = data.email || 'de klant';
+          meldApp('');
+          tekenKlanten();
+        }).catch(function (fout) { meldApp(fout.message); klaar(false); });
+      });
+    });
+    rij.appendChild(mail);
+
+    /* Zelf doorsturen, bijvoorbeeld via WhatsApp. De link wordt pas opgehaald
+       als je erop drukt: in die link zit zijn toegangscode, en die hoort niet
+       mee te liften met elk overzicht dat het portaal binnenhaalt. */
+    var deel = maak('button', 'knop knop--rand', 'Link delen');
+    deel.type = 'button';
+    deel.addEventListener('click', function () {
+      bezig(deel, 'Ophalen\u2026', function (klaar) {
+        verstuur('portaallink', { klantId: k.id })
+          .then(function (data) {
+            var tekst = 'Uw eigen overzicht bij Schaap Express Transport';
+            if (navigator.share) {
+              navigator.share({ title: tekst, text: tekst, url: data.link })
+                .catch(function () { /* afgebroken; niets aan de hand */ });
+            } else {
+              kopieer(data.link, deel);
+            }
+          })
+          .catch(function (fout) { meldApp(fout.message); klaar(false); });
+      });
+    });
+    rij.appendChild(deel);
+
+    vak.appendChild(rij);
+    return vak;
+  }
+
   function tekenKlantkaart(k) {
     var kaart = maak('div', 'klantkaart');
 
@@ -1871,6 +1961,8 @@
       knoppen.appendChild(route);
     }
     if (knoppen.childNodes.length) { kaart.appendChild(knoppen); }
+
+    kaart.appendChild(tekenPortaalblok(k));
 
     /* Facturen komen er pas bij als je erom vraagt. Ze standaard meesturen zou
        het dagoverzicht opblazen voor iets wat je een paar keer per week doet. */

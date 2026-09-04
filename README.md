@@ -260,6 +260,16 @@ als er werkelijk iets gereden is. Dat is waar een tariefafspraak op hoort te
 rusten; zie `KORTINGEN.md`. Een chauffeur ziet dit tabblad niet, en zijn
 klantenlijst wordt niet eens opgehaald.
 
+Onderaan elke klantkaart staat het **klantportaal**. Een vaste klant nodig je
+daar uit — per mail, of door de link zelf te delen via WhatsApp. Dat stond eerst
+alleen bij een opdracht onder Planning, en dat betekende dat je een klant zonder
+openstaande opdracht nergens kon uitnodigen.
+
+De link met zijn toegangscode wordt pas opgehaald als je op **Link delen** drukt.
+Die code is een wachtwoord: wie de link heeft komt binnen. Hij hoort dus niet mee
+te liften met elk overzicht dat het portaal binnenhaalt, maar alleen naar buiten
+te komen als je er met een druk op de knop om vraagt, voor één klant tegelijk.
+
 Onder elke klant zit **Facturen tonen**. Die worden pas opgehaald als je erom
 vraagt — ze standaard meesturen zou het dagoverzicht opblazen voor iets wat je
 een paar keer per week opzoekt. Per factuur staat alles wat erop staat: nummer,

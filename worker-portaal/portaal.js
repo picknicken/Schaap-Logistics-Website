@@ -211,6 +211,7 @@ const K = {
   termijn:   'Betalingstermijn (dagen)',
   nummer:    'Klantnummer',
   code:      'Portaalcode',
+  portaallink:'Portaallink',
   uitnodigen:'Uitnodiging versturen',
   uitgenodigd:'Uitnodiging verstuurd op',
   soort:     'Soort klant',
@@ -497,6 +498,7 @@ async function schakel(env, body, origin, wie) {
     case 'uitnodiging':  return await stuurUitnodiging(env, body, origin);
     case 'klantsoort':   return await zetKlantsoort(env, body, origin);
     case 'facturen':     return await haalFacturen(env, body, origin);
+    case 'portaallink':  return await haalPortaallink(env, body, origin);
     case 'leesbericht':  return await leesBericht(env, body, origin);
     case 'dagstaat':     return await zetDagstaat(env, body, origin, wie);
     case 'pushaan':      return await meldPushAan(env, body, origin, wie);
@@ -1039,6 +1041,44 @@ async function stuurUitnodiging(env, body, origin) {
 
   const klant = naarKlant(await patch(env, env.AIRTABLE_KLANTEN, id, velden));
   return antwoord(200, { ok: true, klant, email: f[K.email] }, origin, true);
+}
+
+/* De persoonlijke portaallink van één klant, om zelf door te sturen.
+
+   Waarom dit een eigen actie is en niet gewoon een veld in de klantenlijst:
+   in die link zit de toegangscode van de klant, en dat is een wachtwoord. Wie
+   de link heeft komt binnen. Die code hoort daarom niet mee te liften met elk
+   dagoverzicht dat het portaal ophaalt — hij komt alleen naar buiten als je er
+   met een druk op de knop om vraagt, voor één klant tegelijk.
+
+   Heeft de klant nog geen code, dan maken we er hier een. Airtable rekent de
+   link daarna zelf uit; zonder code blijft dat veld leeg. */
+async function haalPortaallink(env, body, origin) {
+  const id = recordId(body.klantId);
+  if (!id) { return antwoord(400, { fout: 'Ongeldig klant-id' }, origin, true); }
+
+  let record = await airtable(env, `${env.AIRTABLE_KLANTEN}/${id}`);
+  let f = record.fields || {};
+
+  if ((keuze(f[K.soort]) || 'Eenmalig') !== 'Vaste klant') {
+    return antwoord(400, {
+      fout: 'Dit is een eenmalige klant. Maak hem eerst vaste klant.'
+    }, origin, true);
+  }
+
+  if (!f[K.code]) {
+    record = await patch(env, env.AIRTABLE_KLANTEN, id, { [K.code]: verzinCode() });
+    f = record.fields || {};
+  }
+
+  const link = String(f[K.portaallink] || '');
+  if (!link) {
+    return antwoord(502, {
+      fout: 'De portaallink is nog niet klaar. Probeer het over een tel opnieuw.'
+    }, origin, true);
+  }
+
+  return antwoord(200, { ok: true, link, naam: f[K.naam] || '' }, origin, true);
 }
 
 /* ------------------------------------------------------- oude facturen

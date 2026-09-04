@@ -389,6 +389,19 @@ input{font:inherit}
   .regel__label{width:70px}
 }
 
+/* --------------------------------------------------------- klantportaal */
+.portaalblok{
+  border-top:1px solid var(--line);padding:12px 16px;
+  display:flex;flex-direction:column;gap:9px;background:var(--paper-2);
+}
+.portaalblok__uit{margin:0;font-size:.85rem;color:var(--muted);line-height:1.5}
+.portaalblok__goed{
+  margin:0;font-size:.85rem;line-height:1.5;color:#11603c;font-weight:600;
+}
+.portaalblok__knoppen{display:flex;gap:8px;flex-wrap:wrap}
+.portaalblok__knoppen .knop{flex:1 1 auto;text-align:center;font-size:.84rem}
+.portaalblok > .knop{align-self:flex-start}
+
 /* ------------------------------------------------------------- facturen */
 .klantkaart__meer{
   width:100%;border:0;border-top:1px solid var(--line);background:var(--paper-2);
