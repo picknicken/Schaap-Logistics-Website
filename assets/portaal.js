@@ -344,6 +344,79 @@
     return e;
   }
 
+  /* ------------------------------------------- de conceptfactuur
+
+     Wat er op de factuur komt te staan als de rit nu zou stoppen. Geen
+     opgeslagen document maar de factuurpagina met de gegevens van dit moment
+     erin; verandert er iets aan de rit, dan verandert hij mee.
+
+     Dezelfde velden en dezelfde volgorde als de formule Factuurlink in
+     Airtable, zodat het concept en de echte factuur niet uit elkaar kunnen
+     lopen. Wat er niet in kan zitten zijn de klantgegevens: adres, btw-nummer
+     en debiteurnummer staan in Airtable en niet op de ritkaart. Die blijven
+     dus leeg tot de factuur er echt is. */
+  var TARIEVEN = {
+    'Standaard transport':      { start: 75,  km: 1.50 },
+    'Spoedtransport':           { start: 100, km: 2.00 },
+    'Directe spoed':            { start: 125, km: 2.50 },
+    'Internationaal transport': { start: 150, km: 2.00 }
+  };
+
+  function conceptLink(rit) {
+    var t = TARIEVEN[rit.type] || TARIEVEN['Standaard transport'];
+    var km = Number(rit.km) || 0;
+    var ritprijs = Math.max(t.start + km * t.km,
+                            rit.type === 'Internationaal transport' ? 200 : 75);
+    /* De tijdtoeslag rekent hetzelfde als de site en als Airtable: een
+       percentage van de ritprijs met een ondergrens. */
+    var deel = rit.tijdvak === 'Avondrit (18:00-23:00)' ? 0.20
+             : rit.tijdvak === 'Nacht- of weekendrit' ? 0.40 : 0;
+    var bodem = deel === 0.20 ? 25 : deel === 0.40 ? 50 : 0;
+    var tijd = deel ? Math.round(Math.max(ritprijs * deel, bodem) * 100) / 100 : 0;
+    var wacht = Number(rit.wachttijd) || 0;
+    var wachttoeslag = Math.ceil(Math.max(0, wacht - 15) / 15) * 15;
+
+    var q = new URLSearchParams();
+    q.set('concept', '1');
+    /* Geen beheer=1: de balk daaronder legt uit hoe je er een PDF van maakt en
+       die in Airtable zet, en dat moet je met een concept juist niet doen. */
+    q.set('datum', vandaagIso());
+    if (rit.datum) { q.set('ritdatum', rit.datum); }
+    if (rit.klant) { q.set('klant', rit.klant); }
+    q.set('van', rit.ophaal || '');
+    q.set('naar', rit.aflever || '');
+    q.set('oms', rit.type || '');
+    q.set('km', String(km));
+    q.set('kmtarief', String(t.km));
+    q.set('start', String(t.start));
+    q.set('stops', String(Number(rit.stops) || 0));
+    q.set('stoptarief', '25');
+    q.set('tijdtoeslag', String(tijd));
+    q.set('tijdvak', rit.tijdvak || '');
+    q.set('wacht', String(wacht));
+    q.set('wachttoeslag', String(wachttoeslag));
+    q.set('toeslag', String(Number(rit.doorbereken) || 0));
+    q.set('toeslagoms', 'Doorberekende kosten (tol, parkeren, veerpont)');
+    q.set('korting', String(Number(rit.korting) || 0));
+    q.set('kortingoms', rit.kortingRe || '');
+    q.set('termijn', '14');
+    return '../factuur/?' + q.toString();
+  }
+
+  function vandaagIso() {
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') +
+           '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function conceptKnop(rit) {
+    var a = maak('a', 'knop knop--rand', 'Bekijk de conceptfactuur');
+    a.href = conceptLink(rit);
+    a.target = '_blank';
+    a.rel = 'noopener';
+    return a;
+  }
+
   /* Opent de kaartenapp met deze bestemming. Werkt op Android en iOS zonder
      sleutel of account; staat de app niet op de telefoon, dan opent de site. */
   function routeNaar(adres) {
@@ -712,6 +785,12 @@
       knoppen.appendChild(bel);
     }
 
+    /* Op elk moment van de rit kunnen zien wat de factuur wordt. Niet alleen
+       aan het eind: juist onderweg wil je weten of die wachttijd van veertig
+       minuten en die tol er goed op staan, want daarna is de rit uitgevoerd en
+       staat de factuur er. */
+    knoppen.appendChild(conceptKnop(rit));
+
     if (rit.status === 'Gepland') {
       var vertrek = maak('button', 'knop knop--blauw', 'Onderweg');
       vertrek.type = 'button';
@@ -850,6 +929,15 @@
     if (dl) { lijf.appendChild(dl); }
 
     var knoppen = maak('div', 'knoppen');
+
+    /* Ook bij een aanvraag die je nog niet hebt aangenomen: wat zou deze rit
+       opleveren? Dat wil je weten voordat je ja zegt, niet erna. De aanvraag
+       heeft dezelfde velden onder andere namen. */
+    knoppen.appendChild(conceptKnop({
+      type: a.dienst, km: a.afstand, stops: a.stops, tijdvak: a.tijdvak,
+      ophaal: a.ophaal, aflever: a.aflever, klant: a.bedrijf,
+      datum: a.datum, wachttijd: 0, doorbereken: 0, korting: 0, kortingRe: ''
+    }));
 
     if (a.telefoon) {
       var bel = maak('a', 'knop knop--rand', 'Bel ' + (a.contact || a.bedrijf || 'de klant'));

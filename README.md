@@ -348,6 +348,30 @@ Twee dingen die het **niet** is: er is geen offline modus, en pushmeldingen op
 je telefoon zitten er niet in. Dat laatste kan op een geinstalleerde webapp
 (iOS 16.4 en hoger) maar is apart werk; nu gaat het spoedseintje per mail.
 
+### De conceptfactuur, op elk moment
+
+Op elke ritkaart en op elke aanvraag staat **Bekijk de conceptfactuur**. Dat is
+geen opgeslagen document maar de factuurpagina met de gegevens van dat moment
+erin. Verandert er iets aan de rit — kilometers, een extra stop, wachttijd, tol
+die je doorberekent, een korting — dan verandert het concept mee.
+
+Waarom dat er is: onderweg wil je weten of die veertig minuten wachten en die
+tol goed op de factuur komen. Aan het eind is het te laat, want dan zet je de
+rit op Uitgevoerd en staat de factuur er.
+
+Bij een aanvraag die je nog niet hebt aangenomen doet hij hetzelfde. Zo zie je
+wat een rit oplevert voordat je ja zegt.
+
+Hij is herkenbaar geen factuur: de kop zegt *Conceptfactuur*, er staat geen
+nummer, het totaal heet niet "te betalen", er staat geen betaalverzoek onder, en
+er staat een strook boven die zegt dat de rit nog loopt. De uitleg over hoe je er
+een PDF van maakt staat er bewust niet bij — een concept hoort niet in Airtable.
+
+De berekening staat op vier plekken en moet overal gelijk zijn: `assets/site.js`
+voor de website, het veld *Automatisch totaal excl. BTW* in Airtable, de formule
+*Factuurlink* voor de echte factuur, en `conceptLink()` in `assets/portaal.js`
+voor het concept. Wijzig je een tarief, loop ze alle vier langs.
+
 ### Inloggen: eigenaar en chauffeurs
 
 Het portaal had één gedeeld wachtwoord. Nu kan iedereen een eigen code hebben,

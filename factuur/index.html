@@ -39,6 +39,11 @@ body{
   padding:24px 16px 64px;
 }
 
+/* De conceptstrook is oranje en niet blauw: dit is geen bediening maar een
+   waarschuwing dat je naar iets kijkt dat nog niet vaststaat. */
+.balk--concept{background:#fff6e5;border-color:#f0d9a8;color:#7a5a12}
+.balk--concept b{color:#5c430b}
+
 /* ---------- balk met bediening, verdwijnt bij printen ---------- */
 /* display:flex wint het anders van het hidden-attribuut, waardoor de balk
    toch bij de klant in beeld zou komen. */
@@ -179,6 +184,17 @@ tbody td.af{color:#1d7a4c}
      dezelfde pagina vanuit zijn portaal. Hij staat daarom standaard uit en
      verschijnt alleen als de adresregel ?beheer=1 bevat, wat de Factuurlink
      in Airtable meestuurt. -->
+<!-- Een conceptfactuur: de rit loopt nog, dus dit is wat de factuur wordt als
+     er verder niets meer verandert. Hij heeft nog geen nummer en er valt niets
+     te betalen. Het chauffeursportaal opent hem zo vanaf elke ritkaart. -->
+<div class="balk balk--concept" id="conceptbalk" hidden>
+  <p>
+    <b>Dit is nog geen factuur.</b> De rit loopt nog. Dit is wat er op de
+    factuur komt te staan als er niets meer verandert. Er is nog geen
+    factuurnummer en er valt nog niets te betalen.
+  </p>
+</div>
+
 <div class="balk" id="balk" hidden>
   <p>
     <b>Zo maak je hier een PDF van:</b> druk op de knop hiernaast en kies bij
@@ -190,8 +206,12 @@ tbody td.af{color:#1d7a4c}
 <script>
   /* Meteen hier, nog voor de rest van de pagina: anders flitst de balk even
      in beeld bij de klant. */
-  if (new URLSearchParams(window.location.search).get('beheer') === '1') {
+  var vroeg = new URLSearchParams(window.location.search);
+  if (vroeg.get('beheer') === '1') {
     document.getElementById('balk').hidden = false;
+  }
+  if (vroeg.get('concept') === '1') {
+    document.getElementById('conceptbalk').hidden = false;
   }
 </script>
 
@@ -266,7 +286,7 @@ tbody td.af{color:#1d7a4c}
       <dt>Totaal goederen / diensten</dt><dd id="v-subtotaal">&euro; 0,00</dd>
       <dt>Af te dragen btw 21%</dt><dd id="v-btw">&euro; 0,00</dd>
       <div class="som" style="display:contents">
-        <dt>Totaal te betalen</dt><dd id="v-totaal">&euro; 0,00</dd>
+        <dt id="v-totaallabel">Totaal te betalen</dt><dd id="v-totaal">&euro; 0,00</dd>
       </div>
     </dl>
   </div>
@@ -391,10 +411,24 @@ tbody td.af{color:#1d7a4c}
      met een creditnota. Dat is hetzelfde vel papier, maar met een eigen nummer,
      negatieve bedragen, een verwijzing naar de factuur die wordt teruggedraaid,
      en geen verzoek om te betalen — je geeft juist iets terug. */
+  /* Een concept is geen factuur: geen nummer, geen betaalverzoek, en dat moet
+     er ook op staan. Anders belandt er straks een conceptje bij een klant die
+     denkt dat hij moet betalen. */
+  var concept      = q.get('concept') === '1';
   var credit       = lees('credit', '') === '1';
   var creditVan    = lees('creditvan', '');
   var creditReden  = lees('creditreden', '');
   var creditBedrag = getal('creditbedrag', 0);
+
+  if (concept) {
+    zet('v-titel', 'Conceptfactuur');
+    zet('v-nrlabel', 'Nog geen nummer');
+    zet('v-nr', '—');
+    /* "Te betalen" hoort er niet op: er valt nog niets te betalen. */
+    zet('v-totaallabel', 'Totaal');
+    document.getElementById('v-betaalzin').hidden = true;
+    document.title = 'Conceptfactuur — Schaap Express Transport';
+  }
 
   if (credit) {
     zet('v-titel', 'Creditfactuur');
