@@ -7,7 +7,11 @@ compatibility_date = "2026-09-02"
 # automatisering elke maandag; hier kost het geen automatiseringsrun, dus kan
 # het dagelijks. De betalingsherinnering blijft in Airtable: die verstuurt mail.
 [triggers]
-crons = ["0 5 * * *"]
+crons = ["0 5 * * *", "* * * * *"]
+
+# De tweede draait elke minuut en kijkt of er een pushmelding uit moet: een
+# nieuwe aanvraag, of een rit die de klant heeft afgezegd. Dat kost geen
+# Airtable-automatiseringsrun en past ruim binnen de gratis Workers-limiet.
 
 # Geen geheimen in dit bestand — dat staat in git. Twee secrets zet je apart:
 #   wrangler secret put AIRTABLE_TOKEN     (dezelfde als bij schaap-aanvragen)
@@ -22,6 +26,13 @@ AIRTABLE_KLANTEN = "tbluCJAsTFXdB2ZeR"
 AIRTABLE_FACTUREN = "tblDA2m46PWhhiFnC"
 AIRTABLE_CHAUFFEURS = "tblT2n7aVSbnSxac2"
 AIRTABLE_DAGSTATEN = "tbldVdLrOMjjCJex9"
+AIRTABLE_PUSH = "tbl7Nt9Q4MUysnbAN"
+# De publieke pushsleutel hoort openbaar te zijn: je telefoon heeft hem nodig
+# om zich aan te melden. De private helft is een secret:
+#   wrangler secret put VAPID_PRIVE
+# Allebei maak je ze met scripts/pushsleutels.html, in je eigen browser.
+VAPID_PUBLIEK = ""
+VAPID_CONTACT = "mailto:info@schaaplogistics.nl"
 # Meerdere adressen mogen, gescheiden door een komma. Het oude
 # github.io-adres blijft er voorlopig bij staan: dat leidt naar het
 # nieuwe door, maar tijdens het verhuizen van de DNS kan een bezoeker

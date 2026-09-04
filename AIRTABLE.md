@@ -265,6 +265,25 @@ klantportaal** en de twee seintjes aan jezelf sturen allemaal mail.
 verhuizen, maar draaien op een vinkje in Airtable en niet op een knop in het
 portaal; ze komen zo weinig voor dat het de moeite niet loont.
 
+#### Wat er als pushmelding gaat in plaats van als mail
+
+Twee automatiseringen stuurden een mail naar jezelf: *Seintje bij een nieuwe
+aanvraag* en *Seintje bij een annulering door de klant*. Die kunnen uit zodra de
+proefmelding op je telefoon werkt (zie `OPENSTAAND.md`). Het werk gebeurt dan in
+de tabel `Pushmeldingen` (`tbl7Nt9Q4MUysnbAN`) en in twee stempelvelden:
+`Pushmelding verstuurd op` op `Website-aanvragen` en `Pushmelding annulering op`
+op `Ritten`.
+
+Die stempels zijn het hele mechanisme. De cron-trigger draait elke minuut en
+zoekt records waar de stempel nog leeg is; sturen en stempelen gebeurt per
+record. **Eerst stempelen, dan sturen** — andersom zou een ronde die halverwege
+omvalt bij de volgende poging hetzelfde bericht nog eens sturen, en tien keer
+hetzelfde seintje is erger dan er één missen. Wil je een bericht opnieuw
+ontvangen, maak de stempel dan leeg.
+
+Ook *Afleverbericht naar de klant* kan uit: dat staat in de tijdlijn van het
+klantportaal.
+
 #### De volgorde die een dubbele factuur onmogelijk maakt
 
 Dit is het gevaarlijke deel van deze verhuizing, en het is met opzet zo opgelost.

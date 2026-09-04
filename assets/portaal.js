@@ -48,6 +48,10 @@
      ritten van volgende week bij krijgen. */
   var meldRitten = [];
   var meldingen = [];
+  /* De publieke pushsleutel komt van de tussenlaag mee, niet uit dit bestand.
+     Zo hoef je na het instellen van de sleutels de site niet opnieuw uit te
+     rollen. Leeg betekent: pushmeldingen zijn nog niet ingesteld. */
+  var pushSleutel = '';
   var tabblad = 'ritten';
   var klantVoor = null;
   var tekentVoor = null;
@@ -262,6 +266,9 @@
     var vak = el('plakvak');
     if (vak) { vak.hidden = !(data && data.kan && data.kan.leesbericht); }
 
+    if (data && data.pushSleutel !== undefined) { pushSleutel = data.pushSleutel || ''; }
+    tekenPushvak(!!(data && data.kan && data.kan.push));
+
     /* Wie is er ingelogd. Een chauffeur ziet alleen zijn eigen ritten, dus de
        twee andere tabbladen zouden bij hem altijd leeg zijn — die halen we weg
        in plaats van ze leeg te laten staan. De tussenlaag houdt hem daar toch
@@ -375,6 +382,159 @@
     el('t-open').textContent = open;
     el('t-km').textContent = dagKilometers();
     el('t-omzet').textContent = omzet ? euro.format(omzet) : '–';
+  }
+
+  /* ------------------------------------------------------- pushmeldingen
+
+     Een melding in de lijst hieronder zie je pas als je het portaal opent. Dit
+     laat de telefoon zelf piepen, ook als de app dicht is.
+
+     Twee dingen om te weten. Op een iPhone werkt dit alleen als het portaal op
+     je beginscherm staat — in een gewoon Safari-tabblad kan het niet, dat is
+     een keuze van Apple. En toestemming vragen mag alleen op een druk op de
+     knop; daarom staat er een knop en gebeurt het niet vanzelf. */
+
+  function pushKanHier() {
+    return 'serviceWorker' in navigator &&
+           'PushManager' in window &&
+           typeof Notification !== 'undefined';
+  }
+
+  /* De sleutel komt als tekst binnen en de browser wil bytes. */
+  function sleutelNaarBytes(tekst) {
+    var recht = String(tekst).replace(/-/g, '+').replace(/_/g, '/');
+    var heel = recht + new Array((4 - (recht.length % 4)) % 4 + 1).join('=');
+    var bin = window.atob(heel);
+    var uit = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) { uit[i] = bin.charCodeAt(i); }
+    return uit;
+  }
+
+  function meldPush(tekst, isFout) {
+    var m = el('push-melding');
+    if (!m) { return; }
+    m.textContent = tekst || '';
+    m.hidden = !tekst;
+    m.className = 'melding' + (tekst && !isFout ? ' melding--goed' : '');
+  }
+
+  function huidigAbonnement() {
+    if (!pushKanHier()) { return Promise.resolve(null); }
+    return navigator.serviceWorker.getRegistration('./')
+      .then(function (reg) { return reg ? reg.pushManager.getSubscription() : null; })
+      .catch(function () { return null; });
+  }
+
+  /* Waar dit apparaat op lijkt, zodat je twee telefoons uit elkaar houdt.
+     Bewust grof: het hele browsermerk zegt niets extra's en is lang. */
+  function apparaatnaam() {
+    var ua = navigator.userAgent || '';
+    var soort = /iPhone/.test(ua) ? 'iPhone'
+      : /iPad/.test(ua) ? 'iPad'
+      : /Android/.test(ua) ? 'Android'
+      : /Macintosh/.test(ua) ? 'Mac'
+      : /Windows/.test(ua) ? 'Windows' : 'Apparaat';
+    return soort + ' — ' + datumLang(vandaag());
+  }
+
+  function tekenPushvak(mag) {
+    var vak = el('pushvak');
+    if (!vak) { return; }
+    /* Verbergen als de tussenlaag geen sleutels heeft of deze browser het niet
+       kan. Een knop die niets doet is erger dan geen knop. */
+    vak.hidden = !mag || !pushKanHier();
+    if (vak.hidden) { return; }
+
+    huidigAbonnement().then(function (ab) {
+      var aan = !!ab && Notification.permission === 'granted';
+      el('push-stand').hidden = !aan;
+      el('push-aan').hidden = aan;
+      el('push-proef').hidden = !aan;
+      el('push-uit').hidden = !aan;
+
+      if (Notification.permission === 'denied') {
+        el('push-aan').hidden = true;
+        meldPush('Je hebt meldingen voor deze pagina geweigerd. Dat zet je aan ' +
+                 'in de instellingen van je telefoon, bij Meldingen.', true);
+      }
+    });
+  }
+
+  function pushAanzetten() {
+    var knop = el('push-aan');
+    knop.disabled = true;
+    knop.textContent = 'Even wachten…';
+    meldPush('');
+
+    navigator.serviceWorker.register('./sw.js')
+      .then(function (reg) {
+        return navigator.serviceWorker.ready.then(function () {
+          return Notification.requestPermission().then(function (antwoordJa) {
+            if (antwoordJa !== 'granted') {
+              throw new Error('Zonder toestemming kan je telefoon niet piepen. ' +
+                              'Staat het portaal op je beginscherm?');
+            }
+            return reg.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: sleutelNaarBytes(pushSleutel)
+            });
+          });
+        });
+      })
+      .then(function (ab) {
+        var j = ab.toJSON();
+        return verstuur('pushaan', {
+          endpoint: j.endpoint,
+          p256dh: j.keys && j.keys.p256dh,
+          auth: j.keys && j.keys.auth,
+          apparaat: apparaatnaam()
+        });
+      })
+      .then(function () {
+        meldPush('Meldingen staan aan op dit apparaat.');
+        tekenPushvak(true);
+      })
+      .catch(function (fout) {
+        meldPush(fout.message || 'Aanzetten lukte niet.', true);
+      })
+      .then(function () {
+        knop.disabled = false;
+        knop.textContent = 'Meldingen aanzetten';
+      });
+  }
+
+  function pushUitzetten() {
+    var knop = el('push-uit');
+    knop.disabled = true;
+    meldPush('');
+    huidigAbonnement().then(function (ab) {
+      if (!ab) { return null; }
+      var endpoint = ab.endpoint;
+      /* Eerst de tussenlaag, dan pas de telefoon. Andersom zouden we het adres
+         niet meer weten om af te melden en bleef er een dode regel staan. */
+      return verstuur('pushuit', { endpoint: endpoint })
+        .then(function () { return ab.unsubscribe(); });
+    })
+      .then(function () {
+        meldPush('Meldingen staan uit op dit apparaat.');
+        tekenPushvak(true);
+      })
+      .catch(function (fout) { meldPush(fout.message, true); })
+      .then(function () { knop.disabled = false; });
+  }
+
+  if (el('push-aan')) {
+    el('push-aan').addEventListener('click', pushAanzetten);
+    el('push-uit').addEventListener('click', pushUitzetten);
+    el('push-proef').addEventListener('click', function () {
+      var knop = el('push-proef');
+      knop.disabled = true;
+      meldPush('');
+      verstuur('pushtest', {})
+        .then(function () { meldPush('Verstuurd. Hij hoort er zo te zijn.'); })
+        .catch(function (fout) { meldPush(fout.message, true); })
+        .then(function () { knop.disabled = false; });
+    });
   }
 
   /* ------------------------------------------------------------ meldingen

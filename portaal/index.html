@@ -292,6 +292,22 @@ input{font:inherit}
 }
 .teller__uitleg{margin:0;font-size:.8rem;color:var(--muted);line-height:1.5}
 
+/* --------------------------------------------------------- pushmeldingen */
+.pushvak{
+  background:var(--paper-2);border:1px solid var(--line);border-radius:12px;
+  padding:14px;margin-top:16px;display:flex;flex-direction:column;gap:10px;
+}
+.pushvak__rij{display:flex;gap:10px;align-items:flex-start}
+.pushvak__rij b{color:var(--heading);font-size:.95rem}
+.pushvak__uitleg{margin:3px 0 0;font-size:.83rem;color:var(--muted);line-height:1.5}
+.pushvak__stand{
+  margin-left:auto;flex:none;font-size:.7rem;font-weight:700;letter-spacing:.04em;
+  text-transform:uppercase;color:#11603c;background:var(--ok-vlak);
+  border:1px solid var(--ok);border-radius:999px;padding:3px 9px;
+}
+.pushvak__knoppen{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.pushvak__knoppen .knop--rand{flex:1 1 auto}
+
 /* ------------------------------------------------------------ meldingen
    Wat vroeger per mail kwam. Een melding is een regel met een stip ervoor:
    rood als het geld of een spoedrit raakt, amber als het kan wachten. Gezien
@@ -632,6 +648,27 @@ input{font:inherit}
        een rit zonder klant kun je niet factureren, en een rit die op Onderweg
        blijft staan levert nooit een factuur op. -->
   <div id="paneel-meldingen" class="wrap" hidden>
+    <!-- Een melding in dit lijstje zie je pas als je het portaal opent. Voor
+         een spoedaanvraag is dat te laat, dus kan de telefoon zelf piepen. -->
+    <div class="pushvak" id="pushvak" hidden>
+      <div class="pushvak__rij">
+        <div>
+          <b id="push-titel">Meldingen op deze telefoon</b>
+          <p class="pushvak__uitleg" id="push-uitleg">
+            Krijg een seintje zodra er een spoedaanvraag binnenkomt, ook als
+            het portaal dicht is.
+          </p>
+        </div>
+        <span class="pushvak__stand" id="push-stand" hidden>Aan</span>
+      </div>
+      <div id="push-melding" class="melding" hidden></div>
+      <div class="pushvak__knoppen">
+        <button class="knop knop--rand" id="push-aan" type="button">Meldingen aanzetten</button>
+        <button class="knop knop--stil" id="push-proef" type="button" hidden>Proefmelding</button>
+        <button class="knop knop--stil" id="push-uit" type="button" hidden>Uitzetten</button>
+      </div>
+    </div>
+
     <div id="lijst-meldingen" class="lijst"></div>
   </div>
 </div>

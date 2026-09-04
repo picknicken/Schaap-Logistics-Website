@@ -20,6 +20,11 @@
      AIRTABLE_KLANTEN     tbluCJAsTFXdB2ZeR
      AIRTABLE_FACTUREN    tblDA2m46PWhhiFnC
      AIRTABLE_DAGSTATEN   tbldVdLrOMjjCJex9
+     AIRTABLE_PUSH        tbl7Nt9Q4MUysnbAN
+     VAPID_PUBLIEK        de publieke pushsleutel (mag in git, staat in wrangler.toml)
+     VAPID_CONTACT        mailto:... — de pushdienst wil weten wie er stuurt
+   en als derde secret:
+     wrangler secret put VAPID_PRIVE        <- de private pushsleutel, als JWK
      TOEGESTANE_ORIGIN    https://schaaplogistics.nl,https://picknicken.github.io
 
    De token heeft data.records:read én data.records:write nodig. Alleen
@@ -68,6 +73,7 @@ const R = {
   annulDoor:  'Geannuleerd door klant',
   annulOp:    'Geannuleerd op',
   annulReden: 'Reden annulering',
+  pushAnnul:  'Pushmelding annulering op',
   /* De bedragen zoals Airtable ze uitrekent, plus het handmatige bedrag dat
      bij internationaal transport op offerte wordt ingevuld. Deze drie gaan
      mee naar de conceptfactuur. */
@@ -121,7 +127,22 @@ const A = {
   prijs:      'Prijsindicatie excl btw',
   opdracht:   'Opdracht',
   omzetten:   'Omzetten naar opdracht',
-  binnen:     'Binnengekomen'
+  binnen:     'Binnengekomen',
+  push:       'Pushmelding verstuurd op'
+};
+
+/* De apparaten die een pushmelding willen. Een regel per telefoon, niet per
+   persoon: hetzelfde portaal op twee telefoons is twee regels. */
+const PU = {
+  apparaat:  'Apparaat',
+  endpoint:  'Endpoint',
+  p256dh:    'Sleutel p256dh',
+  auth:      'Sleutel auth',
+  voor:      'Voor',
+  aangemeld: 'Aangemeld op',
+  gebruikt:  'Laatst gebruikt',
+  actief:    'Actief',
+  fout:      'Laatste fout'
 };
 
 /* De facturen. Alleen de velden die het portaal zelf schrijft bij het maken van
@@ -166,6 +187,10 @@ const K = {
 /* Precies de statussen die in Airtable bestaan. Een status die de telefoon
    verzint mag nooit doorgeschreven worden. */
 const RIT_STATUSSEN = ['Gepland', 'Onderweg', 'Uitgevoerd', 'Geannuleerd'];
+
+/* Precies zoals hij in wrangler.toml staat. Wijzig je hem daar, dan hier ook,
+   anders draait de dagklus als pushronde en andersom. */
+const DAGKLUS = '0 5 * * *';
 
 const MAX_BODY_MB    = 4;    /* een handtekening is een paar kB; dit is ruim */
 const MAX_HANDTEK_KB = 800;
@@ -227,7 +252,9 @@ function magVanOrigin(origin, toegestaan) {
    krijgt ze niet terug als winstcijfer. */
 const CHAUFFEUR_MAG = new Set([
   'overzicht', 'ritten', 'status', 'handtekening', 'notitie', 'ritkm', 'ritkosten',
-  'dagstaat'
+  'dagstaat',
+  /* Een chauffeur mag zich aanmelden voor meldingen over zijn eigen ritten. */
+  'pushaan', 'pushuit', 'pushtest'
 ]);
 
 export default {
@@ -241,7 +268,14 @@ export default {
 
      Het cron-schema staat in wrangler.toml en loopt op UTC. */
   async scheduled(gebeurtenis, env, ctx) {
-    ctx.waitUntil(markeerTeLateFacturen(env));
+    /* Twee schema's op één Worker. Welke er afging staat in event.cron; die
+       ene keer per dag doet het factuurwerk, de rest van de minuten kijkt
+       alleen of er iets is om naar je telefoon te sturen. */
+    if (gebeurtenis && gebeurtenis.cron === DAGKLUS) {
+      ctx.waitUntil(markeerTeLateFacturen(env));
+      return;
+    }
+    ctx.waitUntil(pushRonde(env));
   },
 
   async fetch(verzoek, env) {
@@ -405,6 +439,9 @@ async function schakel(env, body, origin, wie) {
     case 'uitnodiging':  return await stuurUitnodiging(env, body, origin);
     case 'leesbericht':  return await leesBericht(env, body, origin);
     case 'dagstaat':     return await zetDagstaat(env, body, origin, wie);
+    case 'pushaan':      return await meldPushAan(env, body, origin, wie);
+    case 'pushuit':      return await meldPushAf(env, body, origin, wie);
+    case 'pushtest':     return await proefPush(env, body, origin, wie);
     default:
       return antwoord(400, { fout: 'Onbekende actie' }, origin, true);
   }
@@ -429,7 +466,8 @@ async function haalOverzicht(env, body, origin, wie) {
     await noteerBezoek(env, wie);
     return antwoord(200, {
       ok: true, dag, ritten, aanvragen: [], opdrachten: [], klanten: [], dagstaat,
-      kan: { leesbericht: false },
+      kan: { leesbericht: false, push: pushKan(env) },
+      pushSleutel: pushKan(env) ? env.VAPID_PUBLIEK : '',
       ik: { naam: wie.naam, rol: wie.rol }
     }, origin, true);
   }
@@ -442,12 +480,13 @@ async function haalOverzicht(env, body, origin, wie) {
   ]);
   /* Het portaal moet weten of het de knop "vul het formulier in" mag laten
      zien. Alleen of er een sleutel staat, nooit de sleutel zelf. */
-  const kan = { leesbericht: !!env.ANTHROPIC_API_KEY };
+  const kan = { leesbericht: !!env.ANTHROPIC_API_KEY, push: pushKan(env) };
   const dagstaat = await dagstaatLezen(env, dag, wie, ritten);
   await noteerBezoek(env, wie);
 
   return antwoord(200, { ok: true, dag, ritten, aanvragen, opdrachten, klanten, kan,
-                         dagstaat, ik: { naam: wie.naam, rol: wie.rol } },
+                         dagstaat, pushSleutel: pushKan(env) ? env.VAPID_PUBLIEK : '',
+                         ik: { naam: wie.naam, rol: wie.rol } },
                   origin, true);
 }
 
@@ -968,6 +1007,363 @@ async function zetRitKm(env, body, origin) {
 
   const rit = naarRit(await patch(env, env.AIRTABLE_RITTEN, id, velden));
   return antwoord(200, { ok: true, rit }, origin, true);
+}
+
+/* ============================================================== PUSHMELDINGEN
+
+   Een melding in het portaal zie je pas als je het portaal opent. Voor een
+   spoedaanvraag is dat te laat — dan wil je dat je telefoon piept terwijl hij
+   in je zak zit. Dat is een pushmelding, en sinds het portaal als app op je
+   beginscherm staat kan iOS dat.
+
+   Hoe het loopt:
+
+   1. Je telefoon meldt zich aan (actie pushaan). Hij geeft een adres bij de
+      pushdienst van Apple of Google, plus twee sleutels. Dat komt in de tabel
+      Pushmeldingen.
+   2. Elke minuut kijkt een cron-trigger of er iets nieuws is: een aanvraag
+      zonder stempel, of een rit die de klant heeft afgezegd.
+   3. De tussenlaag versleutelt de tekst met de sleutels van dat apparaat en
+      geeft het pakketje af bij de pushdienst.
+
+   De versleuteling is geen keuze maar een eis: de pushdienst mag de inhoud van
+   je meldingen niet kunnen lezen, en het protocol staat platte tekst niet toe.
+   Apple en Google zien dus wel dát er iets voor jou is, niet wat.
+
+   Waarom een cron en niet een seintje vanuit de aanvraag-Worker: dan zouden
+   twee Workers een gedeeld wachtwoord moeten kennen en zou dezelfde crypto op
+   twee plekken staan. Een minuut vertraging is voor spoedwerk ruim genoeg, en
+   het stempelveld zorgt ervoor dat er nooit twee keer een seintje uitgaat.
+
+   Zonder VAPID_PUBLIEK en VAPID_PRIVE doet dit niets en verbergt het portaal
+   de knop. Sleutels maken doe je met scripts/pushsleutels.html — die maakt ze
+   in je eigen browser, zodat de private sleutel nergens langskomt. */
+
+const PUSH_TTL = 3600;          /* een uur; daarna is het nieuws toch oud */
+const PUSH_MAX = 50;            /* hoogstens zoveel apparaten in één ronde */
+
+function pushKan(env) {
+  return !!(env.VAPID_PUBLIEK && env.VAPID_PRIVE && env.AIRTABLE_PUSH);
+}
+
+/* ---------------------------------------------------------- bouwstenen */
+
+function naarB64url(ruw) {
+  const b = new Uint8Array(ruw);
+  let tekst = '';
+  for (let i = 0; i < b.length; i++) { tekst += String.fromCharCode(b[i]); }
+  return btoa(tekst).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function vanB64url(tekst) {
+  const recht = String(tekst || '').replace(/-/g, '+').replace(/_/g, '/');
+  const heel = recht + '='.repeat((4 - (recht.length % 4)) % 4);
+  const bin = atob(heel);
+  const uit = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) { uit[i] = bin.charCodeAt(i); }
+  return uit;
+}
+
+function bytes(tekst) { return new TextEncoder().encode(tekst); }
+
+function samen() {
+  const delen = Array.prototype.slice.call(arguments);
+  const lengte = delen.reduce((t, d) => t + d.length, 0);
+  const uit = new Uint8Array(lengte);
+  let waar = 0;
+  delen.forEach((d) => { uit.set(d, waar); waar += d.length; });
+  return uit;
+}
+
+/* HKDF met SHA-256, precies zoals RFC 8291 hem gebruikt. */
+async function hkdf(zout, ikm, info, lengte) {
+  const basis = await crypto.subtle.importKey('raw', ikm, 'HKDF', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'HKDF', hash: 'SHA-256', salt: zout, info }, basis, lengte * 8);
+  return new Uint8Array(bits);
+}
+
+/* ------------------------------------------------------------- VAPID
+
+   Het bewijs dat dit seintje van ons komt en niet van een vreemde. Een JWT
+   ondertekend met de private sleutel; de pushdienst controleert hem met de
+   publieke sleutel die we meesturen. */
+async function vapidKop(env, endpoint) {
+  const ruw = JSON.parse(env.VAPID_PRIVE);
+  /* Alleen de vier velden die ertoe doen. Een JWK uit een browser draagt ook
+     key_ops en ext mee, en die kunnen het importeren laten struikelen. */
+  const jwk = { kty: 'EC', crv: 'P-256', d: ruw.d, x: ruw.x, y: ruw.y };
+  const sleutel = await crypto.subtle.importKey(
+    'jwk', jwk, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
+
+  const lijf = {
+    aud: new URL(endpoint).origin,
+    exp: Math.floor(Date.now() / 1000) + 12 * 3600,
+    sub: env.VAPID_CONTACT || 'mailto:info@schaaplogistics.nl'
+  };
+  const tekst = naarB64url(bytes(JSON.stringify({ typ: 'JWT', alg: 'ES256' }))) +
+                '.' + naarB64url(bytes(JSON.stringify(lijf)));
+  /* Voor ECDSA geeft WebCrypto de handtekening al als r||s terug, en dat is
+     precies wat ES256 wil. Geen DER-gedoe. */
+  const hand = await crypto.subtle.sign(
+    { name: 'ECDSA', hash: 'SHA-256' }, sleutel, bytes(tekst));
+
+  return `vapid t=${tekst}.${naarB64url(hand)}, k=${env.VAPID_PUBLIEK}`;
+}
+
+/* --------------------------------------------------- de tekst versleutelen
+
+   RFC 8291, aes128gcm. Kort samengevat: we maken een wegwerpsleutelpaar, doen
+   daarmee een sleuteluitwisseling met de publieke sleutel van de telefoon, en
+   leiden daar een versleutelsleutel uit af. Alleen die telefoon kan hem weer
+   openen — de pushdienst geeft een gesloten envelop door. */
+async function versleutelPush(p256dh, authGeheim, tekst) {
+  const telefoonPub = vanB64url(p256dh);
+  const auth = vanB64url(authGeheim);
+
+  const eigen = await crypto.subtle.generateKey(
+    { name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']);
+  const eigenPub = new Uint8Array(await crypto.subtle.exportKey('raw', eigen.publicKey));
+
+  const anderePub = await crypto.subtle.importKey(
+    'raw', telefoonPub, { name: 'ECDH', namedCurve: 'P-256' }, false, []);
+  const gedeeld = new Uint8Array(await crypto.subtle.deriveBits(
+    { name: 'ECDH', public: anderePub }, eigen.privateKey, 256));
+
+  /* De volgorde in dit blokje is voorgeschreven en telt: eerst de sleutel van
+     de telefoon, dan die van ons. Omgedraaid komt er een sleutel uit die
+     nergens op past en faalt het pas op het toestel. */
+  const sleutelInfo = samen(bytes('WebPush: info'), new Uint8Array([0]),
+                            telefoonPub, eigenPub);
+  const ikm = await hkdf(auth, gedeeld, sleutelInfo, 32);
+
+  const zout = crypto.getRandomValues(new Uint8Array(16));
+  const cek = await hkdf(zout, ikm,
+    samen(bytes('Content-Encoding: aes128gcm'), new Uint8Array([0])), 16);
+  const nonce = await hkdf(zout, ikm,
+    samen(bytes('Content-Encoding: nonce'), new Uint8Array([0])), 12);
+
+  /* De 0x02 erachter is het teken dat dit het laatste blok is. */
+  const plat = samen(bytes(tekst), new Uint8Array([2]));
+  const aes = await crypto.subtle.importKey('raw', cek, { name: 'AES-GCM' }, false, ['encrypt']);
+  const gesloten = new Uint8Array(await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv: nonce }, aes, plat));
+
+  const blokmaat = new Uint8Array(4);
+  new DataView(blokmaat.buffer).setUint32(0, 4096);
+  return samen(zout, blokmaat, new Uint8Array([eigenPub.length]), eigenPub, gesloten);
+}
+
+/* ------------------------------------------------------------- versturen */
+
+async function stuurNaarApparaat(env, record, bericht) {
+  const f = record.fields || {};
+  const endpoint = String(f[PU.endpoint] || '').trim();
+  if (!endpoint || !f[PU.p256dh] || !f[PU.auth]) { return false; }
+
+  const lijf = await versleutelPush(f[PU.p256dh], f[PU.auth], JSON.stringify(bericht));
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Authorization': await vapidKop(env, endpoint),
+      'Content-Encoding': 'aes128gcm',
+      'Content-Type': 'application/octet-stream',
+      'TTL': String(PUSH_TTL),
+      'Urgency': bericht.spoed ? 'high' : 'normal'
+    },
+    body: lijf
+  });
+
+  if (res.ok) {
+    await patchStil(env, env.AIRTABLE_PUSH, record.id,
+      { [PU.gebruikt]: new Date().toISOString(), [PU.fout]: '' });
+    return true;
+  }
+
+  /* 404 en 410 betekenen: dit abonnement bestaat niet meer. Nieuwe telefoon,
+     app verwijderd, of meldingen uitgezet. Dan zetten we het apparaat uit in
+     plaats van het elke minuut opnieuw te proberen. */
+  const uitleg = `${res.status} ${(await res.text()).slice(0, 120)}`;
+  const weg = res.status === 404 || res.status === 410;
+  await patchStil(env, env.AIRTABLE_PUSH, record.id,
+    weg ? { [PU.actief]: false, [PU.fout]: uitleg } : { [PU.fout]: uitleg });
+  console.log(`Push naar ${record.id} mislukt: ${uitleg}`);
+  return false;
+}
+
+/* Een aantekening mag nooit de reden zijn dat er niets gebeurt. */
+async function patchStil(env, tabel, id, velden) {
+  try { await patch(env, tabel, id, velden); }
+  catch (fout) { console.log('Aantekening mislukt: ' + fout.message); }
+}
+
+async function apparatenVoor(env, namen) {
+  const zoek = new URLSearchParams();
+  zoek.set('filterByFormula', `{${PU.actief}}`);
+  zoek.set('pageSize', String(PUSH_MAX));
+  const data = await airtable(env, `${env.AIRTABLE_PUSH}?${zoek}`);
+  /* Op de naam zeven doen we hier en niet in de formule: die naam is vrije
+     tekst en hoort niet in een formule geplakt te worden. */
+  return (data.records || []).filter(
+    (r) => namen.indexOf(String((r.fields || {})[PU.voor] || '')) >= 0);
+}
+
+async function stuurPush(env, namen, bericht) {
+  if (!pushKan(env)) { return 0; }
+  let gelukt = 0;
+  const apparaten = await apparatenVoor(env, namen);
+  for (const apparaat of apparaten) {
+    try {
+      if (await stuurNaarApparaat(env, apparaat, bericht)) { gelukt++; }
+    } catch (fout) {
+      console.log('Push mislukt: ' + fout.message);
+    }
+  }
+  return gelukt;
+}
+
+/* ------------------------------------------------------------ de ronde
+
+   Elke minuut. Kijkt of er iets is gebeurd waar nog geen seintje over uit is,
+   stuurt dat, en zet daarna de stempel. Die stempel is het hele geheim: hij
+   maakt de ronde herhaalbaar zonder dat je twee keer hetzelfde bericht krijgt. */
+async function pushRonde(env) {
+  if (!pushKan(env)) { return; }
+  try {
+    await Promise.all([nieuweAanvragenMelden(env), afzeggingenMelden(env)]);
+  } catch (fout) {
+    console.log('Pushronde mislukt: ' + fout.message);
+  }
+}
+
+async function nieuweAanvragenMelden(env) {
+  const zoek = new URLSearchParams();
+  zoek.set('filterByFormula',
+    `AND({${A.status}} = 'Nieuw', {${A.push}} = BLANK())`);
+  zoek.set('pageSize', '10');
+  const data = await airtable(env, `${env.AIRTABLE_AANVRAGEN}?${zoek}`);
+
+  for (const record of (data.records || [])) {
+    const f = record.fields || {};
+    const dienst = keuze(f[A.dienst]) || 'Transport';
+    const spoed = /spoed|direct/i.test(dienst);
+    /* Eerst stempelen, dan sturen. Andersom zou een ronde die halverwege
+       omvalt bij de volgende poging hetzelfde bericht nog eens sturen. Een
+       gemist seintje is vervelend; er tien achter elkaar krijgen is erger. */
+    await patch(env, env.AIRTABLE_AANVRAGEN, record.id,
+      { [A.push]: new Date().toISOString() });
+    await stuurPush(env, ['Eigenaar'], {
+      titel: (spoed ? 'SPOED: ' : '') + 'Nieuwe aanvraag',
+      tekst: `${f[A.bedrijf] || f[A.contact] || 'Onbekend'} — ` +
+             `${f[A.ophaal] || f[A.ophaalpc] || '?'} naar ${f[A.aflever] || f[A.afleverpc] || '?'}`,
+      tag: 'aanvraag-' + record.id,
+      spoed
+    });
+  }
+}
+
+async function afzeggingenMelden(env) {
+  const zoek = new URLSearchParams();
+  zoek.set('filterByFormula',
+    `AND({${R.annulDoor}}, {${R.pushAnnul}} = BLANK())`);
+  zoek.set('pageSize', '10');
+  const data = await airtable(env, `${env.AIRTABLE_RITTEN}?${zoek}`);
+
+  for (const record of (data.records || [])) {
+    const f = record.fields || {};
+    await patch(env, env.AIRTABLE_RITTEN, record.id,
+      { [R.pushAnnul]: new Date().toISOString() });
+    /* Ook naar de chauffeur die hem zou rijden: die moet het weten voordat hij
+       in de auto stapt. */
+    const namen = ['Eigenaar'];
+    const chauffeur = String(f[R.chauffeur] || '').trim();
+    if (chauffeur && namen.indexOf(chauffeur) < 0) { namen.push(chauffeur); }
+
+    await stuurPush(env, namen, {
+      titel: 'Klant heeft afgezegd',
+      tekst: `${eerste(f[R.klant]) || f[R.rit] || 'Rit'} op ${f[R.datum] || ''}` +
+             (f[R.annulReden] ? ' — ' + String(f[R.annulReden]).slice(0, 80) : ''),
+      tag: 'afzegging-' + record.id,
+      spoed: true
+    });
+  }
+}
+
+/* --------------------------------------------------------- de acties */
+
+async function meldPushAan(env, body, origin, wie) {
+  if (!pushKan(env)) {
+    return antwoord(501, { fout: 'Pushmeldingen zijn nog niet ingesteld.' }, origin, true);
+  }
+  const endpoint = String(body.endpoint || '').trim();
+  const p256dh = String(body.p256dh || '').trim();
+  const auth = String(body.auth || '').trim();
+  if (!/^https:\/\/[^\s]+$/.test(endpoint) || !p256dh || !auth) {
+    return antwoord(400, { fout: 'Onvolledige aanmelding' }, origin, true);
+  }
+
+  const velden = {
+    [PU.apparaat]:  String(body.apparaat || 'Onbekend apparaat').trim().slice(0, 80),
+    [PU.endpoint]:  endpoint,
+    [PU.p256dh]:    p256dh.slice(0, 200),
+    [PU.auth]:      auth.slice(0, 100),
+    [PU.voor]:      dagstaatNaam(wie),
+    [PU.aangemeld]: new Date().toISOString(),
+    [PU.actief]:    true,
+    [PU.fout]:      ''
+  };
+
+  /* Hetzelfde apparaat mag maar één regel hebben. Meldt hij zich opnieuw aan
+     — na een herinstallatie bijvoorbeeld — dan werken we de bestaande bij. */
+  const bestaand = await zoekApparaat(env, endpoint);
+  const record = bestaand
+    ? await patch(env, env.AIRTABLE_PUSH, bestaand.id, velden)
+    : await maak(env, env.AIRTABLE_PUSH, velden);
+
+  return antwoord(200, { ok: true, aangemeld: true, id: record.id }, origin, true);
+}
+
+async function meldPushAf(env, body, origin, wie) {
+  if (!pushKan(env)) {
+    return antwoord(501, { fout: 'Pushmeldingen zijn nog niet ingesteld.' }, origin, true);
+  }
+  const endpoint = String(body.endpoint || '').trim();
+  if (!endpoint) { return antwoord(400, { fout: 'Geen apparaat opgegeven' }, origin, true); }
+
+  const bestaand = await zoekApparaat(env, endpoint);
+  if (bestaand) {
+    await patch(env, env.AIRTABLE_PUSH, bestaand.id,
+      { [PU.actief]: false, [PU.fout]: 'Zelf uitgezet in het portaal' });
+  }
+  return antwoord(200, { ok: true, aangemeld: false }, origin, true);
+}
+
+/* Een proefmelding, zodat je op het moment van aanzetten ziet of het werkt en
+   niet pas bij de eerste spoedaanvraag om half elf 's avonds. */
+async function proefPush(env, body, origin, wie) {
+  if (!pushKan(env)) {
+    return antwoord(501, { fout: 'Pushmeldingen zijn nog niet ingesteld.' }, origin, true);
+  }
+  const gelukt = await stuurPush(env, [dagstaatNaam(wie)], {
+    titel: 'Proefmelding',
+    tekst: 'Als je dit ziet werken de meldingen op dit apparaat.',
+    tag: 'proef'
+  });
+  return gelukt
+    ? antwoord(200, { ok: true, verstuurd: gelukt }, origin, true)
+    : antwoord(502, { fout: 'De melding kwam niet aan. Staat dit apparaat aan?' },
+               origin, true);
+}
+
+async function zoekApparaat(env, endpoint) {
+  const zoek = new URLSearchParams();
+  zoek.set('pageSize', String(PUSH_MAX));
+  const data = await airtable(env, `${env.AIRTABLE_PUSH}?${zoek}`);
+  /* Het endpoint is een lange URL met tekens die je niet in een Airtable-
+     formule wilt plakken. Zelf zeven is hier veiliger en gaat over een
+     handvol regels. */
+  return (data.records || []).find(
+    (r) => String((r.fields || {})[PU.endpoint] || '').trim() === endpoint) || null;
 }
 
 /* ------------------------------------------------- facturen die te laat zijn

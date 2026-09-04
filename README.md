@@ -257,9 +257,22 @@ de dag waarop die rit staat. Wat je gezien hebt blijft staan maar wordt gedimd,
 en dat onthoudt je telefoon zelf — het staat niet in Airtable, want het is niets
 waard voor iemand anders.
 
-Let op wat dit níét is: **een melding piept niet.** Een mail komt binnen op je
-telefoon, een melding zie je pas als je het portaal opent. Voor een spoedaanvraag
-is dat een verschil dat geld kost. Zie `OPENSTAAND.md`.
+Bovenaan het tabblad staat **Meldingen op deze telefoon**. Daarmee piept je
+telefoon zelf bij een spoedaanvraag of een afzegging, ook als het portaal dicht
+is. Op een iPhone werkt dat alleen als het portaal op je beginscherm staat — in
+een Safari-tabblad kan het niet, dat is een keuze van Apple.
+
+Hoe het loopt: je telefoon meldt zich aan bij de pushdienst van Apple of Google
+en geeft een adres plus twee sleutels; die komen in de tabel `Pushmeldingen`.
+Elke minuut kijkt een cron-trigger op de Worker of er een aanvraag zonder
+stempel is of een rit die de klant heeft afgezegd, versleutelt de tekst met de
+sleutels van dat toestel en geeft het pakketje af. De pushdienst ziet dus wel
+dát er iets voor je is, niet wat — dat is geen extraatje maar een eis van het
+protocol.
+
+Sleutels maak je eenmalig met `scripts/pushsleutels.html`, in je eigen browser.
+De publieke helft staat in `wrangler.toml`, de private is een Cloudflare-secret.
+Zonder die twee blijft het hele blok verborgen.
 
 Een chauffeur ziet dit tabblad niet: meldingen gaan over aanvragen, klanten en
 facturen, en dat is jouw bedrijfsvoering.

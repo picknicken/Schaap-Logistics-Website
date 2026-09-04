@@ -285,34 +285,54 @@ Ook aan laten, en dat zijn er twee die je waarschijnlijk niet bedoelde:
   krijgt. Zet je hem uit, dan komt niemand er meer in. Hij gaat één keer per
   klant, dus hij kost je vrijwel niets.
 
-### Twee dingen om over te beslissen
+### Pushmeldingen: drie stappen, eenmalig
 
-**1. De aanvrager hoort nu niets meer.** `Bevestigingsmail naar de aanvrager` is
-de mail die zegt "we hebben uw aanvraag ontvangen". Iemand die het formulier op
-je site invult is nog geen klant en heeft dus **geen portaal**; die mail kan
-daarom niet verhuizen. Zet je hem uit, dan vult iemand het formulier in en hoort
-daarna niets tot jij de rit inplant.
+Gebouwd. Je telefoon piept nu bij een spoedaanvraag en bij een klant die
+afzegt, ook als het portaal dicht is. Elke minuut kijkt de tussenlaag of er
+iets nieuws is; een stempelveld zorgt dat je nooit twee keer hetzelfde bericht
+krijgt.
 
-Ik heb hem daarom **aan laten staan** — dat maakt vier mails in plaats van drie.
-Wil je toch naar drie, dan zijn dit je opties, in volgorde van wat ik zou doen:
+1. **Maak de sleutels.** Open `scripts/pushsleutels.html` in je browser en druk
+   op *Sleutels maken*. Dat gebeurt in je eigen browser: er wordt niets
+   verstuurd of opgeslagen, ook niet naar mij.
+2. **`VAPID_PUBLIEK`** zet je in `worker-portaal/wrangler.toml` tussen de lege
+   aanhalingstekens. Die mag openbaar zijn — je telefoon heeft hem nodig om
+   zich aan te melden. Push naar `main` en de Worker rolt zichzelf uit.
+3. **`VAPID_PRIVE`** zet je als **Secret** in Cloudflare, bij
+   *schaap-portaal → Settings → Variables and Secrets*. Die stuur je nooit
+   door — niet naar mij, niet via WhatsApp, niet in een document.
 
-1. Aan laten. Hij kost je één run per aanvraag en het is het eerste wat een
-   nieuwe klant van je bedrijf ziet.
-2. Uitzetten en de bevestiging op de website zelf sterker maken: naam, wat je
-   hebt aangevraagd, en wanneer je iets hoort. Dan is er iets, maar niets om te
-   bewaren.
-3. Uitzetten en accepteren dat er stilte is tot jij belt.
+Daarna: open het portaal **vanaf je beginscherm** (niet in een Safari-tabblad,
+dan kan iOS het niet), ga naar *Meldingen* en druk op **Meldingen aanzetten**.
+Druk meteen daarna op **Proefmelding** — piept je telefoon, dan staat het.
 
-**2. Een melding piept niet.** Dit is de echte prijs van deze verhuizing. Een
-mail komt binnen op je telefoon; een melding zie je pas als je het portaal
-opent. Voor een **spoedaanvraag** is dat het verschil tussen wel en niet op tijd
-reageren, en dus tussen wel en geen opdracht.
+**Wat ik niet heb kunnen testen.** Dat de versleuteling klopt is wél bewezen:
+een test pakt uit wat de tussenlaag verstuurt en leest de tekst terug, en het
+VAPID-bewijs wordt op handtekening gecontroleerd. Maar of Apple die melding
+daadwerkelijk op jouw scherm zet, kan hier niemand aantonen. Dat weet je pas
+met die proefmelding. Werkt hij niet, laat het me weten met wat er op het
+scherm staat.
 
-Wat dat oplost is een pushmelding vanuit het portaal — dat kan sinds het als app
-geïnstalleerd is, en het kost geen abonnement. Het is wel een bouwklus van een
-paar uur. **Tot die er is zou ik `Seintje bij een nieuwe aanvraag` aan laten
-staan** en alleen de andere drie uitzetten. Eén run per aanvraag is een goedkope
-verzekering tegen een gemiste spoedrit.
+Zodra de proefmelding werkt kun je `Seintje bij een nieuwe aanvraag` en
+`Seintje bij een annulering door de klant` uitzetten in Airtable. Niet eerder:
+zolang push niet bewezen werkt is die mail je enige seintje.
+
+### De aanvrager houdt zijn mail
+
+Afgesproken: `Bevestigingsmail naar de aanvrager` blijft aan. Iemand die het
+formulier invult is nog geen klant en heeft dus geen portaal — die mail kan
+nergens anders heen, en het is het eerste wat een nieuwe klant van je bedrijf
+ziet. Dat maakt vier mails naar buiten in plaats van drie:
+
+| Mail | Naar wie | Wanneer |
+| --- | --- | --- |
+| Ontvangstbevestiging | de aanvrager | formulier ingevuld |
+| Orderbevestiging | de klant | jij plant de rit in |
+| Factuur | de klant | jij zet het vinkje om |
+| Betalingsherinnering | de klant | maandagochtend, als er te lang openstaat |
+
+Plus de uitnodiging voor het klantportaal, één keer per klant. Die kan niet
+weg: hij ís de toegang tot het portaal.
 
 **De kilometerstand staat in het portaal.** Onder de vier getallen van de dag in
 de Ritten-tab zit een blok *Kilometerstand*: beginstand bij vertrek, eindstand bij
@@ -343,7 +363,7 @@ netjes van h1 naar h2 zonder gaten, en de foutpagina werkt weer — die verwees 
 de domeinverhuizing nog naar het oude adres en kwam daardoor zonder opmaak en met
 dode links binnen.
 
-**162 portaaltests, 140 schermtests, 139 portaal-Workertests, 43 klanttests en
+**173 portaaltests, 140 schermtests, 153 portaal-Workertests, 43 klanttests en
 alle overige Worker-tests** draaien groen, waaronder controles dat de prijzen op de site kloppen met de calculator, dat een klant nooit een cent van
 jouw kosten te zien krijgt, en dat een creditnota naar de oorspronkelijke factuur
 verwijst.

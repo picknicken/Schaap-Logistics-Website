@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Pushsleutels maken — Schaap Express Transport</title>
+<style>
+  :root{
+    --navy:#0b1526; --paper:#fff; --paper-2:#f4f6fa; --line:#dde3ec;
+    --muted:#5b6b82; --heading:#0b1526; --amber:#ffb020; --urgent:#d6010b;
+    --ok:#12a15c; --ok-vlak:#e6f5ed;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;padding:28px 18px 60px;background:var(--paper-2);color:var(--heading);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  }
+  .wrap{max-width:720px;margin:0 auto}
+  h1{font-size:1.5rem;margin:0 0 6px}
+  .sub{color:var(--muted);margin:0 0 24px}
+  .kaart{
+    background:var(--paper);border:1px solid var(--line);border-radius:14px;
+    padding:20px;margin-bottom:16px;
+  }
+  h2{font-size:1.05rem;margin:0 0 10px}
+  p{margin:0 0 12px}
+  .waarschuwing{
+    border-left:4px solid var(--urgent);background:#fff1f1;border-radius:8px;
+    padding:12px 14px;margin:0 0 18px;font-size:.92rem;
+  }
+  button{
+    font:inherit;font-weight:700;border:0;border-radius:10px;padding:13px 18px;
+    background:var(--amber);color:var(--navy);cursor:pointer;
+  }
+  button:disabled{opacity:.5;cursor:default}
+  .kopieer{
+    background:var(--paper);border:1.5px solid var(--line);color:var(--heading);
+    padding:7px 12px;font-size:.85rem;border-radius:8px;
+  }
+  label{display:block;font-weight:700;font-size:.85rem;margin:18px 0 6px}
+  .waar{font-size:.8rem;color:var(--muted);font-weight:500;margin:0 0 6px}
+  textarea{
+    width:100%;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    padding:11px;border:1px solid var(--line);border-radius:9px;background:var(--paper-2);
+    resize:vertical;word-break:break-all;
+  }
+  .goed{border-left:4px solid var(--ok);background:var(--ok-vlak);border-radius:8px;
+        padding:12px 14px;margin:16px 0 0;font-size:.92rem;color:#11603c}
+  ol{padding-left:22px}
+  li{margin-bottom:8px}
+  code{background:var(--paper-2);padding:2px 6px;border-radius:5px;font-size:.9em}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Pushsleutels maken</h1>
+<p class="sub">Voor de meldingen van het chauffeursportaal. Eenmalig.</p>
+
+<div class="waarschuwing">
+  <strong>Deze pagina maakt de sleutels in je eigen browser.</strong> Er wordt
+  niets verstuurd, opgeslagen of gedeeld — ook niet met mij. De private sleutel
+  hoort alleen in Cloudflare thuis. Stuur hem nooit door, niet via WhatsApp en
+  niet in een document.
+</div>
+
+<div class="kaart">
+  <h2>1. Maak het sleutelpaar</h2>
+  <p>Eén druk. Krijg je nieuwe sleutels, dan moeten alle telefoons zich opnieuw
+     aanmelden voor meldingen — doe dit dus één keer.</p>
+  <button id="maak" type="button">Sleutels maken</button>
+
+  <div id="uit" hidden>
+    <label for="publiek">VAPID_PUBLIEK</label>
+    <p class="waar">Mag openbaar zijn. Zet hem in
+       <code>worker-portaal/wrangler.toml</code> tussen de aanhalingstekens bij
+       <code>VAPID_PUBLIEK</code>, en commit dat gerust.</p>
+    <textarea id="publiek" rows="2" readonly></textarea>
+    <button class="kopieer" type="button" data-voor="publiek">Kopiëren</button>
+
+    <label for="prive">VAPID_PRIVE</label>
+    <p class="waar">Dit is het geheim. Cloudflare dashboard →
+       <strong>Workers &amp; Pages</strong> → <strong>schaap-portaal</strong> →
+       <strong>Settings</strong> → <strong>Variables and Secrets</strong> →
+       <strong>Add</strong> → type <strong>Secret</strong>, naam
+       <code>VAPID_PRIVE</code>, en hier de hele regel in plakken.</p>
+    <textarea id="prive" rows="4" readonly></textarea>
+    <button class="kopieer" type="button" data-voor="prive">Kopiëren</button>
+
+    <div class="goed">
+      Klaar. Sluit deze pagina daarna: de sleutels staan nergens bewaard, dus
+      na het sluiten zijn ze weg. Ben je de private sleutel kwijt, maak dan
+      gewoon een nieuw paar en meld je telefoon opnieuw aan.
+    </div>
+  </div>
+</div>
+
+<div class="kaart">
+  <h2>2. Daarna</h2>
+  <ol>
+    <li>Zet <code>VAPID_PUBLIEK</code> in <code>wrangler.toml</code> en push dat
+        naar <code>main</code>, dan rolt de Worker zichzelf uit.</li>
+    <li>Zet <code>VAPID_PRIVE</code> als secret in Cloudflare.</li>
+    <li>Open het chauffeursportaal <em>vanaf je beginscherm</em> — niet in een
+        Safari-tabblad, want dan kan iOS geen meldingen sturen.</li>
+    <li>Ga naar <strong>Meldingen</strong> en druk op
+        <strong>Meldingen aanzetten</strong>.</li>
+    <li>Druk daarna op <strong>Proefmelding</strong>. Piept je telefoon, dan
+        staat het.</li>
+  </ol>
+</div>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  function naarB64url(ruw) {
+    var b = new Uint8Array(ruw), t = '';
+    for (var i = 0; i < b.length; i++) { t += String.fromCharCode(b[i]); }
+    return btoa(t).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+
+  document.getElementById('maak').addEventListener('click', function () {
+    var knop = this;
+    knop.disabled = true;
+    knop.textContent = 'Bezig…';
+
+    /* Een P-256-sleutelpaar, precies wat het pushprotocol voorschrijft. Voor
+       het ondertekenen (ECDSA) én voor de browser, die de publieke helft als
+       ruwe bytes wil. */
+    crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true,
+                              ['sign', 'verify'])
+      .then(function (paar) {
+        return Promise.all([
+          crypto.subtle.exportKey('raw', paar.publicKey),
+          crypto.subtle.exportKey('jwk', paar.privateKey)
+        ]);
+      })
+      .then(function (delen) {
+        var jwk = delen[1];
+        document.getElementById('publiek').value = naarB64url(delen[0]);
+        /* Alleen de vier velden die de tussenlaag nodig heeft. key_ops en ext
+           laten het importeren daar struikelen. */
+        document.getElementById('prive').value = JSON.stringify({
+          kty: 'EC', crv: 'P-256', d: jwk.d, x: jwk.x, y: jwk.y
+        });
+        document.getElementById('uit').hidden = false;
+        knop.textContent = 'Nog een paar maken';
+        knop.disabled = false;
+      })
+      .catch(function (fout) {
+        knop.textContent = 'Sleutels maken';
+        knop.disabled = false;
+        alert('Dat lukte niet: ' + fout.message +
+              '\n\nDeze pagina heeft https nodig, of localhost.');
+      });
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('.kopieer'), function (k) {
+    k.addEventListener('click', function () {
+      var veld = document.getElementById(k.getAttribute('data-voor'));
+      veld.select();
+      try {
+        navigator.clipboard ? navigator.clipboard.writeText(veld.value)
+                            : document.execCommand('copy');
+        k.textContent = 'Gekopieerd';
+        setTimeout(function () { k.textContent = 'Kopiëren'; }, 1600);
+      } catch (fout) {
+        k.textContent = 'Selecteer en kopieer zelf';
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>
