@@ -257,36 +257,62 @@ creditfactuur maken, factuur versturen, betalingsherinnering, facturen te laat
 markeren, uitnodiging klantportaal, seintje bij een aanvraag, seintje bij een
 annulering.
 
-### Eén klik: zet `Facturen te laat markeren` uit
+### Vier automatiseringen uitzetten in Airtable
 
-Die automatisering is naar de tussenlaag verhuisd en draait daar nu elke ochtend
-in plaats van elke maandag, zonder dat het een automatiseringsrun kost. De
-Airtable-versie draait op een klok, dus die blijft afgaan tot je hem uitzet — met
-de schakelaar rechtsboven in de automatisering. Via de koppeling kan ik dat niet.
+Je hebt gekozen voor **drie mails naar de klant**: de orderbevestiging, de
+factuur en de betalingsherinnering. De rest is een melding in het portaal
+geworden. Uitzetten kan ik niet via de koppeling — dat is de schakelaar
+rechtsboven in elke automatisering.
 
-Schadelijk is het niet, hij zet dezelfde status. Maar het is wel precies de
-besparing die je wilde.
+| Zet uit | Waarom | Waar het nu staat |
+| --- | --- | --- |
+| `Seintje bij een nieuwe aanvraag` | Ging naar jezelf | Tabblad **Meldingen**, spoed in het rood |
+| `Seintje bij een annulering door de klant` | Ging naar jezelf | Tabblad **Meldingen** |
+| `Afleverbericht naar de klant` | Ging naar de klant | De tijdlijn in het klantportaal |
+| `Facturen te laat markeren` | Verhuisd naar de tussenlaag | Draait nu elke ochtend via de Worker |
 
-De twee andere verhuisde automatiseringen — *Aanvraag omzetten naar opdracht* en
-*Uitgevoerde rit factureren* — mag je juist **aan laten**. Die draaien op een
-voorwaarde die na de verhuizing nooit meer waar is, dus ze kosten niets en zijn
-een vangnet als de tussenlaag omvalt. Waarom dat veilig is staat in `AIRTABLE.md`
-onder *De volgorde die een dubbele factuur onmogelijk maakt*.
+**Aan laten:** `Orderbevestiging naar de klant`, `Factuur naar de klant sturen`,
+`Betalingsherinnering sturen`. Dat zijn je drie.
 
-### Minder mail: gedaan, maar anders dan gepland
+Ook aan laten, en dat zijn er twee die je waarschijnlijk niet bedoelde:
 
-De orderbevestiging is gepubliceerd. De twee andere ritberichten —
-*Bevestigingsmail naar de aanvrager* en *Afleverbericht naar de klant* — staan
-bewust aan gelaten. Je klant krijgt dus drie berichten over een rit in plaats van
-een: aanvraag binnen, rit ingepland, zending afgeleverd.
+- `Aanvraag omzetten naar opdracht` en `Uitgevoerde rit factureren` draaien op
+  een voorwaarde die na de verhuizing nooit meer waar is. Ze kosten dus niets en
+  zijn een vangnet als de tussenlaag omvalt. Waarom dat veilig is staat in
+  `AIRTABLE.md`.
+- `Uitnodiging klantportaal versturen`. **Die mail kan geen portaalmelding
+  worden**, want hij is precies het bericht waarmee een klant zijn portaal
+  krijgt. Zet je hem uit, dan komt niemand er meer in. Hij gaat één keer per
+  klant, dus hij kost je vrijwel niets.
 
-Dat is een keuze, geen fout. Meer berichten betekent meer gerustheid bij de klant
-en minder telefoontjes; het kost je alleen wat meer automatiseringsruns. Wil je er
-later toch een uit, dan staat in `BACKLOG.md` onder *Minder mail* wat je uitzet en
-waar de voorwaarden dan blijven.
+### Twee dingen om over te beslissen
 
-Let op: de voorwaarden gaan nu twee keer mee, in de ontvangstbevestiging en in de
-orderbevestiging. Dubbel is geen probleem — geen enkele is dat wel.
+**1. De aanvrager hoort nu niets meer.** `Bevestigingsmail naar de aanvrager` is
+de mail die zegt "we hebben uw aanvraag ontvangen". Iemand die het formulier op
+je site invult is nog geen klant en heeft dus **geen portaal**; die mail kan
+daarom niet verhuizen. Zet je hem uit, dan vult iemand het formulier in en hoort
+daarna niets tot jij de rit inplant.
+
+Ik heb hem daarom **aan laten staan** — dat maakt vier mails in plaats van drie.
+Wil je toch naar drie, dan zijn dit je opties, in volgorde van wat ik zou doen:
+
+1. Aan laten. Hij kost je één run per aanvraag en het is het eerste wat een
+   nieuwe klant van je bedrijf ziet.
+2. Uitzetten en de bevestiging op de website zelf sterker maken: naam, wat je
+   hebt aangevraagd, en wanneer je iets hoort. Dan is er iets, maar niets om te
+   bewaren.
+3. Uitzetten en accepteren dat er stilte is tot jij belt.
+
+**2. Een melding piept niet.** Dit is de echte prijs van deze verhuizing. Een
+mail komt binnen op je telefoon; een melding zie je pas als je het portaal
+opent. Voor een **spoedaanvraag** is dat het verschil tussen wel en niet op tijd
+reageren, en dus tussen wel en geen opdracht.
+
+Wat dat oplost is een pushmelding vanuit het portaal — dat kan sinds het als app
+geïnstalleerd is, en het kost geen abonnement. Het is wel een bouwklus van een
+paar uur. **Tot die er is zou ik `Seintje bij een nieuwe aanvraag` aan laten
+staan** en alleen de andere drie uitzetten. Eén run per aanvraag is een goedkope
+verzekering tegen een gemiste spoedrit.
 
 **De kilometerstand staat in het portaal.** Onder de vier getallen van de dag in
 de Ritten-tab zit een blok *Kilometerstand*: beginstand bij vertrek, eindstand bij
@@ -317,7 +343,7 @@ netjes van h1 naar h2 zonder gaten, en de foutpagina werkt weer — die verwees 
 de domeinverhuizing nog naar het oude adres en kwam daardoor zonder opmaak en met
 dode links binnen.
 
-**150 portaaltests, 140 schermtests, 139 portaal-Workertests, 43 klanttests en
+**162 portaaltests, 140 schermtests, 139 portaal-Workertests, 43 klanttests en
 alle overige Worker-tests** draaien groen, waaronder controles dat de prijzen op de site kloppen met de calculator, dat een klant nooit een cent van
 jouw kosten te zien krijgt, en dat een creditnota naar de oorspronkelijke factuur
 verwijst.

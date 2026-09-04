@@ -208,7 +208,7 @@ je telefoon, met knoppen om de status om te zetten, een route te starten en de
 ontvanger te laten tekenen. Nergens naartoe gelinkt vanaf de site — zet hem op je
 beginscherm als snelkoppeling.
 
-Drie tabbladen, met een teller erop zodat je in één blik ziet waar iets ligt.
+Vier tabbladen, met een teller erop zodat je in één blik ziet waar iets ligt.
 
 **Ritten** — de dag die je rijdt.
 
@@ -236,6 +236,33 @@ Drie tabbladen, met een teller erop zodat je in één blik ziet waar iets ligt.
   bijtelling. Het verschil hoort verklaarbaar te zijn; daar is het tekstvakje
   voor. Staat het op een negatief getal, dan klopt de eindstand niet of staan er
   te veel kilometers op een rit.
+
+**Meldingen** — wat vroeger per mail kwam.
+
+Twee van de berichten die Airtable verstuurde gingen naar jou en niet naar een
+klant: er is een aanvraag binnen, en een klant heeft afgezegd. Die staan hier.
+Een spoedaanvraag krijgt een rode stip en staat bovenaan.
+
+Daar staan drie waarschuwingen bij die er nooit waren en die geen mail waard
+zouden zijn, maar wel geld kosten als je ze mist:
+
+- **Rit zonder klant** — die kun je niet factureren, en dat merkte je pas bij het
+  factureren.
+- **Rit staat nog op Onderweg** terwijl de dag voorbij is — nooit afgerond, dus
+  er komt ook geen factuur.
+- **Morgen een rit zonder ophaaltijd** — de klant weet niet hoe laat je komt.
+
+Aantikken brengt je naar de plek waar je er iets mee kunt: de aanvraag zelf, of
+de dag waarop die rit staat. Wat je gezien hebt blijft staan maar wordt gedimd,
+en dat onthoudt je telefoon zelf — het staat niet in Airtable, want het is niets
+waard voor iemand anders.
+
+Let op wat dit níét is: **een melding piept niet.** Een mail komt binnen op je
+telefoon, een melding zie je pas als je het portaal opent. Voor een spoedaanvraag
+is dat een verschil dat geld kost. Zie `OPENSTAAND.md`.
+
+Een chauffeur ziet dit tabblad niet: meldingen gaan over aanvragen, klanten en
+facturen, en dat is jouw bedrijfsvoering.
 
 **Aanvragen** — wat er via de site binnenkomt en nog niet is afgehandeld.
 

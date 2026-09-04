@@ -43,6 +43,11 @@
   /* De kilometerstand van de dag die op het scherm staat. Null zolang de
      tussenlaag er nog niet van weet: dan blijft het hele blok weg. */
   var dagstaat = null;
+  /* De ritten van een ruimer venster dan de dag op het scherm, alleen voor de
+     meldingen. Bewust apart van `ritten`, anders zou de dagweergave er ineens
+     ritten van volgende week bij krijgen. */
+  var meldRitten = [];
+  var meldingen = [];
   var tabblad = 'ritten';
   var klantVoor = null;
   var tekentVoor = null;
@@ -81,6 +86,17 @@
   function klok(iso) {
     if (!iso) { return ''; }
     return new Date(iso).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+  }
+  /* Wanneer iets binnenkwam, zoals je het aan iemand zou zeggen: vandaag alleen
+     de tijd, gisteren het woord, en daarvoor de datum erbij. */
+  function moment(iso) {
+    if (!iso) { return ''; }
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) { return ''; }
+    var dagVan = alsDatum(d);
+    if (dagVan === vandaag()) { return 'Vandaag ' + klok(iso); }
+    if (dagVan === verschuif(vandaag(), -1)) { return 'Gisteren ' + klok(iso); }
+    return datumKort(dagVan) + ' ' + klok(iso);
   }
 
   /* ------------------------------------------------------- communicatie */
@@ -253,7 +269,9 @@
        lopen. */
     var ik = (data && data.ik) || null;
     var alleenRitten = !!ik && ik.rol !== 'Eigenaar';
-    ['tab-aanvragen', 'tab-planning'].forEach(function (id) {
+    /* Meldingen gaan over aanvragen, klanten en facturen — jouw bedrijfsvoering.
+       Een chauffeur heeft daar niets te zoeken, dus dat tabblad gaat mee weg. */
+    ['tab-aanvragen', 'tab-planning', 'tab-meldingen'].forEach(function (id) {
       var t = el(id);
       if (t) { t.hidden = alleenRitten; }
     });
@@ -293,6 +311,7 @@
   function tekenAlles() {
     tekenTegels();
     tekenTeller();
+    bouwMeldingen();
     tekenLijst();
     tekenAanvragen();
     tekenPlanning();
@@ -308,6 +327,7 @@
     badge('badge-ritten', open);
     badge('badge-aanvragen', aanvragen.length);
     badge('badge-planning', opdrachten.length);
+    badge('badge-meldingen', meldingen.filter(function (m) { return !m.gezien; }).length);
   }
 
   function badge(id, aantal) {
@@ -316,16 +336,22 @@
     b.hidden = !aantal;
   }
 
+  var TABBLADEN = ['ritten', 'aanvragen', 'planning', 'meldingen'];
+
   function kiesTab(naam) {
     tabblad = naam;
-    ['ritten', 'aanvragen', 'planning'].forEach(function (t) {
+    TABBLADEN.forEach(function (t) {
       el('tab-' + t).setAttribute('aria-selected', String(t === naam));
       el('paneel-' + t).hidden = (t !== naam);
     });
     window.scrollTo(0, 0);
+    /* Meldingen halen een ruimer venster op dan de dag die op het scherm
+       staat: een rit die volgende week is afgezegd hoor je nu te zien, niet
+       pas als je die dag opzoekt. */
+    if (naam === 'meldingen') { haalMeldingen(); }
   }
 
-  ['ritten', 'aanvragen', 'planning'].forEach(function (t) {
+  TABBLADEN.forEach(function (t) {
     el('tab-' + t).addEventListener('click', function () { kiesTab(t); });
   });
 
@@ -349,6 +375,212 @@
     el('t-open').textContent = open;
     el('t-km').textContent = dagKilometers();
     el('t-omzet').textContent = omzet ? euro.format(omzet) : '–';
+  }
+
+  /* ------------------------------------------------------------ meldingen
+
+     Wat vroeger per mail kwam. Twee van de berichten die Airtable verstuurde
+     gingen naar jou en niet naar een klant: er is een aanvraag binnen, en een
+     klant heeft afgezegd. Dat hoeft geen mail te zijn — en elke mail kost een
+     automatiseringsrun waarvan je er honderd per maand hebt.
+
+     Daar staan drie waarschuwingen bij die er nooit waren en die geen enkele
+     mail waard zouden zijn, maar wel geld kosten als je ze mist: een rit
+     zonder klant kun je niet factureren, een rit die op Onderweg blijft staan
+     levert nooit een factuur op, en een rit van morgen zonder ophaaltijd
+     betekent dat de klant niet weet hoe laat je komt.
+
+     Let op wat dit níét is: een melding komt pas binnen als je het portaal
+     opent. Een mail piept op je telefoon. Voor een spoedaanvraag is dat een
+     verschil dat geld kost — zie OPENSTAAND.md. */
+
+  var MELD_SLEUTEL = 'sl-meldingen-gezien';
+
+  /* Welke meldingen je al gezien hebt, in de telefoon zelf. Dit hoort niet in
+     Airtable: het is per apparaat en het is niets waard voor iemand anders. */
+  function gezienLijst() {
+    try {
+      var ruw = window.localStorage.getItem(MELD_SLEUTEL);
+      var lijst = ruw ? JSON.parse(ruw) : [];
+      return Array.isArray(lijst) ? lijst : [];
+    } catch (e) { return []; }
+  }
+
+  function bewaarGezien(lijst) {
+    try {
+      /* Niet eindeloos laten groeien: de laatste tweehonderd is ruim genoeg om
+         te onthouden wat je gezien hebt, en de rest is toch verlopen. */
+      window.localStorage.setItem(MELD_SLEUTEL, JSON.stringify(lijst.slice(-200)));
+    } catch (e) { /* privémodus of vol; dan zie je een melding twee keer */ }
+  }
+
+  function haalMeldingen() {
+    verstuur('ritten', { van: verschuif(vandaag(), -14), tot: verschuif(vandaag(), 31) })
+      .then(function (data) {
+        meldRitten = data.ritten || [];
+        bouwMeldingen();
+        tekenMeldingen();
+        tekenBadges();
+      })
+      .catch(function () {
+        /* Zonder het ruimere venster blijft de lijst staan op wat we al
+           hadden. Beter dan een leeg scherm met een foutmelding erin. */
+        bouwMeldingen();
+        tekenMeldingen();
+      });
+  }
+
+  function spoedig(soort) {
+    return /spoed|direct/i.test(String(soort || ''));
+  }
+
+  function bouwMeldingen() {
+    var gezien = gezienLijst();
+    var nu = vandaag();
+    var morgen = verschuif(nu, 1);
+    var uit = [];
+
+    /* Waar de dagweergave en het ruimere venster elkaar overlappen, wint het
+       ruimere venster: dat is het verst bijgewerkt. */
+    var alle = meldRitten.length ? meldRitten.slice() : ritten.slice();
+    if (meldRitten.length) {
+      var bekend = {};
+      meldRitten.forEach(function (r) { bekend[r.id] = true; });
+      ritten.forEach(function (r) { if (!bekend[r.id]) { alle.push(r); } });
+    }
+
+    aanvragen.forEach(function (a) {
+      uit.push({
+        sleutel: 'aanvraag:' + a.id,
+        klasse: spoedig(a.dienst) ? 'meld--urgent' : 'meld--let',
+        titel: (spoedig(a.dienst) ? 'SPOED: ' : '') + 'Nieuwe aanvraag',
+        regel: (a.bedrijf || a.contact || 'Onbekend') + ' — ' +
+               (a.ophaal || a.ophaalpc || '?') + ' \u2192 ' + (a.aflever || a.afleverpc || '?'),
+        wanneer: a.binnen || '',
+        tab: 'aanvragen'
+      });
+    });
+
+    alle.forEach(function (r) {
+      if (r.afgezegdDoorKlant) {
+        uit.push({
+          sleutel: 'afgezegd:' + r.id + ':' + (r.afgezegdOp || ''),
+          klasse: 'meld--urgent',
+          titel: 'Klant heeft afgezegd',
+          regel: (r.klant || r.naam || 'Rit') + ' op ' + datumKort(r.datum) +
+                 (r.afzegreden ? ' — ' + r.afzegreden : ''),
+          wanneer: r.afgezegdOp || '',
+          tab: 'ritten',
+          dag: r.datum
+        });
+        return;
+      }
+      if (r.status === 'Geannuleerd') { return; }
+
+      /* Blijft op Onderweg staan terwijl de dag voorbij is: dan is de rit nooit
+         afgerond en komt er ook nooit een factuur. */
+      if (r.status === 'Onderweg' && r.datum && r.datum < nu) {
+        uit.push({
+          sleutel: 'onderweg:' + r.id + ':' + r.datum,
+          klasse: 'meld--urgent',
+          titel: 'Rit staat nog op Onderweg',
+          regel: (r.klant || r.naam || 'Rit') + ' van ' + datumKort(r.datum) +
+                 ' is nooit afgerond. Er komt dus geen factuur.',
+          wanneer: '', tab: 'ritten', dag: r.datum
+        });
+      }
+
+      /* Geen klant eraan: dan kun je hem niet factureren. Alleen melden bij
+         ritten die nog moeten of net geweest zijn — een oude rit zonder klant
+         is meestal een proefrit. */
+      if (!r.klant && r.datum >= verschuif(nu, -7)) {
+        uit.push({
+          sleutel: 'geenklant:' + r.id,
+          klasse: 'meld--let',
+          titel: 'Rit zonder klant',
+          regel: (r.naam || 'Rit') + ' op ' + datumKort(r.datum) +
+                 ' hangt aan niemand. Zo kun je er geen factuur van maken.',
+          wanneer: '', tab: 'ritten', dag: r.datum
+        });
+      }
+
+      if (r.datum === morgen && !r.tijd && r.status === 'Gepland') {
+        uit.push({
+          sleutel: 'geentijd:' + r.id,
+          klasse: 'meld--let',
+          titel: 'Morgen een rit zonder ophaaltijd',
+          regel: (r.klant || r.naam || 'Rit') +
+                 ' — de klant weet niet hoe laat je komt.',
+          wanneer: '', tab: 'ritten', dag: r.datum
+        });
+      }
+    });
+
+    /* Het dringendste bovenaan, en binnen dezelfde soort het nieuwste eerst.
+       Let op de rang: die van urgent is nul, en nul is onwaar. Met `|| 2`
+       erachter zou het dringendste juist onderaan belanden. */
+    var rang = { 'meld--urgent': 0, 'meld--let': 1 };
+    var rangVan = function (m) {
+      return Object.prototype.hasOwnProperty.call(rang, m.klasse) ? rang[m.klasse] : 2;
+    };
+    uit.sort(function (a, b) {
+      var v = rangVan(a) - rangVan(b);
+      return v !== 0 ? v : String(b.wanneer || '').localeCompare(String(a.wanneer || ''));
+    });
+
+    uit.forEach(function (m) { m.gezien = gezien.indexOf(m.sleutel) >= 0; });
+    meldingen = uit;
+  }
+
+  function tekenMeldingen() {
+    var lijst = el('lijst-meldingen');
+    if (!lijst) { return; }
+    lijst.innerHTML = '';
+
+    if (!meldingen.length) {
+      lijst.appendChild(maak('div', 'leeg',
+        'Niets wat je aandacht vraagt. Geen open aanvragen, geen afzeggingen, ' +
+        'en elke rit hangt aan een klant.'));
+      return;
+    }
+
+    meldingen.forEach(function (m) {
+      var knop = maak('button', 'meld ' + m.klasse);
+      knop.type = 'button';
+      if (m.gezien) { knop.setAttribute('data-gezien', ''); }
+      knop.appendChild(maak('span', 'meld__stip'));
+
+      var lijf = maak('div', 'meld__lijf');
+      lijf.appendChild(maak('div', 'meld__titel', m.titel));
+      lijf.appendChild(maak('div', 'meld__regel', m.regel));
+      if (m.wanneer) {
+        lijf.appendChild(maak('div', 'meld__wanneer', moment(m.wanneer)));
+      }
+      knop.appendChild(lijf);
+
+      /* Aantikken brengt je naar de plek waar je er iets mee kunt: de aanvraag
+         zelf, of de dag waarop die rit staat. */
+      knop.addEventListener('click', function () {
+        markeerGezien(m.sleutel);
+        /* Meteen dimmen, niet pas bij de volgende ophaalronde. Kom je terug op
+           dit tabblad en staat hij er nog ongelezen bij, dan tik je hem nog
+           een keer aan. */
+        knop.setAttribute('data-gezien', '');
+        if (m.dag && m.dag !== dag) { gaNaar(m.dag); }
+        kiesTab(m.tab || 'ritten');
+      });
+      lijst.appendChild(knop);
+    });
+  }
+
+  function markeerGezien(sleutel) {
+    var gezien = gezienLijst();
+    if (gezien.indexOf(sleutel) < 0) {
+      gezien.push(sleutel);
+      bewaarGezien(gezien);
+    }
+    meldingen.forEach(function (m) { if (m.sleutel === sleutel) { m.gezien = true; } });
+    tekenBadges();
   }
 
   /* ------------------------------------------------------ kilometerstand

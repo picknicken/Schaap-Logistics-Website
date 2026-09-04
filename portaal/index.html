@@ -292,6 +292,28 @@ input{font:inherit}
 }
 .teller__uitleg{margin:0;font-size:.8rem;color:var(--muted);line-height:1.5}
 
+/* ------------------------------------------------------------ meldingen
+   Wat vroeger per mail kwam. Een melding is een regel met een stip ervoor:
+   rood als het geld of een spoedrit raakt, amber als het kan wachten. Gezien
+   is een lichte regel — hij blijft staan, want een afgehandelde melding wil
+   je nog kunnen terugvinden. */
+.meld{
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--r);
+  padding:13px 15px;display:flex;gap:12px;align-items:flex-start;
+  text-align:left;font:inherit;color:inherit;width:100%;cursor:pointer;
+}
+.meld[data-gezien]{opacity:.55}
+.meld__stip{
+  width:9px;height:9px;border-radius:50%;background:var(--muted);
+  flex:none;margin-top:6px;
+}
+.meld--urgent .meld__stip{background:var(--urgent)}
+.meld--let .meld__stip{background:var(--amber)}
+.meld__lijf{flex:1;min-width:0}
+.meld__titel{font-weight:700;color:var(--heading);font-size:.95rem}
+.meld__regel{font-size:.85rem;color:var(--muted);margin-top:2px;line-height:1.45}
+.meld__wanneer{font-size:.72rem;color:var(--muted);margin-top:5px;font-weight:600}
+
 /* --------------------------------------------------------------- lijst */
 .lijst{padding:16px 0 40px;display:grid;gap:12px}
 
@@ -521,6 +543,9 @@ input{font:inherit}
     <button class="tab" id="tab-planning" role="tab" aria-selected="false" type="button">
       Planning <span class="tab__badge" id="badge-planning" hidden>0</span>
     </button>
+    <button class="tab" id="tab-meldingen" role="tab" aria-selected="false" type="button">
+      Meldingen <span class="tab__badge" id="badge-meldingen" hidden>0</span>
+    </button>
   </div>
 
   <div id="paneel-ritten">
@@ -599,6 +624,15 @@ input{font:inherit}
 
   <div id="paneel-planning" class="wrap" hidden>
     <div id="lijst-planning" class="lijst"></div>
+  </div>
+
+  <!-- Wat vroeger per mail kwam. Een seintje bij een nieuwe aanvraag en bij een
+       annulering hoefde geen mail te zijn: het gaat over jouw werk en niet over
+       dat van de klant. Daar staan nu de waarschuwingen bij die er nooit waren:
+       een rit zonder klant kun je niet factureren, en een rit die op Onderweg
+       blijft staan levert nooit een factuur op. -->
+  <div id="paneel-meldingen" class="wrap" hidden>
+    <div id="lijst-meldingen" class="lijst"></div>
   </div>
 </div>
 
