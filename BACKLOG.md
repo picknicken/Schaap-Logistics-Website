@@ -1,8 +1,8 @@
 # Backlog
 
-Wat er nog op de lijst staat, opgeschreven op 4 september 2026. Niets hiervan is
-gebouwd. Per punt staat er wat er al is, wat er bij moet, en waar de adder onder
-het gras zit.
+Wat er nog op de lijst staat, opgeschreven op 4 september 2026. Op de doorgestreepte
+punten na is hiervan niets gebouwd. Per punt staat er wat er al is, wat er bij moet,
+en waar de adder onder het gras zit.
 
 Voor de volgorde van de livegang: zie `TIJDLIJN.md`. Voor wat de livegang
 tegenhoudt: `OPENSTAAND.md`. Dit bestand gaat over wat er daarná bij kan.
@@ -30,7 +30,9 @@ het voorstel, zodat je in één blik ziet wat hij verstaan heeft. En een adres d
 onzeker is komt in het lijstje eronder te staan.
 
 **Kleine klus**, mits het inspreken op jouw telefoon goed genoeg blijkt. Test dat
-eerst met de knop die er nu al staat.
+eerst met de knop die er nu al staat. Let op: het plakvak en de spreekknop blijven
+verborgen zolang er geen `ANTHROPIC_API_KEY` bij de portaal-Worker staat — zie
+`OPENSTAAND.md`.
 
 ---
 
@@ -162,10 +164,10 @@ Je kosten per kilometer veranderen niet omdat een klant veel rijdt. Wat je kunt
 weggeven is het starttarief, want dat is het deel dat schaalt met hoe vaak je
 langskomt.
 
-**En het belangrijkste getal dat je nog niet hebt.** In Airtable staat *Winst per
-km*, maar dat is per rit. Wat een tariefafspraak veilig maakt is per **klant**
-kunnen zien wat er onder de streep overblijft. Dat is een klein veld erbij en
-zou ik bouwen vóór de eerste kortingsafspraak, niet erna.
+**Het getal dat een tariefafspraak veilig maakt, staat er inmiddels.** Op de
+tabel `Klanten` staan nu *Winst totaal*, *Aantal ritten*, *Kilometers totaal*,
+*Winst per rit* en *Winstmarge*. Kijk daar naar voordat je een korting toezegt,
+niet erna. Wat er nog niet in zit zijn je vaste lasten — zie punt 11.
 
 ---
 
@@ -191,13 +193,118 @@ meer bij de rest.
 
 ---
 
+## 10. Minder mail naar de klant
+
+**Aan gelaten op 4 september.** Alle drie de ritberichten staan aan: de
+ontvangstbevestiging bij de aanvraag, de orderbevestiging bij het inplannen, en
+het afleverbericht. De klant krijgt dus drie mails per rit.
+
+**Waarom dat voor nu prima is.** Meer berichten is minder onzekerheid bij de
+klant en minder telefoontjes bij jou. Bij spoedvervoer is "hij is aangekomen" het
+bericht waar iemand de hele dag op wacht.
+
+**Waarom je het later misschien toch wilt.** Twee redenen. Elke mail kost een
+automatiseringsrun, en op het gratis Airtable-plan heb je er honderd per maand —
+een rit van aanvraag tot betaalde factuur kost er nu zes à zeven in plaats van
+vijf à zes. En vaste klanten die vijf keer per week rijden krijgen vijftien
+berichten per week over dingen die ze in hun portaal kunnen zien.
+
+**Wat je dan uitzet, in Airtable, met de schakelaar rechtsboven in de
+automatisering:**
+
+| Automatisering | Wat vervalt | Waar het dan staat |
+| --- | --- | --- |
+| *Bevestigingsmail naar de aanvrager* | "we hebben uw aanvraag ontvangen" | De orderbevestiging volgt meestal binnen een dag |
+| *Afleverbericht naar de klant* | "uw zending is afgeleverd" | De tijdlijn per zending in het klantportaal |
+
+**De valkuil.** De voorwaarden gaan nu twee keer mee: in de ontvangstbevestiging
+én in de orderbevestiging. Zet je de ontvangstbevestiging uit, dan blijft de
+orderbevestiging over — en dat is juridisch de betere plek, want volgens artikel 4
+komt de overeenkomst tot stand op het moment dat jij de opdracht bevestigt. Zet ze
+dus nooit allebei uit, en controleer na het uitzetten één keer of er in de
+orderbevestiging nog een link naar de voorwaarden staat.
+
+Zet je het afleverbericht uit, zorg dan eerst dat de klant zijn portaallink heeft
+gekregen. Anders haal je een bericht weg zonder dat er iets voor in de plaats komt.
+
+**In een adem hiermee:** de beschrijving van de automatisering *Orderbevestiging
+naar de klant* in Airtable begint met "De enige mail die een klant over een rit
+krijgt". Dat klopt nu niet meer. Pas die zin aan of laat hem staan tot je de knoop
+doorhakt.
+
+---
+
+## 11. Wat nog niet eerder op een lijst stond
+
+Opgeschreven 4 september, nadat de kilometerstand er stond. Dit zijn geen
+varianten op wat hierboven staat maar dingen die in geen enkele lijst voorkwamen.
+
+### Voor jou
+
+- **Prijsopgave vanaf je telefoon, in dertig seconden.** Een klant belt: "wat
+  kost spoed van Rotterdam naar Venlo?" Nu moet je de website erbij pakken of het
+  uit je hoofd doen. Twee postcodes en een soort rit in het chauffeursportaal, en
+  je hebt hetzelfde bedrag als de site zou tonen — met een knop om het meteen als
+  appje of mailtje te versturen. Dat laatste is het punt: een prijs die je
+  opnoemt aan de telefoon is geen prijs die je later kunt aanwijzen. **Dit zou ik
+  als eerste bouwen van dit hele lijstje**; het is klein, de rekenmachine bestaat
+  al, en je gebruikt het elke week.
+
+- **Wat een dag jou werkelijk kost.** Je weet nu per rit wat er aan brandstof,
+  tol en overige kosten in ging. Wat nergens staat zijn je vaste lasten: lease of
+  afschrijving, verzekering, wegenbelasting, onderhoud, telefoon, boekhouder.
+  Zonder die is *Winst* een brutomarge, geen winst. Met een simpel maandbedrag
+  erbij weet je twee dingen die je nu niet weet: wat een dag rijden moet opbrengen
+  voordat je begint te verdienen, en wat een kilometer je echt kost. Dat laatste
+  is het getal onder elke kortingsafspraak — zie `KORTINGEN.md`.
+
+- **De bus zelf.** APK, verzekering, wegenbelasting, onderhoudsbeurt, banden.
+  Voor een eenmanszaak is de bus het bedrijf: staat hij stil, dan is er geen
+  omzet. Een paar datums in Airtable en een seintje twee weken van tevoren is een
+  halfuur werk en voorkomt de dag dat je erachter komt dat de APK gisteren
+  verliep.
+
+- **Ritten die te combineren zijn.** Twee ritten op dezelfde dag waarvan de
+  routes elkaar overlappen — daar zit je marge. Nu zie je dat alleen als je zelf
+  op de kaart kijkt. Een seintje bij het inplannen ("deze rit ligt op de route van
+  RIT-14") is niet moeilijk en verdient zichzelf in één rit terug.
+
+- **Klanten die je niet meer ziet.** Wie drie maanden geleden nog reed en sindsdien
+  niet meer, is geen verloren klant maar een telefoontje. Dat lijstje rolt zo uit
+  wat er al in `Klanten` staat.
+
+- **Een aanvraag die blijft liggen.** Je stuurt een prijs en hoort niets. Na twee
+  dagen een seintje aan jezelf is het verschil tussen een opdracht en een
+  aanvraag die doodbloedt.
+
+### Voor de klant
+
+- **Vragen om een Google-review na een geslaagde rit.** Voor een nieuw bedrijf is
+  dat de goedkoopste reclame die er is, en het moment vlak na een afgeleverde
+  spoedzending is het enige moment waarop iemand het ook echt doet. Eén zin
+  onderaan het afleverbericht.
+
+- **Een offerte op papier.** Voor grotere of terugkerende opdrachten wil een klant
+  iets om intern te laten aftekenen. De factuurpagina bestaat al; een offerte is
+  dezelfde pagina met een andere kop en een geldigheidsdatum.
+
+- **Contactpersoon ter plaatse.** Niet de klant die belt, maar de man bij de
+  expeditie waar je moet zijn. Nu staat dat in het veld Opmerkingen als je eraan
+  denkt. Een eigen veld met een belknop scheelt zoeken op de stoep.
+
+- **Zeggen hoe laat je ongeveer komt, en niet alleen dát je komt.** De
+  orderbevestiging noemt de ophaaltijd. Wat er niet staat is wanneer het bij de
+  ontvanger is. Voor de klant is dat de vraag die ertoe doet.
+
+---
+
 ## Wat ik als eerste zou doen
 
 1. **De inlogschermen en het kopieerbaar maken.** Klein, zichtbaar, en je hebt er
    elke dag wat aan.
 2. **Inspreken doortrekken naar een rit.** Bouwt voort op wat er nu al staat.
 3. **Navigeren die met de rit meegaat.**
-4. **Winst per klant**, vóór je over kortingen praat.
+4. ~~**Winst per klant.**~~ Staat er, op de tabel `Klanten`.
 5. **Het klantportaal installeerbaar maken** — een halfuur, en dan zie je of
    klanten het gebruiken voordat je een inlogsysteem bouwt.
 6. **Pas daarna** accounts per klant, en de mailbox alleen als je die accounts

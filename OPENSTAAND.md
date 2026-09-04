@@ -257,31 +257,20 @@ creditfactuur maken, factuur versturen, betalingsherinnering, facturen te laat
 markeren, uitnodiging klantportaal, seintje bij een aanvraag, seintje bij een
 annulering.
 
-### Minder mail: drie dingen die jij in Airtable moet doen
+### Minder mail: gedaan, maar anders dan gepland
 
-Een klant kreeg drie berichten over dezelfde rit. Dat is nu één
-**orderbevestiging** met alles erin, en de rest staat in zijn portaal. Aanzetten,
-uitzetten en publiceren kan ik niet via de koppeling — dat zijn drie klikken van
-jou:
+De orderbevestiging is gepubliceerd. De twee andere ritberichten —
+*Bevestigingsmail naar de aanvrager* en *Afleverbericht naar de klant* — staan
+bewust aan gelaten. Je klant krijgt dus drie berichten over een rit in plaats van
+een: aanvraag binnen, rit ingepland, zending afgeleverd.
 
-1. **Publiceer** de bijgewerkte *Orderbevestiging naar de klant* (heette eerst
-   *Rit bevestigen naar de klant*). Er staat een concept klaar; druk op *Update*.
-   Zolang je dat niet doet gaat de oude, kortere tekst uit — zonder de
-   voorwaarden en zonder de portaallink.
-2. **Zet uit**: *Bevestigingsmail naar de aanvrager*. Dat was het bericht
-   "we hebben uw aanvraag ontvangen".
-3. **Zet uit**: *Afleverbericht naar de klant*. Dat staat nu in het portaal, in
-   de tijdlijn per zending.
+Dat is een keuze, geen fout. Meer berichten betekent meer gerustheid bij de klant
+en minder telefoontjes; het kost je alleen wat meer automatiseringsruns. Wil je er
+later toch een uit, dan staat in `BACKLOG.md` onder *Minder mail* wat je uitzet en
+waar de voorwaarden dan blijven.
 
-Wat blijft staan: de factuur, de creditnota, de betalingsherinnering en de
-uitnodiging voor het portaal. De herinnering is geen ritbericht maar hoe je je
-geld binnenkrijgt.
-
-**Let op bij punt 2 en 3.** De voorwaarden werden meegestuurd met de
-ontvangstbevestiging. Die staan nu in de orderbevestiging, en dat is juridisch
-zelfs de betere plek: volgens artikel 4 komt de overeenkomst tot stand op het
-moment dat jij de opdracht bevestigt. Zet punt 1 dus aan vóór punt 2, anders zit
-er een gat waarin er helemaal geen voorwaarden uitgaan.
+Let op: de voorwaarden gaan nu twee keer mee, in de ontvangstbevestiging en in de
+orderbevestiging. Dubbel is geen probleem — geen enkele is dat wel.
 
 **De kilometerstand staat in het portaal.** Onder de vier getallen van de dag in
 de Ritten-tab zit een blok *Kilometerstand*: beginstand bij vertrek, eindstand bij
