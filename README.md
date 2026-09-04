@@ -219,8 +219,13 @@ tabblad dat je kiest schuift vanzelf in beeld.
 - **Status omzetten.** *Onderweg* legt meteen het vertrektijdstip vast, zodat je
   achteraf ziet hoe lang een rit werkelijk duurde.
 - **Route starten.** Bij een geplande rit wijst de knop naar het ophaaladres, bij
-  een rit die onderweg is naar het afleveradres. Opent Google Maps op de telefoon,
-  zonder sleutel of account.
+  een rit die onderweg is naar het afleveradres. Op een iPhone of iPad opent dat
+  **Kaarten** — de app die er al op staat en waar CarPlay mee praat. Op alles
+  wat geen Apple is Google Maps, want `maps.apple.com` toont daar alleen een
+  webpagina die niets kan. Geen sleutel of account nodig.
+
+  Wil je op je iPhone toch Google Maps, dan is dat één regel in
+  `assets/portaal.js` (`opApple`).
 - **Laten tekenen.** De ontvanger zet zijn handtekening op je scherm en typt zijn
   naam. Die gaan als afleverbewijs bij de rit in Airtable, en de rit springt op
   *Uitgevoerd* — waarmee de conceptfactuur zichzelf aanmaakt.

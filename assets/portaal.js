@@ -973,9 +973,25 @@
     return a;
   }
 
-  /* Opent de kaartenapp met deze bestemming. Werkt op Android en iOS zonder
-     sleutel of account; staat de app niet op de telefoon, dan opent de site. */
+  /* Op een iPhone opent een routelink Kaarten, de app die er al op staat en
+     waar CarPlay mee praat. Elders Google Maps, want maps.apple.com toont op
+     Android alleen een webpagina die niets kan.
+
+     Een iPad meldt zich sinds iPadOS 13 als Macintosh; die vangen we op het
+     aanraakscherm. Een gewone Mac krijgt Google Maps: daar zit je achter een
+     bureau en is een kaart in een tabblad handiger dan een app die opent. */
+  function opApple() {
+    var ua = navigator.userAgent || '';
+    return /iPhone|iPad|iPod/.test(ua) ||
+           (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  }
+
+  /* Opent de kaartenapp met deze bestemming. Werkt zonder sleutel of account;
+     staat de app niet op de telefoon, dan opent de site. */
   function routeNaar(adres) {
+    if (opApple()) {
+      return 'https://maps.apple.com/?dirflg=d&daddr=' + encodeURIComponent(adres);
+    }
     return 'https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=' +
            encodeURIComponent(adres);
   }
@@ -985,6 +1001,10 @@
      daar is een betaalde sleutel bij Google voor nodig, en die hoort niet in
      een pagina te staan die iedereen kan openen. */
   function routeVan(van, naar) {
+    if (opApple()) {
+      return 'https://maps.apple.com/?dirflg=d&saddr=' + encodeURIComponent(van) +
+             '&daddr=' + encodeURIComponent(naar);
+    }
     return 'https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=' +
            encodeURIComponent(van) + '&destination=' + encodeURIComponent(naar);
   }
@@ -1954,8 +1974,7 @@
     }
     if (k.adres) {
       var route = maak('a', 'knop knop--rand', 'Route');
-      route.href = 'https://www.google.com/maps/dir/?api=1&destination=' +
-                   encodeURIComponent(k.adres);
+      route.href = routeNaar(k.adres);
       route.target = '_blank';
       route.rel = 'noopener';
       knoppen.appendChild(route);

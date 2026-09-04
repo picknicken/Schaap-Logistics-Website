@@ -41,12 +41,13 @@ verborgen zolang er geen `ANTHROPIC_API_KEY` bij de portaal-Worker staat — zie
 **Wat er al is.** Op de ritkaart staat *Route naar ophaaladres*, en bij de
 kilometers *Kortste route opzoeken in Maps*.
 
-**Wat erbij moet.** Op iOS opent zo'n link nu Apple Kaarten of Google Maps,
-afhankelijk van wat er staat. Netter: één knop die meegaat met de rit —
-onderweg naar het ophaaladres vóór het ophalen, naar het afleveradres daarna.
-Dat scheelt kiezen op het moment dat je in de auto zit.
+**Gebouwd.** De knop gaat mee met de rit — vóór het ophalen naar het
+ophaaladres, daarna naar het afleveradres — en op een iPhone of iPad opent hij
+Kaarten in plaats van een webpagina.
 
-**Klein.** Een uur werk.
+**Wat er nog kan.** Apple's routelink kent geen tussenstops, dus een rit met
+extra adressen onderweg gaat als losse ritten. Google Maps kan dat wel; wil je
+dat, dan is het een keuze per rit in plaats van per toestel.
 
 ---
 
