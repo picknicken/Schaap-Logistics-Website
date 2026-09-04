@@ -145,6 +145,37 @@ const PU = {
   fout:      'Laatste fout'
 };
 
+/* De facturen zoals je ze in het portaal terugzoekt. Alles wat op de factuur
+   zelf staat, plus wat je nodig hebt om te weten of er nog geld moet komen. */
+const FL = {
+  nummer:     'Factuurnummer',
+  datum:      'Factuurdatum',
+  vervalt:    'Vervaldatum',
+  vervaltBer: 'Vervaldatum berekend',
+  subtotaal:  'Subtotaal',
+  btw:        'BTW',
+  totaal:     'Totaal',
+  betaald:    'Betaald',
+  openstaand: 'Openstaand',
+  telaat:     'Dagen te laat',
+  status:     'Status',
+  link:       'Factuurlink',
+  pdf:        'PDF',
+  verzonden:  'Verzonden op',
+  herinnerd:  'Herinnering verstuurd op',
+  klantnaam:  'Klant naam',
+  klantmail:  'Factuuradres',
+  ritdatum:   'Rit ritdatum',
+  ophaal:     'Rit ophaaladres',
+  aflever:    'Rit afleveradres',
+  km:         'Rit kilometers',
+  type:       'Rit type',
+  referentie: 'Uw referentie',
+  opdracht:   'Opdracht omschrijving',
+  creditVan:  'Crediteert nummer',
+  gecrediteerd:'Gecrediteerd nummer'
+};
+
 /* De facturen. Alleen de velden die het portaal zelf schrijft bij het maken van
    een conceptfactuur; de rest van de tabel rekent zichzelf uit. */
 const FA = {
@@ -465,6 +496,7 @@ async function schakel(env, body, origin, wie) {
     case 'nieuweklant':  return await nieuweKlant(env, body, origin);
     case 'uitnodiging':  return await stuurUitnodiging(env, body, origin);
     case 'klantsoort':   return await zetKlantsoort(env, body, origin);
+    case 'facturen':     return await haalFacturen(env, body, origin);
     case 'leesbericht':  return await leesBericht(env, body, origin);
     case 'dagstaat':     return await zetDagstaat(env, body, origin, wie);
     case 'pushaan':      return await meldPushAan(env, body, origin, wie);
@@ -1007,6 +1039,88 @@ async function stuurUitnodiging(env, body, origin) {
 
   const klant = naarKlant(await patch(env, env.AIRTABLE_KLANTEN, id, velden));
   return antwoord(200, { ok: true, klant, email: f[K.email] }, origin, true);
+}
+
+/* ------------------------------------------------------- oude facturen
+
+   Terugzoeken wat je iemand hebt gestuurd, en die factuur opnieuw kunnen
+   delen. Twee manieren, want er zijn twee momenten waarop je dit doet: je
+   zoekt een klant op en wilt zien wat hij heeft gehad, of een klant belt met
+   een factuurnummer in zijn hand.
+
+   Dit is een actie voor de eigenaar alleen. Er staan bedragen in, dus hij
+   staat niet in CHAUFFEUR_MAG en een chauffeur krijgt hem nooit te zien. */
+async function haalFacturen(env, body, origin) {
+  const klantId = recordId(body.klantId);
+  const nummer = String(body.nummer || '').trim();
+
+  if (klantId) {
+    const facturen = await klantRecords(
+      env, klantId, 'Facturen', env.AIRTABLE_FACTUREN, naarFactuurVoorMij);
+    return antwoord(200, { ok: true, facturen }, origin, true);
+  }
+
+  if (nummer) {
+    /* Alleen letters, cijfers en streepjes. Wat de klant door de telefoon
+       opleest gaat hier in een Airtable-formule, en dan wil je niet dat een
+       aanhalingsteken iets anders betekent dan een teken. */
+    const veilig = nummer.replace(/[^A-Za-z0-9-]/g, '').slice(0, 30);
+    if (veilig.length < 2) {
+      return antwoord(400, { fout: 'Geef minstens twee tekens van het factuurnummer' },
+                      origin, true);
+    }
+    const zoek = new URLSearchParams();
+    zoek.set('filterByFormula', `FIND('${veilig.toUpperCase()}', UPPER({${FL.nummer}} & '')) > 0`);
+    zoek.set('pageSize', '20');
+    zoek.append('sort[0][field]', FL.datum);
+    zoek.append('sort[0][direction]', 'desc');
+    const data = await airtable(env, `${env.AIRTABLE_FACTUREN}?${zoek}`);
+    return antwoord(200, { ok: true, facturen: (data.records || []).map(naarFactuurVoorMij) },
+                    origin, true);
+  }
+
+  return antwoord(400, { fout: 'Geef een klant of een factuurnummer op' }, origin, true);
+}
+
+/* De factuur zoals jij hem ziet. Twee links met opzet: die van jou opent de
+   pagina met de beheerbalk erboven (de knop Opslaan als PDF), die voor de klant
+   is dezelfde pagina zonder die balk. Stuur je per ongeluk de jouwe door, dan
+   ziet een klant een knop die voor jou bedoeld is. */
+function naarFactuurVoorMij(record) {
+  const f = record.fields || {};
+  const pdf = Array.isArray(f[FL.pdf]) && f[FL.pdf].length ? f[FL.pdf][0] : null;
+  const link = String(f[FL.link] || '');
+  return {
+    id:         record.id,
+    nummer:     f[FL.nummer] || '',
+    datum:      f[FL.datum] || '',
+    vervalt:    f[FL.vervalt] || f[FL.vervaltBer] || '',
+    subtotaal:  f[FL.subtotaal] || 0,
+    btw:        f[FL.btw] || 0,
+    totaal:     f[FL.totaal] || 0,
+    betaald:    f[FL.betaald] || 0,
+    openstaand: f[FL.openstaand] || 0,
+    telaat:     f[FL.telaat] || 0,
+    status:     keuze(f[FL.status]) || 'Concept',
+    verzonden:  f[FL.verzonden] || '',
+    herinnerd:  f[FL.herinnerd] || '',
+    klant:      eerste(f[FL.klantnaam]) || '',
+    email:      f[FL.klantmail] || '',
+    ritdatum:   eerste(f[FL.ritdatum]) || '',
+    ophaal:     eerste(f[FL.ophaal]) || '',
+    aflever:    eerste(f[FL.aflever]) || '',
+    km:         eerste(f[FL.km]) || 0,
+    type:       eerste(f[FL.type]) || '',
+    referentie: eerste(f[FL.referentie]) || '',
+    opdracht:   eerste(f[FL.opdracht]) || '',
+    /* Een creditnota draait een eerdere factuur terug; dat hoort erbij te
+       staan, anders lijkt het een gewone factuur met een raar bedrag. */
+    creditVan:  f[FL.creditVan] || '',
+    gecrediteerd: eerste(f[FL.gecrediteerd]) || '',
+    link:       link,
+    klantlink:  zonderBeheer(link),
+    pdf:        pdf ? (pdf.url || '') : ''
+  };
 }
 
 /* Een klant omzetten van eenmalig naar vast, of terug.

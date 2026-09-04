@@ -324,6 +324,21 @@ Deze velden dragen geld, dus ze gaan door dezelfde zeef als de ritvelden: een
 chauffeur krijgt geen klantenlijst opgehaald, en mocht een latere actie er toch
 een meesturen dan haalt `zonderBedragen` ze eruit.
 
+### Waarom `Factuurlink` twee versies heeft
+
+Het veld `Factuurlink` op `Facturen` bouwt een adres naar de factuurpagina met
+alle gegevens erin. Achter dat adres staat `beheer=1`, en dat schakelt de balk
+boven de factuur aan met de knop *Opslaan als PDF* en de uitleg erbij. Die balk
+is voor jou.
+
+Het portaal geeft dezelfde factuur daarom twee keer terug: `link` met die balk,
+en `klantlink` zonder. De knop *Link sturen* gebruikt de tweede. Stuur je per
+ongeluk de eerste door, dan ziet een klant een knop die voor jou bedoeld is —
+schadelijk is het niet, maar het staat slordig.
+
+Hetzelfde geldt in het klantportaal: daar komt de factuur binnen via
+`zonderBeheer`, en die functie is de enige plek waar dat gebeurt.
+
 ### Eenmalige klanten en vaste klanten
 
 Op `Klanten` staat `Soort klant` (`fldSLJJ5sdfsZrUzI`): **Eenmalig** of **Vaste

@@ -260,6 +260,25 @@ als er werkelijk iets gereden is. Dat is waar een tariefafspraak op hoort te
 rusten; zie `KORTINGEN.md`. Een chauffeur ziet dit tabblad niet, en zijn
 klantenlijst wordt niet eens opgehaald.
 
+Onder elke klant zit **Facturen tonen**. Die worden pas opgehaald als je erom
+vraagt — ze standaard meesturen zou het dagoverzicht opblazen voor iets wat je
+een paar keer per week opzoekt. Per factuur staat alles wat erop staat: nummer,
+datum, vervaldatum, de rit en de route, kilometers, de referentie van de klant,
+bedrag exclusief btw, de btw apart, wat er betaald is en wat er nog openstaat.
+Een creditnota zegt welke factuur hij terugdraait, en een teruggedraaide factuur
+zegt met welke creditnota.
+
+Twee knoppen per factuur, en dat verschil is met opzet:
+
+- **Bekijken** opent jouw versie, met de beheerbalk en de knop *Opslaan als PDF*.
+- **Link sturen** opent het deelvenster van je telefoon — dus WhatsApp, mail, wat
+  je maar wilt — met dezelfde pagina **zonder** die balk. Kan je browser dat
+  niet, dan komt de link op het klembord.
+
+Belt een klant met een factuurnummer in zijn hand, dan typ je dat gewoon in het
+zoekvak: een term met cijfers erin zoekt ook de facturen af, en de gevonden
+factuur komt bovenaan met de klantnaam erbij.
+
 **Meldingen** — wat vroeger per mail kwam.
 
 Twee van de berichten die Airtable verstuurde gingen naar jou en niet naar een

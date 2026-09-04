@@ -52,6 +52,11 @@
      Zo hoef je na het instellen van de sleutels de site niet opnieuw uit te
      rollen. Leeg betekent: pushmeldingen zijn nog niet ingesteld. */
   var pushSleutel = '';
+  /* Facturen worden per klant opgehaald op het moment dat je erom vraagt, en
+     daarna onthouden. Ze meesturen met het dagoverzicht zou dat overzicht
+     opblazen voor iets wat je een paar keer per week opzoekt. */
+  var facturen = {};
+  var factuurZoek = [];
   var tabblad = 'ritten';
   var klantVoor = null;
   var tekentVoor = null;
@@ -1547,6 +1552,118 @@
 
   /* -------------------------------------------------------- planning */
 
+  /* --------------------------------------------------------- facturen
+
+     Terugzoeken wat een klant heeft gehad, en die factuur opnieuw kunnen
+     delen. Twee links per factuur en dat is met opzet: die van jou opent de
+     pagina met de beheerbalk (de knop Opslaan als PDF), die je deelt is
+     dezelfde pagina zonder die balk. */
+
+  function factuurNummerachtig(term) {
+    /* Iets met minstens twee cijfers erin, of iets dat op SL-2026- lijkt.
+       Zo gaat een zoekopdracht op "bakker" niet ook nog de facturen af. */
+    return /\d{2}/.test(term) || /^sl-?\d*/i.test(term);
+  }
+
+  function haalFacturenVan(klantId, knop) {
+    bezig(knop, 'Ophalen\u2026', function (klaar) {
+      verstuur('facturen', { klantId: klantId })
+        .then(function (data) {
+          facturen[klantId] = data.facturen || [];
+          tekenKlanten();
+        })
+        .catch(function (fout) { meldApp(fout.message); klaar(false); });
+    });
+  }
+
+  /* Delen gaat via het deelvenster van de telefoon, want daar zit WhatsApp in
+     en dat is hoe je een klant werkelijk bereikt. Kan de browser dat niet, dan
+     komt de link op het klembord. */
+  function deelFactuur(f, knop) {
+    var tekst = 'Factuur ' + f.nummer + ' van Schaap Express Transport';
+    if (navigator.share) {
+      navigator.share({ title: tekst, text: tekst, url: f.klantlink })
+        .catch(function () { /* afgebroken door de gebruiker; niets aan de hand */ });
+      return;
+    }
+    kopieer(f.klantlink, knop);
+  }
+
+  function tekenFactuur(f) {
+    var vak = maak('div', 'factuur');
+
+    var kop = maak('div', 'factuur__kop');
+    kop.appendChild(maak('span', 'factuur__nr', f.nummer || 'Nog geen nummer'));
+    var stand = maak('span', 'factuur__stand', f.status);
+    stand.setAttribute('data-stand', f.status);
+    kop.appendChild(stand);
+    kop.appendChild(maak('span', 'factuur__bedrag', euroCent.format(f.totaal || 0)));
+    vak.appendChild(kop);
+
+    var rijen = maak('dl', 'factuur__rij');
+    rijen.style.display = 'block';
+    [['Datum', f.datum ? datumKort(f.datum) : ''],
+     ['Vervalt', f.vervalt ? datumKort(f.vervalt) : ''],
+     ['Rit', f.ritdatum ? datumKort(f.ritdatum) : ''],
+     ['Route', f.ophaal && f.aflever ? f.ophaal + ' \u2192 ' + f.aflever : ''],
+     ['Soort', f.type],
+     ['Kilometers', f.km ? f.km + ' km' : ''],
+     ['Referentie', f.referentie],
+     ['Excl. btw', euroCent.format(f.subtotaal || 0)],
+     ['Btw', euroCent.format(f.btw || 0)],
+     ['Betaald', f.betaald ? euroCent.format(f.betaald) : ''],
+     ['Verstuurd', f.verzonden ? datumKort(f.verzonden) : ''],
+     ['Herinnerd', f.herinnerd ? datumKort(String(f.herinnerd).slice(0, 10)) : '']
+    ].forEach(function (paar) {
+      if (!paar[1]) { return; }
+      var r = maak('div', 'factuur__rij');
+      r.appendChild(maak('dt', '', paar[0]));
+      r.appendChild(maak('dd', '', String(paar[1])));
+      rijen.appendChild(r);
+    });
+    vak.appendChild(rijen);
+
+    if (Number(f.openstaand) > 0) {
+      vak.appendChild(maak('p', 'factuur__open',
+        euroCent.format(f.openstaand) + ' staat nog open' +
+        (f.telaat ? ', ' + f.telaat + ' dagen te laat.' : '.')));
+    }
+    /* Een creditnota zonder die zin ziet eruit als een gewone factuur met een
+       raar bedrag. */
+    if (f.creditVan) {
+      vak.appendChild(maak('p', 'factuur__uitleg',
+        'Creditnota; draait factuur ' + f.creditVan + ' terug.'));
+    }
+    if (f.gecrediteerd) {
+      vak.appendChild(maak('p', 'factuur__uitleg',
+        'Teruggedraaid met creditnota ' + f.gecrediteerd + '.'));
+    }
+
+    var knoppen = maak('div', 'factuur__knoppen');
+    if (f.link) {
+      var open = maak('a', 'knop knop--rand', 'Bekijken');
+      open.href = f.link;
+      open.target = '_blank';
+      open.rel = 'noopener';
+      knoppen.appendChild(open);
+
+      var deel = maak('button', 'knop knop--rand', 'Link sturen');
+      deel.type = 'button';
+      deel.addEventListener('click', function () { deelFactuur(f, deel); });
+      knoppen.appendChild(deel);
+    }
+    if (f.pdf) {
+      var pdf = maak('a', 'knop knop--stil', 'PDF');
+      pdf.href = f.pdf;
+      pdf.target = '_blank';
+      pdf.rel = 'noopener';
+      knoppen.appendChild(pdf);
+    }
+    if (knoppen.childNodes.length) { vak.appendChild(knoppen); }
+
+    return vak;
+  }
+
   /* ---------------------------------------------------------- klanten
 
      Opzoeken wie iemand is terwijl je aan de telefoon zit. Er wordt niets
@@ -1573,6 +1690,27 @@
     return term.split(/\s+/).every(function (w) { return hooi.indexOf(w) >= 0; });
   }
 
+  /* Onthoudt waar het laatst naar gezocht is, zodat elke toetsaanslag niet een
+     nieuw verzoek oplevert terwijl je een nummer aan het intypen bent. */
+  var factuurZoekTerm = '';
+  var factuurZoekBezig = false;
+
+  function zoekFacturen(term) {
+    if (term === factuurZoekTerm || factuurZoekBezig) { return; }
+    factuurZoekBezig = true;
+    verstuur('facturen', { nummer: term })
+      .then(function (data) {
+        factuurZoekTerm = term;
+        factuurZoek = data.facturen || [];
+      })
+      .catch(function () { factuurZoek = []; })
+      .then(function () {
+        factuurZoekBezig = false;
+        /* Alleen hertekenen als er ondertussen niets anders is ingetypt. */
+        if (zoekterm() === term) { tekenKlanten(); }
+      });
+  }
+
   function tekenKlanten() {
     var lijst = el('lijst-klanten');
     if (!lijst) { return; }
@@ -1589,9 +1727,30 @@
       return;
     }
 
+    /* Een klant belt met een factuurnummer in zijn hand. Dat nummer staat
+       nergens in de klantenlijst, dus daar wordt apart naar gezocht. */
+    if (term && factuurNummerachtig(term)) { zoekFacturen(term); }
+    if (factuurZoek.length && term && factuurNummerachtig(term)) {
+      var kop = maak('div', 'klantkaart');
+      kop.appendChild(maak('div', 'klantkaart__kop', ''));
+      kop.firstChild.appendChild(maak('div', 'klantkaart__naam',
+        factuurZoek.length === 1 ? 'Eén factuur gevonden'
+                                 : factuurZoek.length + ' facturen gevonden'));
+      factuurZoek.forEach(function (f) {
+        var vak = tekenFactuur(f);
+        if (f.klant) {
+          vak.insertBefore(maak('p', 'factuur__uitleg', 'Van ' + f.klant), vak.childNodes[1]);
+        }
+        kop.appendChild(vak);
+      });
+      lijst.appendChild(kop);
+    }
+
     var gevonden = klanten.filter(function (k) { return klantPast(k, term); });
     if (!gevonden.length) {
-      lijst.appendChild(maak('div', 'leeg', 'Niemand gevonden op \u201c' + term + '\u201d.'));
+      if (!factuurZoek.length || !factuurNummerachtig(term)) {
+        lijst.appendChild(maak('div', 'leeg', 'Niets gevonden op \u201c' + term + '\u201d.'));
+      }
       return;
     }
 
@@ -1712,6 +1871,27 @@
       knoppen.appendChild(route);
     }
     if (knoppen.childNodes.length) { kaart.appendChild(knoppen); }
+
+    /* Facturen komen er pas bij als je erom vraagt. Ze standaard meesturen zou
+       het dagoverzicht opblazen voor iets wat je een paar keer per week doet. */
+    var opgehaald = facturen[k.id];
+    if (opgehaald === undefined) {
+      var haal = maak('button', 'klantkaart__meer', 'Facturen tonen');
+      haal.type = 'button';
+      haal.addEventListener('click', function () { haalFacturenVan(k.id, haal); });
+      kaart.appendChild(haal);
+    } else if (!opgehaald.length) {
+      kaart.appendChild(maak('div', 'klantkaart__meer', 'Nog geen facturen'));
+    } else {
+      opgehaald.forEach(function (f) { kaart.appendChild(tekenFactuur(f)); });
+      var dicht = maak('button', 'klantkaart__meer', 'Facturen verbergen');
+      dicht.type = 'button';
+      dicht.addEventListener('click', function () {
+        delete facturen[k.id];
+        tekenKlanten();
+      });
+      kaart.appendChild(dicht);
+    }
 
     return kaart;
   }
