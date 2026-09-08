@@ -815,19 +815,71 @@ npx wrangler deploy
 
 ## Publiceren
 
-GitHub Pages staat op branch `main`, map `/` (root). `.nojekyll` zorgt dat de
-bestanden ongewijzigd geserveerd worden in plaats van door Jekyll te gaan.
+De site draait op branch `main`, map `/` (root). Aanpassing doorvoeren:
+bewerken, committen, pushen. Binnen ongeveer een minuut staat het erop.
 
-Aanpassing doorvoeren: bewerken, committen, pushen. Pages publiceert de nieuwe
-versie binnen ongeveer een minuut.
+`.nojekyll` en `CNAME` horen bij GitHub Pages. `_headers` hoort bij Cloudflare
+Pages; GitHub Pages leest dat niet en serveert het als tekstbestand. Ze kunnen
+naast elkaar staan, en dat is met opzet: zo is er geen moment waarop de site
+nergens vandaan komt.
+
+### Van GitHub Pages naar Cloudflare Pages
+
+De reden om te verhuizen is dat deze repository privé hoort te zijn. Er staan
+geen wachtwoorden in — die zitten in Cloudflare — maar wel `KORTINGEN.md`, de
+kostprijs per kilometer en de marges. Dat is bedrijfsinformatie en die hoort
+niet openbaar te staan.
+
+GitHub Pages publiceert op het gratis plan alleen vanuit een *publieke*
+repository. Privé plus Pages vereist GitHub Pro. Cloudflare Pages doet het wel
+gratis vanuit een privé repository, en Cloudflare draait hier toch al de twee
+Workers.
+
+**Wat daarvoor moet gebeuren, en waarom het meer is dan een knop.** Het domein
+staat bij Strato en de DNS ook. Om `schaaplogistics.nl` zelf (dus zonder `www`)
+naar Cloudflare Pages te laten wijzen is een CNAME op het kale domein nodig, en
+dat mag niet volgens de DNS-standaard. Cloudflare lost dat op met CNAME-
+flattening, maar dan moet de hele zone bij Cloudflare staan — en daar horen de
+MX- en TXT-records van de e-mail bij.
+
+Dat is het echte werk en het echte risico: de nameservers verzetten neemt de
+e-mail mee. Vóór het verzetten alle records bij Strato overschrijven en één
+voor één naast de records leggen die Cloudflare heeft ingelezen. Cloudflare
+leest de meeste vanzelf in, maar niet gegarandeerd allemaal.
+
+De volgorde die de site en de e-mail in de lucht houdt:
+
+1. Pages-project aanmaken en koppelen aan deze repository. Build-opdracht leeg,
+   uitvoermap `/`. De site draait dan op `<project>.pages.dev` naast de
+   bestaande site — er verandert nog niets voor bezoekers.
+2. De zone `schaaplogistics.nl` bij Cloudflare toevoegen, de ingelezen records
+   controleren tegen Strato, en pas daarna de nameservers bij Strato omzetten.
+3. Het domein aan het Pages-project hangen. Cloudflare zet de records zelf goed.
+4. Alles nalopen: site, aanvraagformulier, chauffeursportaal, klantportaal,
+   factuurpagina.
+5. Pas als dat staat: de repository op privé.
+
+**Na de verhuizing.** DNS wijzigen gaat vanaf dan bij Cloudflare, niet meer bij
+Strato. GitHub Pages schakelt zichzelf uit zodra de repository privé wordt,
+waarmee ook `picknicken.github.io/Schaap-Logistics-Website/...` stopt — links
+die de deur uit zijn gegaan dragen het eigen domein, dus dat raakt niets. De
+uitrol van de twee Workers via GitHub Actions blijft werken; op een privé
+repository geldt daar wel een maandquotum voor, en dit werkstroompje kost er
+ongeveer één minuut per push van.
+
+**Wat het verder oplevert.** `_headers` gaat gelden, dus de kopregels kloppen
+en het cacheprobleem dat het portaal eerder stil legde kan niet meer. En de
+twee Workers zouden op `api.schaaplogistics.nl` kunnen draaien in plaats van op
+een `workers.dev`-adres.
 
 ### Het adres: schaaplogistics.nl
 
 De site staat op `https://schaaplogistics.nl/`. Het domein is geregistreerd bij
-Strato; de DNS wijst met A- en AAAA-records naar GitHub Pages, en `www` gaat via
-een CNAME naar `picknicken.github.io`. Het bestand `CNAME` in de root vertelt
-GitHub welk domein bij deze repo hoort — weghalen betekent terug naar het oude
-adres, dus laat hem staan.
+Strato; zolang de site op GitHub Pages draait wijst de DNS met A- en
+AAAA-records daarheen en gaat `www` via een CNAME naar `picknicken.github.io`.
+Het bestand `CNAME` in de root vertelt GitHub welk domein bij deze repo hoort —
+weghalen betekent terug naar het oude adres, dus laat hem staan tot de
+verhuizing naar Cloudflare Pages rond is.
 
 Het oude `picknicken.github.io/Schaap-Logistics-Website/...` stuurt door naar het
 nieuwe adres, met pad en zoekterm en al. Links die al de deur uit zijn (een

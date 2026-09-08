@@ -1,0 +1,54 @@
+# =========================================================================
+# Kopregels die Cloudflare Pages meestuurt bij elk bestand.
+#
+# GitHub Pages kan dit niet — daar krijg je de kopregels die GitHub kiest en
+# verder niets. Dat is precies waar het eerder misging: de telefoon hield een
+# oude pagina vast terwijl er al een nieuw script naast stond, en het portaal
+# viel stil. Hieronder staat dat het niet meer kan.
+#
+# Dit bestand doet niets zolang de site nog op GitHub Pages draait; die leest
+# het niet en serveert het gewoon als tekstbestand. Zodra Cloudflare Pages het
+# overneemt gaat het gelden.
+# =========================================================================
+
+# Alles: eerst even bij de server nakijken of er een nieuwe versie is.
+#
+# no-cache klinkt als "niet bewaren" maar betekent iets anders: bewaren mag,
+# gebruiken pas na navraag. De browser vraagt "is dit nog goed?", krijgt in de
+# regel een kort "ja" terug en pakt zijn eigen kopie. Dat kost een fractie van
+# een seconde en levert op dat een wijziging er meteen op staat.
+#
+# Voor een site met een handvol bezoekers per dag is dat de goede ruil. Een
+# pagina die een dag oud mag zijn scheelt hier niets aan kosten en levert wel
+# het soort fout op waar niemand aan denkt.
+/*
+  Cache-Control: no-cache
+  # Een bestand is wat het zegt te zijn. Zonder deze regel mag een browser
+  # zelf gaan raden wat er in een bestand zit, en dat is een oude bekende
+  # manier om iets als script te laten uitvoeren wat dat niet is.
+  X-Content-Type-Options: nosniff
+  # Bij het doorklikken naar een kaartendienst of een betaalpagina gaat wel
+  # mee dat je van deze site komt, maar niet welke pagina je bekeek. Een
+  # factuurlink draagt een factuurnummer in het adres.
+  Referrer-Policy: strict-origin-when-cross-origin
+
+# De twee portalen en de factuurpagina mogen nooit in het kader van een andere
+# site hangen. Daar staan bedragen, adressen en handtekeningen op; in een
+# vreemd kader is niet meer te zien van wie de knop is waar je op drukt.
+/portaal/*
+  X-Frame-Options: DENY
+  Content-Security-Policy: frame-ancestors 'none'
+
+/klant/*
+  X-Frame-Options: DENY
+  Content-Security-Policy: frame-ancestors 'none'
+
+/factuur/*
+  X-Frame-Options: DENY
+  Content-Security-Policy: frame-ancestors 'none'
+
+# Het lettertype verandert niet meer onder deze naam. Dat mag dus wél een jaar
+# in het geheugen van de telefoon blijven staan: het is het enige bestand hier
+# dat groot genoeg is om het verschil te merken.
+/assets/inter.woff2
+  Cache-Control: public, max-age=31536000, immutable
