@@ -2040,8 +2040,15 @@ async function klantPoort(env, code, body, origin) {
     if (uit.fout) { return antwoord(uit.code || 400, { fout: uit.fout }, origin, true); }
   }
 
+  /* Foto's bij de aflevering zijn er alleen voor vaste klanten. Het portaal
+     wordt sowieso alleen aan een vaste klant uitgedeeld, maar iemand kan van
+     vast naar eenmalig zijn teruggezet terwijl zijn code blijft werken — en
+     dan hoort dit meteen dicht te gaan. Twee sloten op één deur, want dit is
+     het enige stuk van het portaal waar beeldmateriaal langskomt. */
+  const magFotos = klant.soort === 'Vaste klant';
+
   const [ritten, facturen] = await Promise.all([
-    klantRitten(env, klant.id),
+    klantRitten(env, klant.id, magFotos),
     klantFacturen(env, klant.id)
   ]);
 
@@ -2131,8 +2138,9 @@ async function klantLinkIds(env, klantId, koppelveld) {
     .filter((id) => /^rec[A-Za-z0-9]{14}$/.test(String(id)));
 }
 
-function klantRitten(env, klantId) {
-  return klantRecords(env, klantId, 'Ritten', env.AIRTABLE_RITTEN, naarKlantRit);
+function klantRitten(env, klantId, magFotos) {
+  return klantRecords(env, klantId, 'Ritten', env.AIRTABLE_RITTEN,
+                      (record) => naarKlantRit(record, magFotos));
 }
 
 function klantRitIds(env, klantId) {
@@ -2169,7 +2177,7 @@ function inBrokken(lijst, maat) {
 /* Precies dit, en niets meer. Brandstof, tol, overige ritkosten, totale
    ritkosten, winst en winst per km staan er bewust niet bij: dat is jouw
    bedrijfsvoering en niet die van je klant. */
-function naarKlantRit(record) {
+function naarKlantRit(record, magFotos) {
   const f = record.fields || {};
   const status = keuze(f[R.status]) || 'Gepland';
   return {
@@ -2195,7 +2203,16 @@ function naarKlantRit(record) {
     afgeleverd: Array.isArray(f[R.handtek]) && f[R.handtek].length > 0,
     /* De klant mag zijn eigen afleverbewijs zien. Het is het bewijs dat zijn
        zending is aangekomen; daar hoeft hij ons niet voor te bellen. */
-    krabbel:    bijlageUrl(f[R.handtek])
+    krabbel:    bijlageUrl(f[R.handtek]),
+    /* De foto's van de aflevering, en alleen voor een vaste klant. Een
+       eenmalige klant krijgt een lege lijst — niet een lijst die hij niet mag
+       openen, maar niets. Zo staat er nergens op zijn scherm dat er foto's
+       zijn die hij niet te zien krijgt.
+
+       Het gaat hier bewust om een lijst die leeg blijft in plaats van een vlag
+       die het scherm moet gehoorzamen: wat niet meegestuurd wordt kan niet
+       lekken door een fout aan de andere kant. */
+    fotos:      magFotos ? bijlagen(f[R.fotos]) : []
   };
 }
 

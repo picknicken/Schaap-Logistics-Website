@@ -259,10 +259,8 @@ tabblad dat je kiest schuift vanzelf in beeld.
   van een paar megabyte — en komt als miniatuur op de kaart te staan. Meerdere
   per rit mag, tot tien. Ze staan in het veld `Foto's` bij de rit.
 
-  De klant ziet ze niet. Het klantportaal toont wel de handtekening als
-  afleverbewijs, maar niet de foto's: op een foto kan meer staan dan wat je
-  bedoelde te laten zien. Wil je dat wel, dan is dat één regel in
-  `naarKlantRit()`.
+  Een **vaste klant** kan ze terugkijken in zijn eigen portaal; een eenmalige
+  klant niet. Zie hieronder.
 
 - **Kilometerstand.** Onder die vier getallen zit een blok dat dichtgeklapt één
   regel is: de beginstand bij vertrek en de eindstand bij thuiskomst. Ernaast
@@ -680,9 +678,28 @@ meegestuurd. Verbergen in de pagina zou niet genoeg zijn — wie het antwoord va
 de server bekijkt, ziet dan alsnog alles.
 
 Ook niet zichtbaar: interne ritnamen, opmerkingen bij een rit, telefoonnummers,
-record-ids, en uiteraard alles wat aan een andere klant hangt. Dat laatste zit
+record-ids, en uiteraard alles wat aan een andere klant hangt. Foto's bij de
+aflevering alleen voor een vaste klant; zie verderop. Dat laatste zit
 structureel dicht: het portaal vraagt niet "geef alle ritten en filter" maar
 "geef de ritten die aan deze klant hangen".
+
+**Foto's bij de aflevering — alleen voor vaste klanten.** Heb je bij een rit
+foto's gemaakt, dan kan een vaste klant die terugkijken: onder zijn afgeleverde
+zending zit een dichtgeklapt vak *Foto's bij de aflevering* met het aantal
+erbij. Openklappen laat de postzegels zien; aantikken opent de hele foto. De
+afbeeldingen worden pas opgehaald bij het openklappen, zodat niemand
+bandbreedte betaalt voor foto's die hij niet bekijkt.
+
+Een **eenmalige** klant krijgt ze niet. Dat is geen knop die uitstaat: de Worker
+stuurt de lijst dan leeg mee, dus er staat op zijn scherm nergens dat er iets is
+dat hij niet mag zien. De controle staat in `klantPoort()` en kijkt naar `Soort
+klant` op het moment van inloggen — zet je iemand terug naar eenmalig, dan gaat
+dit meteen dicht, ook als zijn code blijft werken.
+
+Waarom die grens: een foto van een aflevering kan meer laten zien dan wat je
+bedoelde vast te leggen — een ander pand, een ander pakket, een gezicht. Bij een
+vaste klant weet je wie er meekijkt en waarom; bij iemand die je één keer rijdt
+niet.
 
 **Zelf afzeggen.** Bij een zending die nog op *Gepland* staat, staat een knop
 *Deze zending annuleren*. Twee handelingen: eerst de knop, dan een bevestiging

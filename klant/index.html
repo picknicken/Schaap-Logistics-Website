@@ -206,6 +206,30 @@ input{font:inherit}
 .krabbel img{width:100%;height:auto;display:block;max-height:180px;object-fit:contain}
 .bewijs b{display:block;color:#08512f}
 
+/* ------------------------------------------------- foto's bij aflevering
+   Dichtgeklapt, met het aantal op de regel. Wie wil zien waar zijn zending is
+   neergezet klapt hem open; wie dat niet wil houdt een korte kaart. De
+   afbeeldingen worden pas opgehaald bij het openklappen — anders betaalt
+   iedereen bandbreedte voor iets wat de meesten niet aanklikken. */
+.fotovak{border:1px solid var(--line);border-radius:11px;overflow:hidden;background:var(--paper-2)}
+.fotovak__kop{
+  display:flex;align-items:center;gap:8px;padding:11px 14px;cursor:pointer;
+  list-style:none;font-size:.86rem;font-weight:600;color:var(--heading);
+}
+.fotovak__kop::-webkit-details-marker{display:none}
+.fotovak__kop span{margin-left:auto;font-weight:500;color:var(--muted);font-size:.8rem}
+.fotovak__pijl{transition:transform .15s;color:var(--muted);flex:none}
+.fotovak[open] .fotovak__pijl{transform:rotate(90deg)}
+.fotos{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));
+  gap:6px;padding:0 10px 10px;
+}
+.fotos a{
+  display:block;border:1px solid var(--line);border-radius:9px;overflow:hidden;
+  background:#fff;aspect-ratio:1;
+}
+.fotos img{width:100%;height:100%;display:block;object-fit:cover}
+
 /* ----------------------------------------------------------- afzeggen */
 /* De knop staat er rustig bij; de bevestiging eronder is waar het gebeurt.
    Zo kost afzeggen twee handelingen, en dat is precies de bedoeling. */

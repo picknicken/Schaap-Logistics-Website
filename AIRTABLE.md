@@ -636,7 +636,7 @@ dat gaat dan voor en de vraag verdwijnt uit het inlogscherm.
 | Veld | Wat het doet |
 | --- | --- |
 | `Handtekening` | De krabbel van de ontvanger, als afbeelding |
-| `Foto's` | Foto's bij aflevering, gemaakt vanuit het portaal (`fldFLPER4OAVMPDMv`). Hoogstens tien per rit; de klant ziet ze niet |
+| `Foto's` | Foto's bij aflevering, gemaakt vanuit het portaal (`fldFLPER4OAVMPDMv`). Hoogstens tien per rit; alleen een vaste klant kan ze in zijn portaal terugkijken |
 | `Getekend door` | Wie er getekend heeft. Een krabbel zonder naam zegt weinig |
 | `Getekend op` | Het tijdstip. Wordt door het portaal gezet |
 | `Onderweg sinds` | Wanneer je vertrok. Samen met `Getekend op` de werkelijke ritduur |

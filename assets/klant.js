@@ -277,10 +277,73 @@
         vak.appendChild(afb);
         lijf.appendChild(vak);
       }
+
+      /* De foto's van de aflevering: waar het is neergezet en hoe het erbij
+         stond. Dichtgeklapt, want niet iedereen wil dat zien en een kaart met
+         vier plaatjes erop is geen kaart meer. De afbeeldingen worden pas
+         opgehaald bij het openklappen.
+
+         Zijn er geen foto's meegestuurd, dan staat hier niets. Voor een
+         eenmalige klant is dat altijd zo: de tussenlaag stuurt ze niet mee.
+         Er staat dan ook nergens dat er iets is dat hij niet mag zien. */
+      if (r.fotos && r.fotos.length) { lijf.appendChild(fotovak(r)); }
     }
 
     kaart.appendChild(lijf);
     return kaart;
+  }
+
+  function fotovak(r) {
+    var vak = maak('details', 'fotovak');
+    var kop = maak('summary', 'fotovak__kop');
+
+    var pijl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    pijl.setAttribute('class', 'fotovak__pijl');
+    pijl.setAttribute('width', '13');
+    pijl.setAttribute('height', '13');
+    pijl.setAttribute('viewBox', '0 0 24 24');
+    pijl.setAttribute('fill', 'none');
+    pijl.setAttribute('stroke', 'currentColor');
+    pijl.setAttribute('stroke-width', '3');
+    pijl.setAttribute('stroke-linecap', 'round');
+    pijl.setAttribute('stroke-linejoin', 'round');
+    pijl.setAttribute('aria-hidden', 'true');
+    var pad = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    pad.setAttribute('d', 'm9 18 6-6-6-6');
+    pijl.appendChild(pad);
+
+    kop.appendChild(pijl);
+    kop.appendChild(document.createTextNode("Foto's bij de aflevering"));
+    kop.appendChild(maak('span', '', r.fotos.length === 1 ? '1 foto'
+                                                          : r.fotos.length + ' foto\u2019s'));
+    vak.appendChild(kop);
+
+    var raster = maak('div', 'fotos');
+    r.fotos.forEach(function (f, nr) {
+      var link = maak('a', '');
+      link.href = f.url;
+      link.target = '_blank';
+      link.rel = 'noopener';
+      var plaat = document.createElement('img');
+      /* Het adres staat klaar maar wordt pas een src als het vak opengaat.
+         Anders haalt elke telefoon die het portaal opent alle foto's op van
+         alles wat er ooit bezorgd is. */
+      plaat.setAttribute('data-bron', f.klein || f.url);
+      plaat.alt = 'Foto ' + (nr + 1) + ' bij deze aflevering';
+      plaat.loading = 'lazy';
+      link.appendChild(plaat);
+      raster.appendChild(link);
+    });
+    vak.appendChild(raster);
+
+    vak.addEventListener('toggle', function () {
+      if (!vak.open) { return; }
+      Array.prototype.forEach.call(raster.querySelectorAll('img[data-bron]'), function (plaat) {
+        plaat.src = plaat.getAttribute('data-bron');
+        plaat.removeAttribute('data-bron');
+      });
+    });
+    return vak;
   }
 
   /* Afzeggen kan in het portaal alleen zolang de rit nog gepland staat. Is de
