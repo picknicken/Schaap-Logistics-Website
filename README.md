@@ -394,6 +394,16 @@ onmogelijk maakt*.
 
 Twee dingen die bewust zo zijn:
 
+**Het versienummer achter de scripts.** In `portaal/index.html` en
+`klant/index.html` staat achter het script een `?v=…`. Een telefoon bewaart de
+pagina en het script los van elkaar, en een app op het beginscherm houdt de
+pagina hardnekkig vast. Komt er een pagina van gisteren bij een script van
+vandaag, dan zoekt dat script knoppen die er nog niet zijn — en dan valt het
+hele portaal stil. Verander je `assets/portaal.js` of `assets/klant.js`, hoog dat
+nummer dan op, dan horen ze weer bij elkaar. Als tweede vangnet slaat het portaal
+de kalender over in plaats van stuk te vallen als het vak er niet staat; daar
+staat een test op.
+
 **Het adres van de Worker hoeft niet in de code.** Laat `CONFIG.portaalUrl` in
 `assets/portaal.js` leeg, dan vraagt het inlogscherm er zelf om en onthoudt de
 telefoon het. Dat scheelt na het uitrollen een wijziging, een commit en een push

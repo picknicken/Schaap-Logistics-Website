@@ -325,13 +325,20 @@
   el('dag-volgende').addEventListener('click', function () { gaNaar(verschuif(dag, 1)); });
   el('dag-vandaag').addEventListener('click', function () { gaNaar(vandaag()); });
 
+  /* Of het kalendervak op deze pagina staat. Een telefoon bewaart de pagina en
+     dit script los van elkaar; komt er een oude pagina bij dit nieuwe script,
+     dan zijn de knoppen hieronder er niet. Zonder deze vraag zou het script
+     daarop stukvallen en zou het portaal helemaal niets meer laten zien — een
+     ontbrekende kalender is een stuk minder erg dan een leeg scherm. */
+  var heeftKalender = !!el('kalender');
+
   function gaNaar(nieuweDag) {
     dag = nieuweDag;
     haalDag();
     /* Staat de kalender open, dan moet de gekozen dag meeverspringen. Kom je
        daarmee in een andere maand, dan die maand erbij halen — anders kijk je
        naar augustus met een gekozen dag die daar niet in staat. */
-    if (!el('kalender').hidden) {
+    if (heeftKalender && !el('kalender').hidden) {
       if (dag.slice(0, 7) !== maand) { maand = dag.slice(0, 7); haalMaand(maand); }
       tekenMaand();
       el('dag-sprong').value = dag;
@@ -345,9 +352,31 @@
      zoeken op de klant, de plaats of het ritnummer. Typ je een datum in, dan
      komt daar een regel bij om er meteen heen te springen. */
 
-  el('dag-kies').addEventListener('click', function () {
-    zetKalender(el('kalender').hidden);
-  });
+  if (heeftKalender) {
+    el('dag-kies').addEventListener('click', function () {
+      zetKalender(el('kalender').hidden);
+    });
+    el('maand-vorige').addEventListener('click', function () { andereMaand(-1); });
+    el('maand-volgende').addEventListener('click', function () { andereMaand(1); });
+    /* De datumkiezer van de telefoon zelf. Voor een dag in een heel ander jaar
+       is dat één beweging, waar doorbladeren er twintig zou zijn. */
+    el('dag-sprong').addEventListener('change', function () {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(this.value)) { kiesDag(this.value); }
+    });
+    el('rit-zoek').addEventListener('input', function () {
+      var tekst = this.value.trim();
+      el('rit-zoek-leeg').hidden = !this.value;
+      if (zoekWacht) { clearTimeout(zoekWacht); zoekWacht = null; }
+      if (tekst.length < 2) { zoekBeurt++; toonZoek(false); return; }
+      /* Even wachten met versturen. Anders gaat er bij het intypen van "Bakker"
+         zes keer een verzoek weg terwijl alleen het laatste ertoe doet. */
+      zoekWacht = setTimeout(function () { zoekRitten(tekst); }, 350);
+    });
+    el('rit-zoek-leeg').addEventListener('click', function () {
+      wisZoek();
+      el('rit-zoek').focus();
+    });
+  }
 
   function zetKalender(open) {
     el('kalender').hidden = !open;
@@ -358,9 +387,6 @@
     tekenMaand();
     haalMaand(maand);
   }
-
-  el('maand-vorige').addEventListener('click', function () { andereMaand(-1); });
-  el('maand-volgende').addEventListener('click', function () { andereMaand(1); });
 
   function andereMaand(stap) {
     var d = new Date(maand + '-01T12:00:00');
@@ -451,28 +477,7 @@
     gaNaar(nieuweDag);
   }
 
-  /* De datumkiezer van de telefoon zelf. Voor een dag in een heel ander jaar
-     is dat één beweging, waar doorbladeren er twintig zou zijn. */
-  el('dag-sprong').addEventListener('change', function () {
-    if (/^\d{4}-\d{2}-\d{2}$/.test(this.value)) { kiesDag(this.value); }
-  });
-
   /* -------------------------------------------------------------- zoeken */
-
-  el('rit-zoek').addEventListener('input', function () {
-    var tekst = this.value.trim();
-    el('rit-zoek-leeg').hidden = !this.value;
-    if (zoekWacht) { clearTimeout(zoekWacht); zoekWacht = null; }
-    if (tekst.length < 2) { zoekBeurt++; toonZoek(false); return; }
-    /* Even wachten met versturen. Anders gaat er bij het intypen van "Bakker"
-       zes keer een verzoek weg terwijl alleen het laatste ertoe doet. */
-    zoekWacht = setTimeout(function () { zoekRitten(tekst); }, 350);
-  });
-
-  el('rit-zoek-leeg').addEventListener('click', function () {
-    wisZoek();
-    el('rit-zoek').focus();
-  });
 
   function wisZoek() {
     if (zoekWacht) { clearTimeout(zoekWacht); zoekWacht = null; }
@@ -656,6 +661,7 @@
      opnieuw opent. Alleen de maanden waarvan het raster deze dag laat zien
      worden bijgewerkt; die overlappen aan het begin en het eind. */
   function stipBij() {
+    if (!heeftKalender) { return; }
     Object.keys(maanden).forEach(function (sleutel) {
       var start = rasterStart(sleutel);
       var hoort = dag >= start && dag <= verschuif(start, 41);
