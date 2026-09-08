@@ -425,7 +425,7 @@ Je eigen kosten en de kosten van de klant zijn twee verschillende dingen:
 | `Brandstofkosten`, `Tol en parkeren`, `Overige ritkosten` | jouw kosten, voor je eigen boekhouding | nee |
 | `Extra kosten` (in het portaal: *Doorberekenen*) | wat de klant je terugbetaalt | ja, als losse regel *Doorberekende kosten* |
 
-Brandstof zit al in het kilometertarief — dat is precies waar €1,50 tot €2,50 per
+Brandstof zit al in het kilometertarief — dat is precies waar €1,00 tot €2,00 per
 kilometer voor bedoeld is. Zet je je brandstof daarnaast ook nog op de factuur,
 dan betaalt de klant twee keer voor dezelfde liters. Dekt het kilometertarief je
 kosten niet meer, dan hoort het kilometertarief omhoog (op alle drie de plekken
@@ -435,9 +435,11 @@ Tol, veerpont, parkeergeld of iets dat je onderweg voor de klant moest kopen zij
 wél door te berekenen: die zet je in `Extra kosten`, en dan komt het via de
 `Factuurlink` als eigen regel op de factuur te staan.
 
-De formule volgt de website exact: standaard €75 + €1,50/km, spoed €100 + €2,00/km,
-directe spoed €125 + €2,50/km, minimum €75 per opdracht, en daarna pas de extra
-kosten erbij. Internationaal rekent mee met een eigen tarief: €150 + €2,00/km,
+De formule volgt de website exact: standaard €75 + €1,00/km, spoed €100 + €1,50/km,
+directe spoed €125 + €1,50/km, minimum €75 per opdracht, en daarna pas de extra
+kosten erbij. **Al die bedragen zijn inclusief btw**; de formule deelt de hele som
+één keer door 1,21 om op het subtotaal van de factuur uit te komen. Internationaal
+rekent mee met een eigen tarief: €150 + €2,00/km,
 met een eigen bodem van €200 in plaats van €75. Dat minimum is hoger omdat de
 kortste rit over de grens al gauw een halve dag kost — heen, lossen, en leeg
 terug — terwijl een rit naar Turnhout korter is dan een rit naar Rotterdam.

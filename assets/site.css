@@ -310,6 +310,13 @@ tbody tr:hover{background:#fbfcfe}
 .td-strong{font-weight:600;color:var(--heading)}
 .td-price{font-weight:700;color:var(--heading)}
 .td-urgent{color:var(--urgent);font-weight:700}
+/* Het bedrag zonder btw onder het bedrag dat de klant betaalt. De tarieven zijn
+   inclusief btw — dat is wat je betaalt — maar wie hier rekent is een bedrijf en
+   dat wil weten wat er als subtotaal op de factuur komt. */
+.td-excl{
+  display:block;font-weight:500;font-size:.78rem;color:var(--muted);
+  margin-top:2px;white-space:nowrap;
+}
 
 /* price cards */
 .price-card{

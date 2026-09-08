@@ -64,14 +64,16 @@
     <p class="lede" style="margin-bottom:40px">
       U kiest zelf hoe snel het moet. Elk tarief bestaat uit een starttarief plus een vaste
       kilometerprijs — geen brandstoftoeslagen die pas op de factuur verschijnen.
+      De bedragen hieronder zijn inclusief btw: dat is wat u betaalt. Op de factuur
+      staat het bedrag zonder btw met de btw eronder.
     </p>
 
     <div class="grid grid--3" style="margin-bottom:36px">
       <div class="price-card">
         <h2>Standaard transport</h2>
-        <p class="price-card__sub">Reguliere zakelijke transportopdracht</p>
+        <p class="price-card__sub">Geplande rit op een afgesproken tijdstip</p>
         <div class="price-card__amount"><b>vanaf &euro;75</b></div>
-        <p class="price-card__plus">+ <b>&euro;1,50</b> per kilometer &middot; excl. btw</p>
+        <p class="price-card__plus">+ <b>&euro;1,00</b> per kilometer &middot; incl. btw</p>
         <ul>
           <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Direct transport zonder overslag</li>
           <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Vooraf bevestigde ophaal- en aflevertijd</li>
@@ -82,9 +84,9 @@
       <div class="price-card">
         <span class="price-card__tag" style="background:var(--amber);color:#22160a">Met prioriteit</span>
         <h2>Spoedtransport</h2>
-        <p class="price-card__sub">Versnelde levering met voorrang</p>
+        <p class="price-card__sub">Rit die vandaag nog van A naar B gaat</p>
         <div class="price-card__amount"><b>vanaf &euro;100</b></div>
-        <p class="price-card__plus">+ <b>&euro;2,00</b> per kilometer &middot; excl. btw</p>
+        <p class="price-card__plus">+ <b>&euro;1,50</b> per kilometer &middot; incl. btw</p>
         <ul>
           <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Voorrang op geplande ritten</li>
           <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Directe terugkoppeling onderweg</li>
@@ -95,9 +97,9 @@
       <div class="price-card price-card--urgent">
         <span class="price-card__tag">Snelst</span>
         <h2>Directe spoed</h2>
-        <p class="price-card__sub">Direct beschikbaar, zo snel mogelijk vertrek</p>
+        <p class="price-card__sub">Wij stappen nu in de bus en zijn onderweg</p>
         <div class="price-card__amount"><b>vanaf &euro;125</b></div>
-        <p class="price-card__plus">+ <b>&euro;2,50</b> per kilometer &middot; excl. btw</p>
+        <p class="price-card__plus">+ <b>&euro;1,50</b> per kilometer &middot; incl. btw</p>
         <ul>
           <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Wij vertrekken zodra de zending klaarstaat</li>
           <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Alles wijkt voor deze rit</li>
@@ -109,26 +111,30 @@
     <h2 style="font-size:1.1rem;margin-bottom:14px">Rekenvoorbeelden</h2>
     <div class="table-wrap" style="margin-bottom:10px">
       <table>
-        <caption class="sr-only">Voorbeeldprijzen per afstand en type rit, exclusief btw en toeslagen</caption>
+        <caption class="sr-only">Voorbeeldprijzen per afstand en type rit, inclusief btw en exclusief toeslagen</caption>
         <thead>
           <tr><th scope="col">Afstand</th><th scope="col">Standaard</th><th scope="col">Spoed</th><th scope="col">Directe spoed</th></tr>
         </thead>
         <tbody>
-          <tr><td class="td-strong">10 km</td><td class="td-price">&euro; 90,00</td><td class="td-price">&euro; 120,00</td><td class="td-urgent">&euro; 150,00</td></tr>
-          <tr><td class="td-strong">25 km</td><td class="td-price">&euro; 112,50</td><td class="td-price">&euro; 150,00</td><td class="td-urgent">&euro; 187,50</td></tr>
-          <tr><td class="td-strong">50 km</td><td class="td-price">&euro; 150,00</td><td class="td-price">&euro; 200,00</td><td class="td-urgent">&euro; 250,00</td></tr>
-          <tr><td class="td-strong">100 km</td><td class="td-price">&euro; 225,00</td><td class="td-price">&euro; 300,00</td><td class="td-urgent">&euro; 375,00</td></tr>
-          <tr><td class="td-strong">200 km</td><td class="td-price">&euro; 375,00</td><td class="td-price">&euro; 500,00</td><td class="td-urgent">&euro; 625,00</td></tr>
-          <tr><td class="td-strong">300 km</td><td class="td-price">&euro; 525,00</td><td class="td-price">&euro; 700,00</td><td class="td-urgent">&euro; 875,00</td></tr>
+          <tr><td class="td-strong">10 km</td><td class="td-price">&euro; 85,00<span class="td-excl">&euro; 70,25 excl. btw</span></td><td class="td-price">&euro; 115,00<span class="td-excl">&euro; 95,04 excl. btw</span></td><td class="td-urgent">&euro; 140,00<span class="td-excl">&euro; 115,70 excl. btw</span></td></tr>
+          <tr><td class="td-strong">25 km</td><td class="td-price">&euro; 100,00<span class="td-excl">&euro; 82,64 excl. btw</span></td><td class="td-price">&euro; 137,50<span class="td-excl">&euro; 113,64 excl. btw</span></td><td class="td-urgent">&euro; 162,50<span class="td-excl">&euro; 134,30 excl. btw</span></td></tr>
+          <tr><td class="td-strong">50 km</td><td class="td-price">&euro; 125,00<span class="td-excl">&euro; 103,31 excl. btw</span></td><td class="td-price">&euro; 175,00<span class="td-excl">&euro; 144,63 excl. btw</span></td><td class="td-urgent">&euro; 200,00<span class="td-excl">&euro; 165,29 excl. btw</span></td></tr>
+          <tr><td class="td-strong">100 km</td><td class="td-price">&euro; 175,00<span class="td-excl">&euro; 144,63 excl. btw</span></td><td class="td-price">&euro; 250,00<span class="td-excl">&euro; 206,61 excl. btw</span></td><td class="td-urgent">&euro; 275,00<span class="td-excl">&euro; 227,27 excl. btw</span></td></tr>
+          <tr><td class="td-strong">200 km</td><td class="td-price">&euro; 275,00<span class="td-excl">&euro; 227,27 excl. btw</span></td><td class="td-price">&euro; 400,00<span class="td-excl">&euro; 330,58 excl. btw</span></td><td class="td-urgent">&euro; 425,00<span class="td-excl">&euro; 351,24 excl. btw</span></td></tr>
+          <tr><td class="td-strong">300 km</td><td class="td-price">&euro; 375,00<span class="td-excl">&euro; 309,92 excl. btw</span></td><td class="td-price">&euro; 550,00<span class="td-excl">&euro; 454,55 excl. btw</span></td><td class="td-urgent">&euro; 575,00<span class="td-excl">&euro; 475,21 excl. btw</span></td></tr>
         </tbody>
       </table>
     </div>
 <p class="veegtip">Veeg de tabel opzij voor de kolommen die er niet op passen.</p>
     <p style="font-size:.82rem;color:var(--muted);margin-bottom:28px">
-      Bedragen zijn exclusief btw en exclusief eventuele toeslagen.
+      Het grote bedrag is wat u betaalt; daaronder staat hetzelfde bedrag zonder btw,
+      zoals het als subtotaal op de factuur komt. Eventuele toeslagen komen er nog bij.
     </p>
 
     <h2 style="font-size:1.1rem;margin-bottom:14px">Toeslagen en aanvullende kosten</h2>
+    <p style="font-size:.86rem;color:var(--muted);margin-bottom:14px">
+      Ook deze bedragen zijn inclusief btw, net als de tarieven hierboven.
+    </p>
     <div class="table-wrap">
       <table>
         <thead><tr><th scope="col">Post</th><th scope="col">Tarief</th><th scope="col">Toelichting</th></tr></thead>
@@ -161,7 +167,7 @@
       </div>
       <div class="intl__price">
         <b>vanaf &euro;200</b>
-        <span>&euro;150 starttarief + &euro;2,00 per km, excl. btw</span>
+        <span>&euro;150 starttarief + &euro;2,00 per km, incl. btw</span>
         <a class="btn btn--primary" href="../aanvragen/" style="margin-top:16px">Internationale rit aanvragen</a>
       </div>
     </div>
@@ -222,7 +228,7 @@
 
     <div class="footer__bottom">
       <span>&copy; <span id="jaar">2026</span> Schaap Express Transport. Alle rechten voorbehouden.</span>
-      <span>Alle genoemde tarieven zijn exclusief btw. Op onze diensten zijn onze <a href="../voorwaarden/">algemene voorwaarden</a> van toepassing. <a href="../privacy/">Privacyverklaring</a>.</span>
+      <span>Alle genoemde tarieven zijn inclusief btw. Op onze diensten zijn onze <a href="../voorwaarden/">algemene voorwaarden</a> van toepassing. <a href="../privacy/">Privacyverklaring</a>.</span>
       <a class="footer__intern" href="../portaal/">Chauffeursportaal</a>
     </div>
   </div>

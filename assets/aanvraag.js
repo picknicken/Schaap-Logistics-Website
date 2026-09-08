@@ -206,7 +206,8 @@
       samNoot.textContent  = 'Naar Belgi\u00eb en Duitsland rekenen wij ' + euro.format(rit.start) +
                              ' starttarief plus \u20ac ' + rit.km.toFixed(2).replace('.', ',') +
                              ' per kilometer, met ' +
-                             'een minimum van ' + euro.format(rit.minimum) + '. De afstand naar het ' +
+                             'een minimum van ' + euro.format(rit.minimum) + ', alles inclusief btw. ' +
+                             'De afstand naar het ' +
                              'buitenland rekenen wij met de hand na, dus bevestigen wij het ' +
                              'exacte bedrag zodra wij uw route hebben bekeken.';
       return;
@@ -223,13 +224,15 @@
 
     var b = window.SL.bereken(dienst, km, tKey, stops);
     samRijen.appendChild(samRij('Geschatte afstand', km + ' km'));
-    samPrijs.textContent = euro.format(b.totaal);
+    samRijen.appendChild(samRij('Inclusief btw', euro.format(b.totaalIncl)));
+    samPrijs.textContent = euro.format(b.totaalExcl);
     samNoot.textContent  = 'Indicatie op basis van een geschatte rijafstand van ' + km +
                            ' km' + (stops > 0
                              ? ' en ' + stops + (stops === 1 ? ' extra stop' : ' extra stops')
                              : '') +
-                           ', excl. btw. De definitieve prijs wordt bevestigd na ' +
-                           'controle van de opdracht.' +
+                           '. Het grote bedrag is exclusief btw; dat is wat er op de ' +
+                           'factuur als subtotaal komt. De definitieve prijs wordt ' +
+                           'bevestigd na controle van de opdracht.' +
                            (isSpoed()
                              ? ' Wij laten zo snel mogelijk weten hoe laat wij er kunnen zijn.'
                              : '');
@@ -346,7 +349,9 @@
     var tKey   = tijdSleutel();
     var stops  = aantalStops();
     var km     = rit.buitenland ? null : window.SL.schatAfstand(window.SL.postcodeUit(op), window.SL.postcodeUit(af));
-    var prijs  = km === null ? null : window.SL.bereken(dienst, km, tKey, stops).totaal;
+    /* Naar Airtable gaat het bedrag zonder btw: daar wordt de factuur op
+       gebouwd, en die rekent de btw er zelf bij. */
+    var prijs  = km === null ? null : window.SL.bereken(dienst, km, tKey, stops).totaalExcl;
 
     return {
       'Status':                   'Nieuw',

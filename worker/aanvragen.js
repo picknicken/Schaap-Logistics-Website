@@ -41,7 +41,7 @@ const VERPLICHT = ['Bedrijf', 'Contactpersoon', 'Telefoon', 'E-mail'];
 
    Wijzig je de voorwaarden, dan verander je drie dingen tegelijk: deze regel,
    CONFIG.voorwaardenVersie in assets/site.js, en de PDF. */
-const VOORWAARDEN_VERSIE = '2026-09-03';
+const VOORWAARDEN_VERSIE = '2026-09-08';
 const VOORWAARDENVELD    = 'Voorwaarden geaccepteerd';
 
 /* ---------------------------------------------------------------- de rem

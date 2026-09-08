@@ -92,8 +92,12 @@
         ' × ' + euro.format(CONFIG.stoptoeslag), b.stopSom, 'calc__row--toeslag'));
     }
 
-    rowTotal.textContent = euro.format(b.totaal);
-    rowVat.textContent   = euro.format(b.totaal * (1 + CONFIG.btw)) + ' incl. 21% btw';
+    /* De tarieven zijn inclusief btw, maar wie hier rekent is een bedrijf en
+       dat rekent in bedragen zonder btw — dat is ook wat er op de factuur als
+       subtotaal komt. Dus staat het bedrag zonder btw groot, met daaronder wat
+       er werkelijk betaald wordt. */
+    rowTotal.textContent = euro.format(b.totaalExcl);
+    rowVat.textContent   = euro.format(b.totaalIncl) + ' incl. 21% btw';
 
     var k;
     for (k in ritKnop)  { ritKnop[k].setAttribute('aria-pressed',  k === soort ? 'true' : 'false'); }

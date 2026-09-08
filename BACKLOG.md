@@ -302,6 +302,36 @@ varianten op wat hierboven staat maar dingen die in geen enkele lijst voorkwamen
 
 ---
 
+## 12. De repository privé, via Cloudflare Pages
+
+**Waarom.** Er staan geen wachtwoorden in deze repository — die zitten in
+Cloudflare — maar wel `KORTINGEN.md`, de kostprijs per kilometer en de marges.
+Dat is bedrijfsinformatie en die hoort niet openbaar te staan.
+
+**De adder.** GitHub Pages publiceert op het gratis plan alleen vanuit een
+*publieke* repository. Privé zetten zonder iets anders te regelen haalt de site
+dus offline. Twee wegen eromheen: GitHub Pro voor vier dollar per maand, of
+verhuizen naar Cloudflare Pages, dat het gratis wél vanuit een privé repository
+doet.
+
+**Wat er al klaar staat.** `_headers` staat in de repository: kopregels die
+Cloudflare Pages meestuurt en GitHub Pages niet kan lezen. Dat doet nu nog
+niets en gaat gelden zodra Cloudflare het overneemt. De volledige volgorde staat
+in `README.md` onder *Van GitHub Pages naar Cloudflare Pages*, en er is een
+stappenlijst met alle eenentwintig stappen.
+
+**Waarom het wacht.** Het domein staat bij Strato en de DNS ook. Een CNAME op
+het kale domein mag niet volgens de DNS-standaard, dus moet de hele zone naar
+Cloudflare — inclusief de MX- en TXT-records waar de e-mail aan hangt. Dat is
+het echte werk en het echte risico: verkeerd overgenomen mailrecords betekent
+geen post meer. Het is goed te doen, maar niet iets om er even tussendoor te
+doen, en zeker niet vlak voor een weekend.
+
+**Middelgrote klus**, waarvan het meeste in de schermen van Cloudflare en Strato
+gebeurt en niet in de code.
+
+---
+
 ## Wat ik als eerste zou doen
 
 1. **Het kopieerbaar maken doortrekken naar de ritkaart.** In het tabblad
@@ -313,3 +343,7 @@ varianten op wat hierboven staat maar dingen die in geen enkele lijst voorkwamen
    klanten het gebruiken voordat je een inlogsysteem bouwt.
 6. **Pas daarna** accounts per klant, en de mailbox alleen als je die accounts
    hebt.
+
+De verhuizing naar Cloudflare Pages (punt 12) staat hier bewust niet tussen: die
+levert je geen enkele klant op. Doe hem op een rustige ochtend, niet als er iets
+anders speelt.

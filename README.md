@@ -198,7 +198,7 @@ ziet hoe het eruitziet.
 | `start` | Regel 20: het starttarief |
 | `toeslag`, `toeslagoms` | Regel 30: een toeslag met omschrijving |
 | `termijn` | Betalingstermijn in dagen (standaard 14) |
-| `minimum` | Het minimum per opdracht (standaard 75) |
+| `minimum` | Het minimum per opdracht, zonder btw (standaard 75/1,21 = 61,98 — de prijslijst is inclusief btw) |
 
 De pagina rekent zelf de 21% btw en vult zo nodig aan tot het minimumtarief, als
 regel 40. Bedragen mogen met een punt of een komma.

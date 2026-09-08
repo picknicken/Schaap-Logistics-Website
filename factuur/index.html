@@ -468,10 +468,15 @@ tbody td.af{color:#1d7a4c}
 
   /* Het minimumtarief van EUR 75 per opdracht. Anders dan de andere bedragen
      geldt hier altijd een standaard: een factuur zonder minimum in de
-     adresregel moet er nog steeds mee rekenen. */
+     adresregel moet er nog steeds mee rekenen.
+
+     Die 75 is het bedrag dat de klant betaalt en dus inclusief btw, want zo
+     staat de hele prijslijst. Deze pagina rekent in bedragen zonder btw, dus
+     staat hier de omgerekende ondergrens. Onafgerond: rond je hem af, dan
+     valt een korte rit een cent naast wat er op de site beloofd is. */
   var minimumRuw = q.get('minimum');
   var minimum = (minimumRuw === null || minimumRuw === '')
-    ? 75
+    ? 75 / 1.21
     : (parseFloat(String(minimumRuw).replace(',', '.')) || 0);
 
   var ritprijs = ritregels.reduce(function (t, r) { return t + r.bedrag; }, 0);

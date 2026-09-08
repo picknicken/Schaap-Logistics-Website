@@ -19,19 +19,38 @@
        voorwaarden, zet dan hier de nieuwe datum neer, maak de PDF opnieuw
        (scripts/maak-voorwaarden-pdf.mjs) EN pas VOORWAARDEN_VERSIE in
        worker/aanvragen.js aan — anders weigert de tussenlaag de aanvraag. */
-    voorwaardenVersie: '2026-09-03',
-    minimum: 75,                         /* minimumtarief per opdracht */
+    voorwaardenVersie: '2026-09-08',
+    /* ---------------------------------------------------------- de prijzen
+
+       LET OP: alle bedragen hieronder zijn INCLUSIEF btw. Dat is wat een klant
+       betaalt en wat je hem door de telefoon noemt — "vijfenzeventig euro en
+       een euro per kilometer" is dan het hele verhaal, zonder dat er nog iets
+       bij komt.
+
+       De factuur werkt andersom: daar staat eerst het bedrag zonder btw en dan
+       de btw erbij. Het omrekenen gebeurt daarom één keer, aan het eind van de
+       hele som, in bereken(). Eén keer aan het eind en niet per regel: anders
+       lopen de centen uiteen met wat de klant hoorde.
+
+       Wijzig je hier iets, wijzig het dan ook op /tarieven/, in de formule
+       `Automatisch totaal excl. BTW` in de tabel Ritten, en in TARIEVEN in
+       portaal/portaal.js. Anders factureer je iets anders dan je belooft. */
+    minimum: 75,                         /* minimumtarief per opdracht, incl. btw */
     btw: 0.21,
     /* Per dienst een starttarief en een kilometerprijs. Een dienst mag een
        eigen minimum hebben; staat dat er niet, dan geldt CONFIG.minimum.
        Internationaal heeft een hoger minimum omdat de kortste rit over de
        grens al gauw een halve dag kost: heen, lossen, en leeg terug. */
     ritten: {
-      standaard:     { naam: 'Standaard transport',    start: 75,  km: 1.50 },
-      spoed:         { naam: 'Spoedtransport',         start: 100, km: 2.00, spoed: true },
-      direct:        { naam: 'Directe spoed',          start: 125, km: 2.50, spoed: true },
+      standaard:     { naam: 'Standaard transport',    start: 75,  km: 1.00,
+                       kort: 'Geplande rit op een afgesproken tijdstip' },
+      spoed:         { naam: 'Spoedtransport',         start: 100, km: 1.50, spoed: true,
+                       kort: 'Rit die vandaag nog van A naar B gaat' },
+      direct:        { naam: 'Directe spoed',          start: 125, km: 1.50, spoed: true,
+                       kort: 'Ik spring nu in de auto en ben onderweg' },
       internationaal:{ naam: 'Internationaal transport', start: 150, km: 2.00, minimum: 200,
-                       buitenland: true }
+                       buitenland: true,
+                       kort: 'Naar Belgi\u00eb of Duitsland, op offerte' }
     },
     /* Toeslag voor werken buiten kantooruren: een percentage van de ritprijs,
        met een ondergrens. Twee dingen tegelijk, en allebei nodig.
@@ -140,9 +159,19 @@
 
   /* ===================== prijsberekening ===================== */
 
+  function centen(bedrag) { return Math.round(bedrag * 100) / 100; }
+
   /* Ritprijs = starttarief + kilometers. Ligt die onder het minimumtarief,
      dan geldt het minimum. Toeslagen — tijdvak en extra stops — komen daar
-     bovenop, net als in de factuurberekening in Airtable. */
+     bovenop, net als in de factuurberekening in Airtable.
+
+     De hele som loopt op de bedragen uit CONFIG en die zijn inclusief btw. Aan
+     het eind wordt er één keer teruggerekend naar het bedrag zonder btw, want
+     dat is wat er op de factuur als subtotaal hoort te staan.
+
+     Er komen twee getallen uit en ze heten allebei wat ze zijn. Een enkel veld
+     `totaal` stond hier eerder en betekende toen zonder btw; dat woord is
+     bewust weg, zodat niemand het per ongeluk voor het andere aanziet. */
   function bereken(soort, km, tijd, stops) {
     var r = CONFIG.ritten[soort];
     if (!r) { return null; }
@@ -157,11 +186,18 @@
        minimum: dat is wat de rit kost, en dus waar de opslag over hoort te
        gaan. Afgerond op hele centen, anders staat er 30.000000000000004. */
     var basis = ritprijs + correctie;
-    var tijdSom = t.deel ? Math.round(Math.max(basis * t.deel, t.bodem) * 100) / 100 : 0;
+    var tijdSom = t.deel ? centen(Math.max(basis * t.deel, t.bodem)) : 0;
+
+    var incl = centen(ritprijs + correctie + tijdSom + stopSom);
+    var excl = centen(incl / (1 + CONFIG.btw));
     return {
       tarief: r, tijdstip: t, kmSom: kmSom, correctie: correctie,
       stops: n, stopSom: stopSom, tijdSom: tijdSom,
-      totaal: ritprijs + correctie + tijdSom + stopSom
+      /* Wat de klant betaalt. */
+      totaalIncl: incl,
+      /* Wat er als subtotaal op de factuur komt, met de btw daaronder. */
+      totaalExcl: excl,
+      btw: centen(incl - excl)
     };
   }
 
