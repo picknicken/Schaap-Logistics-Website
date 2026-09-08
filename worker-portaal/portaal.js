@@ -67,6 +67,10 @@ const R = {
   chauffeur:  'Chauffeur',
   totaal:     'Automatisch totaal excl. BTW',
   handtek:    'Handtekening',
+  /* Foto's bij aflevering: waar de zending is achtergelaten, of hoe hij erbij
+     stond. Naast de handtekening, niet in plaats daarvan — een krabbel zegt
+     dat iemand tekende, een foto zegt wat hij tekende. */
+  fotos:      "Foto's",
   getekendD:  'Getekend door',
   getekendO:  'Getekend op',
   onderweg:   'Onderweg sinds',
@@ -245,6 +249,11 @@ const DAGKLUS = '0 5 * * *';
 
 const MAX_BODY_MB    = 4;    /* een handtekening is een paar kB; dit is ruim */
 const MAX_HANDTEK_KB = 800;
+/* Een foto wordt op de telefoon al teruggebracht naar hoogstens 1600 pixels
+   en jpeg-kwaliteit 0,8 — dat komt neer op een paar honderd kB. Deze grens
+   vangt af wat daaromheen glipt, want het gratis Airtable-plan geeft je één
+   gigabyte aan bijlagen voor de hele base. */
+const MAX_FOTO_KB    = 1500;
 
 /* Hoeveel dagen je in één keer mag opvragen. Stond op 31, en dat was te krap
    voor twee dingen die het portaal werkelijk vraagt: de meldingen kijken
@@ -318,7 +327,7 @@ function magVanOrigin(origin, toegestaan) {
    krijgt ze niet terug als winstcijfer. */
 const CHAUFFEUR_MAG = new Set([
   'overzicht', 'ritten', 'status', 'handtekening', 'notitie', 'ritkm', 'ritkosten',
-  'dagstaat',
+  'dagstaat', 'ritfoto',
   /* Terugzoeken mag hij ook, maar hij krijgt alleen zijn eigen ritten terug —
      daar zorgt dezelfde zeef voor als bij het dagoverzicht. */
   'zoekritten',
@@ -463,7 +472,8 @@ export default {
 
 /* De acties die op één rit werken. Voor een chauffeur wordt bij deze eerst
    gecontroleerd of die rit van hem is. */
-const RIT_ACTIES = new Set(['status', 'handtekening', 'notitie', 'ritkm', 'ritkosten']);
+const RIT_ACTIES = new Set(['status', 'handtekening', 'notitie', 'ritkm', 'ritkosten',
+                            'ritfoto']);
 
 /* Wat een chauffeur nooit terugkrijgt, ook niet als een actie het per ongeluk
    meestuurt. Dit zijn de velden waar geld in staat. */
@@ -504,6 +514,7 @@ async function schakel(env, body, origin, wie) {
     case 'zoekritten':   return await zoekRitten(env, body, origin, wie);
     case 'status':       return await zetStatus(env, body, origin);
     case 'handtekening': return await zetHandtekening(env, body, origin);
+    case 'ritfoto':      return await zetRitFoto(env, body, origin);
     case 'notitie':      return await zetNotitie(env, body, origin);
     case 'accepteer':    return await accepteerAanvraag(env, body, origin);
     case 'afwijzen':     return await wijsAanvraagAf(env, body, origin);
@@ -677,13 +688,28 @@ async function zetHandtekening(env, body, origin) {
     return antwoord(413, { fout: 'Handtekening te groot' }, origin, true);
   }
 
+  /* Stond de rit zonder bereik in de wachtrij, dan kan hetzelfde verzoek een
+     tweede keer binnenkomen: het eerste is misschien wel aangekomen maar het
+     antwoord niet. De velden opnieuw zetten kan geen kwaad — dezelfde naam,
+     dezelfde status. De krabbel opnieuw uploaden wél: dan hangen er twee
+     dezelfde plaatjes aan één rit. Dus: staat er al een krabbel van dezelfde
+     ondertekenaar, dan slaan we de upload over. */
+  const bestaand = naarRit(await airtable(env, `${env.AIRTABLE_RITTEN}/${id}`));
+  const alGetekend = bestaand.handtekening && bestaand.getekend === naam;
+
   await zorgVoorFactuur(env, id);
 
   const rit = naarRit(await patch(env, env.AIRTABLE_RITTEN, id, {
     [R.getekendD]: naam,
-    [R.getekendO]: new Date().toISOString(),
+    /* Het moment van tekenen laten staan als het er al is: dat was het echte
+       moment, niet het moment waarop de wachtrij leegliep. */
+    [R.getekendO]: bestaand.getekendOp || new Date().toISOString(),
     [R.status]:    'Uitgevoerd'
   }));
+
+  if (alGetekend) {
+    return antwoord(200, { ok: true, handtekening: true, reden: '', rit }, origin, true);
+  }
 
   let opgeslagen = true;
   let reden = '';
@@ -696,6 +722,61 @@ async function zetHandtekening(env, body, origin) {
   }
 
   return antwoord(200, { ok: true, handtekening: opgeslagen, reden, rit }, origin, true);
+}
+
+/* Een foto bij aflevering. Waar de pallet is neergezet, hoe de doos erbij
+   stond, of de schade die er al op zat toen je hem ophaalde. Een handtekening
+   zegt dat iemand tekende; een foto zegt waarvoor.
+
+   Meerdere per rit mogen, tot MAX_FOTOS. De naam van het bestand komt van de
+   telefoon en is uniek per foto — daar hangt het slot aan dat voorkomt dat een
+   verzoek uit de wachtrij dezelfde foto twee keer oplevert. */
+const MAX_FOTOS = 10;
+
+async function zetRitFoto(env, body, origin) {
+  const id = recordId(body.id);
+  if (!id) { return antwoord(400, { fout: 'Ongeldig rit-id' }, origin, true); }
+
+  const match = /^data:(image\/jpeg|image\/png);base64,(.+)$/.exec(String(body.data || ''));
+  if (!match) {
+    return antwoord(400, { fout: 'Geen leesbare foto ontvangen' }, origin, true);
+  }
+  const [, type, base64] = match;
+  if (base64.length * 0.75 > MAX_FOTO_KB * 1024) {
+    return antwoord(413, { fout: 'De foto is te groot' }, origin, true);
+  }
+
+  /* De bestandsnaam gaat een adres in en komt straks in Airtable te staan.
+     Alleen wat in een bestandsnaam hoort, en het moet ergens op eindigen dat
+     bij het soort past. De rijtjes punten worden ook opgeruimd: van
+     "../../weg.jpg" blijft anders "....weg.jpg" over, en dat is weliswaar
+     ongevaarlijk maar het ziet eruit als een pad dat half is weggehaald. */
+  const schoon = String(body.naam || '')
+    .replace(/[^A-Za-z0-9._-]/g, '')
+    .replace(/\.{2,}/g, '.')
+    .replace(/^[.-]+/, '')
+    .slice(0, 60);
+  const past = type === 'image/png' ? /\.png$/i : /\.jpe?g$/i;
+  if (schoon.length < 5 || !past.test(schoon)) {
+    return antwoord(400, { fout: 'Ongeldige bestandsnaam voor de foto' }, origin, true);
+  }
+
+  const nu = await airtable(env, `${env.AIRTABLE_RITTEN}/${id}`);
+  const alAanwezig = (nu.fields || {})[R.fotos] || [];
+  /* Dezelfde naam betekent: deze foto zat al in de wachtrij en is aangekomen,
+     alleen het antwoord niet. Niets doen en ja zeggen. */
+  if (alAanwezig.some((b) => b && b.filename === schoon)) {
+    return antwoord(200, { ok: true, nieuw: false, rit: naarRit(nu) }, origin, true);
+  }
+  if (alAanwezig.length >= MAX_FOTOS) {
+    return antwoord(409, {
+      fout: `Er zitten al ${MAX_FOTOS} foto's aan deze rit. Meer wordt geen beter bewijs.`
+    }, origin, true);
+  }
+
+  await uploadBijlage(env, id, R.fotos, type, base64, schoon);
+  const na = await airtable(env, `${env.AIRTABLE_RITTEN}/${id}`);
+  return antwoord(200, { ok: true, nieuw: true, rit: naarRit(na) }, origin, true);
 }
 
 async function zetNotitie(env, body, origin) {
@@ -2284,6 +2365,19 @@ function bijlageUrl(veld) {
   return String(eerste.url || '');
 }
 
+/* Alle bijlagen van een veld, met de miniatuur erbij als Airtable die heeft
+   gemaakt. Op een ritkaart wil je een postzegel zien en pas bij aantikken de
+   hele foto — vier foto's op ware grootte zijn een paar megabyte over mobiel
+   internet, en dat is precies waar je op dat moment weinig van hebt. */
+function bijlagen(veld) {
+  if (!Array.isArray(veld)) { return []; }
+  return veld.filter(Boolean).map((b) => ({
+    naam:  String(b.filename || ''),
+    url:   String(b.url || ''),
+    klein: String(((b.thumbnails || {}).large || (b.thumbnails || {}).small || {}).url || b.url || '')
+  }));
+}
+
 function zonderBeheer(link) {
   return String(link || '').replace(/([?&])beheer=1&?/, '$1').replace(/[?&]$/, '');
 }
@@ -2345,7 +2439,8 @@ function naarRit(record) {
     handtekening: Array.isArray(f[R.handtek]) && f[R.handtek].length > 0,
     /* De krabbel zelf. Zonder deze link kun je hem nergens terugzien behalve
        in Airtable, en dan is het geen afleverbewijs dat je even laat zien. */
-    krabbel:      bijlageUrl(f[R.handtek])
+    krabbel:      bijlageUrl(f[R.handtek]),
+    fotos:        bijlagen(f[R.fotos])
   };
 }
 
@@ -2753,7 +2848,10 @@ function naarRitVoorChauffeur(record) {
     afgezegdOp: f[R.annulOp] || '',
     afzegreden: f[R.annulReden] || '',
     handtekening: Array.isArray(f[R.handtek]) && f[R.handtek].length > 0,
-    krabbel:      bijlageUrl(f[R.handtek])
+    krabbel:      bijlageUrl(f[R.handtek]),
+    /* Een chauffeur maakt de foto's zelf, dus hij mag ze ook terugzien. Er
+       staat geen bedrag op een foto. */
+    fotos:        bijlagen(f[R.fotos])
   };
 }
 

@@ -628,7 +628,7 @@ npx wrangler deploy
 De URL die `deploy` teruggeeft typ je één keer over in het inlogscherm van het
 portaal; de telefoon onthoudt hem daarna. Je hoeft er dus niets voor in de code
 te veranderen. Wil je het toch vastleggen — bijvoorbeeld omdat er meerdere
-telefoons komen — dan kan het in `assets/portaal.js` bij `CONFIG.portaalUrl`;
+telefoons komen — dan kan het in `portaal/portaal.js` bij `CONFIG.portaalUrl`;
 dat gaat dan voor en de vraag verdwijnt uit het inlogscherm.
 
 **Velden die hierbij horen**, allemaal in `Ritten`:
@@ -636,6 +636,7 @@ dat gaat dan voor en de vraag verdwijnt uit het inlogscherm.
 | Veld | Wat het doet |
 | --- | --- |
 | `Handtekening` | De krabbel van de ontvanger, als afbeelding |
+| `Foto's` | Foto's bij aflevering, gemaakt vanuit het portaal (`fldFLPER4OAVMPDMv`). Hoogstens tien per rit; de klant ziet ze niet |
 | `Getekend door` | Wie er getekend heeft. Een krabbel zonder naam zegt weinig |
 | `Getekend op` | Het tijdstip. Wordt door het portaal gezet |
 | `Onderweg sinds` | Wanneer je vertrok. Samen met `Getekend op` de werkelijke ritduur |

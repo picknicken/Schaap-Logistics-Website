@@ -223,10 +223,224 @@
         return data;
       });
     }, function () {
-      throw new Error(
+      /* Een merkje, zodat de rest van dit bestand het verschil kent tussen
+         "er is geen bereik" en "de tussenlaag zegt nee". Het eerste bewaar je
+         en probeer je later opnieuw; het tweede is een echt antwoord. */
+      var fout = new Error(
         'Geen verbinding. Controleer je bereik en probeer het opnieuw — er is niets verstuurd.'
       );
+      fout.netwerk = true;
+      throw fout;
     });
+  }
+
+  /* ------------------------------------------------------- zonder bereik
+
+     Onderweg is geen bereik geen uitzondering maar een gegeven: een laadkuil,
+     een parkeergarage, een bedrijventerrein waar niets doorkomt. Twee dingen
+     moeten het dan doen.
+
+     Je moet kunnen zien wat je rijdt. Daarom wordt het laatst opgehaalde
+     overzicht per dag bewaard en teruggezet als er niets doorkomt — altijd met
+     een balk erboven die zegt dat het oud is en van hoe laat. Iets ouds tonen
+     mag; doen alsof het vers is niet. Dat was eerder de reden om helemaal
+     niets te bewaren, en die reden staat overeind: hij verbiedt geen geheugen,
+     hij verbiedt een geheugen dat zich voordoet als het heden.
+
+     En wat je invult mag niet weg zijn. Een status, een handtekening, een
+     foto: die gaan in een wachtrij op de telefoon en worden op volgorde
+     verstuurd zodra er weer bereik is. Op volgorde, want Onderweg hoort vóór
+     Uitgevoerd aan te komen. */
+
+  var SL_RIJ = 'sl-portaal-rij';
+  var SL_DAG = 'sl-portaal-dag-';
+  var DAGEN_BEWAARD = 7;
+
+  /* Wat er in de wachtrij mag. Alles wat een antwoord van de tussenlaag nodig
+     heeft om verder te kunnen — een aanvraag omzetten, een klant koppelen, een
+     factuur opzoeken — hoort er niet in: dan zou het scherm doen alsof er iets
+     gebeurd is terwijl er nog niets is. Die zeggen gewoon dat er geen bereik
+     is. */
+  var WACHT_ACTIES = ['status', 'notitie', 'ritkm', 'ritkosten', 'dagstaat',
+                      'handtekening', 'ritfoto'];
+
+  var wachtrij = [];
+  /* Wat blijvend geweigerd is. Dat is geen uitstel maar verlies, en dat hoor
+     je te zien in plaats van het te ontdekken bij een geschil. */
+  var kwijt = [];
+  var bezigMetRij = false;
+  /* Van welk moment het scherm komt, of null als het vers is. */
+  var geheugenVan = null;
+
+  /* Safari in een privévenster laat geen enkele opslag toe en gooit bij elke
+     poging. Alles wat hieronder met het geheugen praat mag daarop niet
+     omvallen; zonder opslag werkt het portaal gewoon, alleen niet offline. */
+  function leesOpslag(sleutel) {
+    try { return localStorage.getItem(sleutel); } catch (e) { return null; }
+  }
+  function schrijfOpslag(sleutel, waarde) {
+    try { localStorage.setItem(sleutel, waarde); return true; } catch (e) { return false; }
+  }
+
+  function bewaarDag(welke, data) {
+    if (schrijfOpslag(SL_DAG + welke, JSON.stringify({ opgehaald: Date.now(), data: data }))) {
+      ruimDagenOp();
+    }
+  }
+
+  /* Verder terug dan een week ga je onderweg niet nakijken, en de ruimte op een
+     telefoon is niet oneindig — zeker niet met foto's in de wachtrij. De
+     sleutel eindigt op de datum, dus alfabetisch sorteren is op ouderdom
+     sorteren. */
+  function ruimDagenOp() {
+    try {
+      var namen = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        var naam = localStorage.key(i);
+        if (naam && naam.indexOf(SL_DAG) === 0) { namen.push(naam); }
+      }
+      namen.sort();
+      while (namen.length > DAGEN_BEWAARD) { localStorage.removeItem(namen.shift()); }
+    } catch (e) { /* dan blijft het staan; erger is het niet */ }
+  }
+
+  function uitGeheugen(welke) {
+    var ruw = leesOpslag(SL_DAG + welke);
+    if (!ruw) { return null; }
+    try { return JSON.parse(ruw); } catch (e) { return null; }
+  }
+
+  function leesWachtrij() {
+    var ruw = leesOpslag(SL_RIJ);
+    if (!ruw) { return []; }
+    try {
+      var lijst = JSON.parse(ruw);
+      return Array.isArray(lijst) ? lijst : [];
+    } catch (e) { return []; }
+  }
+  function bewaarWachtrij() { return schrijfOpslag(SL_RIJ, JSON.stringify(wachtrij)); }
+
+  /* Versturen, en anders bewaren. `alsOffline` levert de rit zoals hij er op
+     het scherm uit hoort te zien zolang het nog niet verstuurd is — onze eigen
+     aanname dus, en niet wat de administratie ervan gemaakt heeft. */
+  function schrijf(actie, gegevens, alsOffline) {
+    if (WACHT_ACTIES.indexOf(actie) < 0) { return verstuur(actie, gegevens); }
+    if (navigator.onLine === false) { return inDeWacht(actie, gegevens, alsOffline); }
+    return verstuur(actie, gegevens).catch(function (fout) {
+      /* Alleen bij een verbindingsfout. Een weigering van de tussenlaag is een
+         echt nee, en die in de rij zetten zou hem daar voor eeuwig laten
+         staan — met alles erachter. */
+      if (fout && fout.netwerk) { return inDeWacht(actie, gegevens, alsOffline); }
+      throw fout;
+    });
+  }
+
+  function inDeWacht(actie, gegevens, alsOffline) {
+    wachtrij.push({ actie: actie, gegevens: gegevens, gemaakt: Date.now() });
+    if (!bewaarWachtrij()) {
+      /* Het geheugen van de telefoon zit vol, meestal door foto's die nog
+         moeten. Stilzwijgend doorgaan zou betekenen dat je denkt dat het
+         bewaard is terwijl het bij het afsluiten weg is. */
+      wachtrij.pop();
+      bewaarWachtrij();
+      tekenOffline();
+      return Promise.reject(new Error(
+        'Er is geen ruimte meer op deze telefoon om dit te bewaren. Zoek even ' +
+        'bereik, dan gaat weg wat er al klaarstaat.'
+      ));
+    }
+    tekenOffline();
+    return Promise.resolve({ ok: true, wacht: true,
+                             rit: alsOffline ? alsOffline() : null });
+  }
+
+  /* Eén tegelijk en op volgorde. Twee tegelijk zou betekenen dat Uitgevoerd
+     eerder kan aankomen dan Onderweg, en dan klopt de vertrektijd niet meer. */
+  function leegDeWachtrij() {
+    if (bezigMetRij || !wachtrij.length) { return; }
+    if (navigator.onLine === false) { tekenOffline(); return; }
+
+    bezigMetRij = true;
+    tekenOffline();
+    var eerste = wachtrij[0];
+
+    verstuur(eerste.actie, eerste.gegevens)
+      .then(function () {
+        wachtrij.shift();
+        bewaarWachtrij();
+        bezigMetRij = false;
+        if (wachtrij.length) { leegDeWachtrij(); return; }
+        tekenOffline();
+        /* De rij is leeg: nu ophalen wat de administratie ervan gemaakt heeft.
+           Wat er op het scherm stond was onze eigen aanname. */
+        haalDag();
+      })
+      .catch(function (fout) {
+        bezigMetRij = false;
+        if (fout && fout.netwerk) { tekenOffline(); return; }
+        wachtrij.shift();
+        bewaarWachtrij();
+        kwijt.push({ actie: eerste.actie, reden: fout.message });
+        tekenOffline();
+        leegDeWachtrij();
+      });
+  }
+
+  function tekenOffline() {
+    var balk = el('offlinebalk');
+    if (!balk) { return; }
+    var kop = el('offline-kop');
+    var uitleg = el('offline-uitleg');
+    balk.removeAttribute('data-kwijt');
+    balk.removeAttribute('data-bezig');
+
+    if (kwijt.length) {
+      balk.hidden = false;
+      balk.setAttribute('data-kwijt', '');
+      kop.textContent = kwijt.length === 1
+        ? 'Eén wijziging is niet opgeslagen'
+        : kwijt.length + ' wijzigingen zijn niet opgeslagen';
+      uitleg.textContent = kwijt[kwijt.length - 1].reden +
+        ' Kijk de rit na en zet het opnieuw.';
+      return;
+    }
+
+    var wacht = wachtrij.length;
+    var uit = navigator.onLine === false;
+
+    if (!uit && bezigMetRij && wacht) {
+      balk.hidden = false;
+      balk.setAttribute('data-bezig', '');
+      kop.textContent = 'Bezig met versturen';
+      uitleg.textContent = wacht === 1 ? 'Nog één wijziging.'
+                                       : 'Nog ' + wacht + ' wijzigingen.';
+      return;
+    }
+
+    if (!uit && !wacht && !geheugenVan) { balk.hidden = true; return; }
+    balk.hidden = false;
+
+    if (uit) {
+      kop.textContent = 'Geen verbinding';
+      var stukken = [];
+      if (geheugenVan) { stukken.push('Je ziet het overzicht van ' + stempel(geheugenVan) + '.'); }
+      stukken.push(wacht === 0
+        ? 'Wat je invult wordt bewaard en verstuurd zodra je weer bereik hebt.'
+        : (wacht === 1 ? 'Eén wijziging staat klaar om te versturen.'
+                       : wacht + ' wijzigingen staan klaar om te versturen.'));
+      uitleg.textContent = stukken.join(' ');
+      return;
+    }
+
+    kop.textContent = wacht ? 'Nog niet verstuurd' : 'Dit is een oud overzicht';
+    uitleg.textContent = wacht
+      ? (wacht === 1 ? 'Eén wijziging wacht nog.' : wacht + ' wijzigingen wachten nog.')
+      : 'Opgehaald om ' + stempel(geheugenVan) + '. Ververs om het bij te werken.';
+  }
+
+  function stempel(moment) {
+    var d = new Date(moment);
+    return isNaN(d.getTime()) ? 'eerder' : klok(d.toISOString());
   }
 
   /* ------------------------------------------------------------ toegang */
@@ -304,7 +518,7 @@
       el('slot').hidden = true;
       el('app').hidden = false;
       el('slot-code').value = '';
-      toon(data);
+      verwerkVers(data);
     }).catch(function (fout) {
       code = '';
       meldSlot(fout.message);
@@ -575,16 +789,41 @@
     return rij;
   }
 
+  /* Verse gegevens: op het scherm, en in het geheugen van de telefoon voor als
+     het bereik straks wegvalt. Door beide plekken waar een overzicht
+     binnenkomt hier langs te sturen — het inloggen en het wisselen van dag —
+     staat er na de eerste keer inloggen al iets bewaard. Anders zou je pas
+     offline kunnen werken nadat je een keer van dag gewisseld was, en dat is
+     precies het soort verschil waar niemand aan denkt. */
+  function verwerkVers(data) {
+    geheugenVan = null;
+    if (data && data.dag) { bewaarDag(data.dag, data); }
+    toon(data);
+    tekenOffline();
+  }
+
   function haalDag() {
     el('dag-naam').textContent = dagNaam(dag);
     el('dag-datum').textContent = datumLang(dag);
     el('lijst').innerHTML = '<div class="leeg">Ophalen…</div>';
     meldApp('');
-    verstuur('overzicht', { dag: dag })
-      .then(toon)
+    var welke = dag;
+    verstuur('overzicht', { dag: welke })
+      .then(verwerkVers)
       .catch(function (fout) {
+        /* Geen bereik: laten zien wat we van deze dag bewaard hebben, met de
+           tijd erbij in de balk. Bij een klant op de stoep helpt een leeg
+           scherm je niet, en het adres van de volgende rit staat hierin. */
+        var pak = fout && fout.netwerk ? uitGeheugen(welke) : null;
+        if (pak && pak.data) {
+          geheugenVan = pak.opgehaald;
+          toon(pak.data);
+          tekenOffline();
+          return;
+        }
         meldApp(fout.message);
         el('lijst').innerHTML = '';
+        tekenOffline();
       });
   }
 
@@ -1215,12 +1454,18 @@
       knop.disabled = true;
       knop.textContent = 'Opslaan…';
       meldTeller('');
-      verstuur('dagstaat', {
+      schrijf('dagstaat', {
         dag: dag,
         begin: el('teller-begin').value.trim(),
         eind: el('teller-eind').value.trim(),
         opmerking: el('teller-opmerking').value
       }).then(function (data) {
+        if (data.wacht) {
+          /* De ingetypte standen blijven staan waar ze staan; vulTeller zou ze
+             overschrijven met wat de tussenlaag laatst zei, en dat is ouder. */
+          meldTeller('Bewaard op deze telefoon. Wordt verstuurd zodra je bereik hebt.');
+          return;
+        }
         dagstaat = data.dagstaat || null;
         vulTeller();
         meldTeller('Kilometerstand opgeslagen.');
@@ -1234,6 +1479,15 @@
   }
 
   /* -------------------------------------------------------------- lijst */
+
+  /* Wat er in een getalveld staat, als getal. Een komma is wat je op een
+     Nederlandse telefoon intikt; leeg of onzin is nul. Wordt gebruikt om het
+     scherm bij te werken zolang de tussenlaag nog niets teruggezegd heeft. */
+  function getal(waarde) {
+    var n = Number(String(waarde === undefined || waarde === null ? '' : waarde)
+      .replace(',', '.').trim());
+    return isFinite(n) ? n : 0;
+  }
 
   function maak(soort, klasse, tekst) {
     var e = document.createElement(soort);
@@ -1583,6 +1837,44 @@
       }
     }
 
+    /* Deze rit draagt iets dat nog verstuurd moet worden. Dat hoort op de
+       kaart zelf te staan en niet alleen in de balk bovenaan: daar staat een
+       aantal, hier staat welke. */
+    if (rit.wacht) {
+      var wachtvak = maak('div', 'bewijs bewijs--wacht');
+      var wt = maak('div');
+      wt.appendChild(maak('b', '', 'Nog niet verstuurd'));
+      wt.appendChild(document.createTextNode(
+        'Wat je hier invulde staat op deze telefoon en gaat weg zodra je ' +
+        'bereik hebt. Sluit de app niet af voordat dat gebeurd is.'));
+      wachtvak.appendChild(wt);
+      lijf.appendChild(wachtvak);
+    }
+
+    /* --- foto's ---
+       Bewust buiten het blok hierboven: een foto hoort niet alleen bij een
+       aflevering. Schade die je bij het laden al ziet leg je vast voordat je
+       wegrijdt, en dan staat de rit nog op Gepland. */
+    if (rit.fotos && rit.fotos.length) {
+      var fotovak = maak('div', 'fotos');
+      rit.fotos.forEach(function (f, nr) {
+        var vakje = maak('a', '');
+        vakje.href = f.url;
+        vakje.target = '_blank';
+        vakje.rel = 'noopener';
+        var plaat = document.createElement('img');
+        /* De miniatuur die Airtable zelf maakte; is die er niet, dan de hele
+           foto. Vier foto's op ware grootte op één ritkaart zijn een paar
+           megabyte over mobiel internet. */
+        plaat.src = f.klein || f.url;
+        plaat.alt = 'Foto ' + (nr + 1) + ' bij deze rit';
+        plaat.loading = 'lazy';
+        vakje.appendChild(plaat);
+        fotovak.appendChild(vakje);
+      });
+      lijf.appendChild(fotovak);
+    }
+
     /* Zonder kilometers rekent de factuur alleen het starttarief en valt hij
        terug op het minimum. Dat zie je pas als de factuur er ligt, en dan is
        hij al de deur uit — dus hier, nu. */
@@ -1644,7 +1936,7 @@
       kmKnop.type = 'button';
       kmKnop.addEventListener('click', function () {
         bezig(kmKnop, 'Opslaan…', function (klaar) {
-          verstuur('ritkm', {
+          schrijf('ritkm', {
             id: rit.id,
             km: kmVeldRit.invoer.value,
             stops: stopVeldRit.invoer.value,
@@ -1653,6 +1945,20 @@
             doorbereken: doorVeld.invoer.value,
             korting: kortVeld.invoer.value,
             kortingRe: redenVeldRit.invoer.value
+          }, function () {
+            /* Wat we zelf weten. Het bedrag en de winst rekent Airtable uit,
+               dus die blijven staan op wat ze waren tot de rij leeg is — met
+               de balk erboven die zegt dat er nog iets openstaat. */
+            return Object.assign({}, rit, {
+              wacht: true,
+              km: getal(kmVeldRit.invoer.value),
+              stops: getal(stopVeldRit.invoer.value),
+              tijdvak: tvVeldRit.invoer.value || rit.tijdvak,
+              wachttijd: getal(wachtVeld.invoer.value),
+              doorbereken: getal(doorVeld.invoer.value),
+              korting: getal(kortVeld.invoer.value),
+              kortingRe: redenVeldRit.invoer.value
+            });
           }).then(function (data) {
             ververs(data.rit);
             meldApp('');
@@ -1718,6 +2024,8 @@
       knoppen.appendChild(vertrek);
     }
 
+    if (rit.status !== 'Geannuleerd') { voegFotoknopToe(knoppen, rit); }
+
     if (rit.status === 'Onderweg' || (rit.status === 'Uitgevoerd' && !rit.handtekening)) {
       var tekenen = maak('button', 'knop knop--groen',
         rit.status === 'Onderweg' ? 'Afleveren en laten tekenen' : 'Handtekening alsnog zetten');
@@ -1752,12 +2060,112 @@
     stipBij();
   }
 
+  /* ------------------------------------------------- foto bij de rit
+
+     Waar de pallet is neergezet, hoe de doos erbij stond, of de schade die er
+     al op zat toen je hem ophaalde. Een handtekening zegt dat iemand tekende;
+     een foto zegt waarvoor. */
+
+  /* Een foto van een moderne telefoon is drie tot acht megabyte. Dat duw je
+     onderweg niet door een slechte verbinding, en als bewijs is het ook niet
+     nodig: op 1600 pixels lees je een adreslabel en zie je waar iets staat.
+     Verkleinen gebeurt daarom hier, op de telefoon. */
+  var FOTO_MAX = 1600;
+
+  function verkleinFoto(bestand) {
+    return new Promise(function (klaar, mislukt) {
+      var adres = URL.createObjectURL(bestand);
+      var afb = new Image();
+      afb.onload = function () {
+        URL.revokeObjectURL(adres);
+        var schaal = Math.min(1, FOTO_MAX / Math.max(afb.width, afb.height));
+        var doek = document.createElement('canvas');
+        doek.width = Math.max(1, Math.round(afb.width * schaal));
+        doek.height = Math.max(1, Math.round(afb.height * schaal));
+        /* Een foto die je liggend maakte staat rechtop dankzij een merkje in
+           het bestand. Browsers passen dat sinds een paar jaar zelf toe bij
+           het tekenen, dus daar hoeven we niets voor te doen. */
+        doek.getContext('2d').drawImage(afb, 0, 0, doek.width, doek.height);
+        klaar(doek.toDataURL('image/jpeg', 0.8));
+      };
+      afb.onerror = function () {
+        URL.revokeObjectURL(adres);
+        mislukt(new Error('Die foto kon ik niet lezen.'));
+      };
+      afb.src = adres;
+    });
+  }
+
+  /* De knop en het verborgen bestandsveld staan naast elkaar, niet in elkaar.
+     Zat het veld in de knop, dan zou de klik die wij zelf op dat veld geven
+     weer omhoog borrelen naar de knop en zichzelf eindeloos opnieuw starten.
+
+     capture zegt tegen de telefoon: open meteen de camera aan de achterkant.
+     Bij een aflevering wil je niet eerst door een keuzemenu. Wil je juist een
+     foto van eerder kunnen pakken, dan is dat dit ene kenmerk minder. */
+  function voegFotoknopToe(knoppen, rit) {
+    var knop = maak('button', 'knop knop--rand',
+      rit.fotos && rit.fotos.length ? 'Nog een foto' : 'Foto maken');
+    knop.type = 'button';
+
+    var veld = document.createElement('input');
+    veld.type = 'file';
+    veld.accept = 'image/*';
+    veld.setAttribute('capture', 'environment');
+    veld.hidden = true;
+
+    veld.addEventListener('change', function () {
+      var bestand = veld.files && veld.files[0];
+      /* Leegmaken, anders geeft dezelfde foto een tweede keer geen wijziging
+         meer en gebeurt er niets als je hem opnieuw kiest. */
+      veld.value = '';
+      if (bestand) { stuurFoto(rit, bestand, knop); }
+    });
+    knop.addEventListener('click', function () { veld.click(); });
+
+    knoppen.appendChild(knop);
+    knoppen.appendChild(veld);
+  }
+
+  function stuurFoto(rit, bestand, knop) {
+    var oud = knop.textContent;
+    knop.disabled = true;
+    knop.textContent = 'Bezig\u2026';
+    meldApp('');
+
+    /* Een naam die maar één keer bestaat. Daar hangt aan de andere kant het
+       slot aan dat voorkomt dat dezelfde foto er twee keer aan komt te hangen
+       als hetzelfde verzoek uit de wachtrij opnieuw verstuurd wordt. */
+    var naam = 'foto-' + Date.now() + '-' +
+               Math.random().toString(36).slice(2, 8) + '.jpg';
+
+    verkleinFoto(bestand)
+      .then(function (data) {
+        return schrijf('ritfoto', { id: rit.id, naam: naam, data: data }, function () {
+          /* Zolang hij nog niet weg is staat de foto uit de telefoon zelf op
+             de kaart. Anders lijkt het alsof je hem niet gemaakt hebt. */
+          return Object.assign({}, rit, {
+            wacht: true,
+            fotos: (rit.fotos || []).concat([{ naam: naam, url: data, klein: data }])
+          });
+        });
+      })
+      .then(function (data) { ververs(data.rit); })
+      .catch(function (fout) {
+        meldApp(fout.message);
+        knop.disabled = false;
+        knop.textContent = oud;
+      });
+  }
+
   function wijzigStatus(rit, status, knop) {
     var oud = knop.textContent;
     knop.disabled = true;
     knop.textContent = 'Bezig…';
     meldApp('');
-    verstuur('status', { id: rit.id, status: status })
+    schrijf('status', { id: rit.id, status: status }, function () {
+      return Object.assign({}, rit, { status: status, wacht: true });
+    })
       .then(function (data) { ververs(data.rit); })
       .catch(function (fout) {
         meldApp(fout.message);
@@ -2649,11 +3057,18 @@
     knop.type = 'button';
     knop.addEventListener('click', function () {
       bezig(knop, 'Opslaan…', function (klaar) {
-        verstuur('ritkosten', {
+        schrijf('ritkosten', {
           id: rit.id,
           brandstof: brandstof.invoer.value,
           tol: tol.invoer.value,
           overig: overig.invoer.value
+        }, function () {
+          return Object.assign({}, rit, {
+            wacht: true,
+            brandstof: getal(brandstof.invoer.value),
+            tol: getal(tol.invoer.value),
+            overig: getal(overig.invoer.value)
+          });
         }).then(function (data) {
           ververs(data.rit);
           meldApp('');
@@ -3123,13 +3538,23 @@
     knop.textContent = 'Opslaan…';
     meldBlad('');
 
-    verstuur('handtekening', {
-      id: tekentVoor.id,
-      naam: naam,
-      data: doekje.toDataURL('image/png')
+    var krabbel = doekje.toDataURL('image/png');
+    var voorRit = tekentVoor;
+
+    schrijf('handtekening', { id: voorRit.id, naam: naam, data: krabbel }, function () {
+      return Object.assign({}, voorRit, {
+        status: 'Uitgevoerd', getekend: naam, getekendOp: new Date().toISOString(),
+        handtekening: true, krabbel: krabbel, wacht: true
+      });
     }).then(function (data) {
       ververs(data.rit);
-      if (data.handtekening) {
+      /* Zonder bereik is de krabbel bewaard op de telefoon en gaat hij weg
+         zodra er weer iets doorkomt. Het blad mag dicht: opnieuw laten tekenen
+         zou een tweede handtekening in de rij zetten. */
+      if (data.wacht) {
+        sluitTekenblad();
+        meldApp('Bewaard op deze telefoon. Wordt verstuurd zodra je bereik hebt.');
+      } else if (data.handtekening) {
         sluitTekenblad();
       } else {
         /* De rit staat nu wel op uitgevoerd, maar de krabbel is niet
@@ -3151,6 +3576,34 @@
 
   /* ---------------------------------------------------------- opstarten */
 
+  /* De service worker meteen aanmelden, niet pas als je meldingen aanzet.
+     Hij zorgt er namelijk ook voor dat dit scherm opengaat zonder bereik, en
+     dat wil je hebben voordat je in een kelder staat — niet erna. Mislukt het
+     (een oude browser, of geopend zonder https), dan werkt alles gewoon;
+     alleen zonder bereik krijg je dan niets. */
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(function () { /* dan niet */ });
+  }
+
+  /* Wat er van de vorige keer nog klaarstond. Sloot je de app af met een
+     handtekening in de rij, dan gaat die nu alsnog weg. */
+  wachtrij = leesWachtrij();
+  tekenOffline();
+
+  window.addEventListener('online', function () {
+    tekenOffline();
+    /* Staat er iets in de rij, dan haalt het legen daarvan zelf de dag op
+       zodra hij leeg is. Anders meteen verversen. */
+    if (wachtrij.length) { leegDeWachtrij(); }
+    else if (code && waarheen()) { haalDag(); }
+  });
+  window.addEventListener('offline', tekenOffline);
+
+  /* De browser is niet eerlijk over "online": op een telefoon staat dat al op
+     waar zodra er wifi is die nergens heen gaat, en op mobiel internet wisselt
+     het per straat. Dus ook gewoon af en toe proberen zolang er iets wacht. */
+  setInterval(function () { if (wachtrij.length) { leegDeWachtrij(); } }, 20000);
+
   try {
     code = localStorage.getItem(CONFIG.sleutel) || '';
     adres = CONFIG.portaalUrl || localStorage.getItem(CONFIG.sleutelAdres) || '';
@@ -3163,6 +3616,7 @@
   if (code && waarheen()) {
     el('slot').hidden = true;
     el('app').hidden = false;
+    if (wachtrij.length) { leegDeWachtrij(); }
     haalDag();
   } else {
     el('dag-naam').textContent = dagNaam(dag);

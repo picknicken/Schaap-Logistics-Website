@@ -1,21 +1,115 @@
 /* =========================================================================
    De service worker van het chauffeursportaal.
 
-   Hij doet één ding: pushmeldingen aannemen en laten zien. Bewust géén
-   caching. Een portaal dat ritten, statussen en bedragen toont mag nooit een
-   oud scherm uit het geheugen opdiepen — dan sta je bij een klant naar de
-   planning van gisteren te kijken en weet je niet dat het oud is. Een lege
-   pagina bij slecht bereik is vervelend; een verkeerde pagina is erger.
+   Twee taken: pushmeldingen aannemen, en zorgen dat het portaal opengaat als
+   je geen bereik hebt.
 
-   Wordt geregistreerd vanuit assets/portaal.js, alleen als je meldingen
-   aanzet. Zet je ze uit, dan blijft hij staan maar doet hij niets.
+   Over dat tweede stond hier eerst dat er bewust niet gecachet werd, omdat een
+   portaal nooit een oud scherm mag tonen zonder dat je dat ziet. Dat blijft
+   staan en het is de reden dat hier alleen de app zelf in de cache gaat — de
+   pagina, het script, het pictogram. Geen ritten, geen statussen, geen
+   bedragen: die komen via POST bij de tussenlaag vandaan en daar komt deze
+   service worker niet aan. Wat er van de laatste dag bewaard wordt regelt het
+   portaal zelf, met de tijd erbij op het scherm.
+
+   Onderscheppen kan alleen binnen de eigen map. Daarom staat portaal.js naast
+   deze pagina en niet in assets/ — anders zou je zonder bereik een pagina
+   krijgen zonder script, en dat is een leeg scherm met een titel.
+
+   Wordt geregistreerd zodra het portaal opent, niet pas bij meldingen.
    ========================================================================= */
 
-/* Meteen de nieuwe versie laten gelden, in plaats van te wachten tot alle
-   tabbladen dicht zijn. Er is hier geen cache die eronder vandaan kan vallen,
-   dus dat is hier gevaarloos. */
-self.addEventListener('install', function () { self.skipWaiting(); });
-self.addEventListener('activate', function (e) { e.waitUntil(self.clients.claim()); });
+/* Hoog dit op als er iets aan de cachestrategie verandert; bij het activeren
+   wordt alles wat een andere naam heeft weggegooid. */
+var CACHE = 'schaap-portaal-1';
+
+/* Wat er meteen bij het installeren in moet, zodat het portaal ook opengaat
+   als de eerste keer dat je geen bereik hebt tegelijk de eerste keer is dat je
+   hem opent. De rest komt vanzelf in de cache bij gebruik. */
+var KERN = ['./', './portaal.js?v=20260908', './manifest.webmanifest'];
+
+/* Hoe lang we op het netwerk wachten voordat we teruggrijpen op de cache.
+   Helemaal geen bereik merkt de browser zelf meteen; één streepje is erger,
+   want dan blijft een verzoek hangen. Vier seconden staan met een dooie
+   verbinding naar een scherm te kijken is precies wat je onderweg niet wilt. */
+var GEDULD = 4000;
+
+self.addEventListener('install', function (e) {
+  self.skipWaiting();
+  e.waitUntil(
+    caches.open(CACHE)
+      .then(function (kast) { return kast.addAll(KERN); })
+      /* Lukt het voorvullen niet — bijvoorbeeld omdat je juist nu geen bereik
+         hebt — dan gaat de installatie gewoon door. De cache vult zich dan bij
+         het eerste bezoek mét bereik. Een mislukte installatie zou betekenen
+         dat er helemaal geen service worker komt. */
+      .catch(function () { return null; })
+  );
+});
+
+self.addEventListener('activate', function (e) {
+  e.waitUntil(
+    caches.keys()
+      .then(function (namen) {
+        return Promise.all(namen.map(function (naam) {
+          return naam === CACHE ? null : caches.delete(naam);
+        }));
+      })
+      .then(function () { return self.clients.claim(); })
+  );
+});
+
+/* Netwerk eerst, cache als terugval. In die volgorde en niet andersom: met
+   bereik hoor je altijd de verse versie te krijgen, zodat een wijziging er
+   meteen op staat en niemand op een cache zit te wachten die vanzelf verloopt.
+   Zonder bereik krijg je wat er de laatste keer stond.
+
+   Alleen GET binnen de eigen map. De tussenlaag draait op een ander adres en
+   praat via POST; daar blijven we vanaf. */
+self.addEventListener('fetch', function (e) {
+  if (e.request.method !== 'GET') { return; }
+  var adres = new URL(e.request.url);
+  if (adres.origin !== self.location.origin) { return; }
+  if (adres.pathname.indexOf(new URL('./', self.location.href).pathname) !== 0) { return; }
+
+  e.respondWith(
+    haalMetGeduld(e.request)
+      .then(function (res) {
+        /* Alleen een echt antwoord bewaren. Een 404 of een foutpagina in de
+           cache stoppen betekent dat je hem zonder bereik ook terugkrijgt. */
+        if (res && res.ok) {
+          var kopie = res.clone();
+          caches.open(CACHE).then(function (kast) { kast.put(e.request, kopie); });
+        }
+        return res;
+      })
+      .catch(function () {
+        return caches.match(e.request).then(function (uit) {
+          if (uit) { return uit; }
+          /* Een pagina die er niet is: dan toch maar de startpagina van het
+             portaal, want daar staat het inlogscherm en die kent de weg. */
+          if (e.request.mode === 'navigate') { return caches.match('./'); }
+          throw new Error('niet in de cache');
+        });
+      })
+  );
+});
+
+function haalMetGeduld(verzoek) {
+  return new Promise(function (klaar, mislukt) {
+    var af = false;
+    var wekker = setTimeout(function () {
+      if (!af) { af = true; mislukt(new Error('te traag')); }
+    }, GEDULD);
+    fetch(verzoek).then(function (res) {
+      clearTimeout(wekker);
+      if (!af) { af = true; klaar(res); }
+    }, function (fout) {
+      clearTimeout(wekker);
+      if (!af) { af = true; mislukt(fout); }
+    });
+  });
+}
 
 var STANDAARD = {
   titel: 'Chauffeursportaal',

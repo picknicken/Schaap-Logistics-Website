@@ -36,13 +36,19 @@ die serveert `diensten/index.html` wel gewoon op `/diensten/`.
 | `404.html` | — | Wordt door GitHub Pages getoond bij een onbekend adres |
 
 ```
+portaal/
+  index.html      het chauffeursportaal zelf
+  portaal.js      het script erbij — bewust hier en niet in assets/, want een
+                  service worker komt niet buiten zijn eigen map
+  sw.js           de service worker: pushmeldingen, en opengaan zonder bereik
+  manifest.webmanifest   waarmee het op je beginscherm een app wordt
+
 assets/
   site.css                alle opmaak, voor alle pagina's
   site.js                 tarieven, afstandsberekening, e-mail, menu — op elke pagina
   calculator.js           de prijscalculator op de homepage
   aanvraag.js             het aanvraagformulier
   contact.js              het berichtformulier
-  portaal.js              het chauffeursportaal
   klant.js                het klantportaal
   logo-schaap-express-wit.png      het hele woordmerk, wit — de voettekst en
                                    de twee portalen
@@ -242,10 +248,21 @@ tabblad dat je kiest schuift vanzelf in beeld.
   webpagina die niets kan. Geen sleutel of account nodig.
 
   Wil je op je iPhone toch Google Maps, dan is dat één regel in
-  `assets/portaal.js` (`opApple`).
+  `portaal/portaal.js` (`opApple`).
 - **Laten tekenen.** De ontvanger zet zijn handtekening op je scherm en typt zijn
   naam. Die gaan als afleverbewijs bij de rit in Airtable, en de rit springt op
   *Uitgevoerd* — waarmee de conceptfactuur zichzelf aanmaakt.
+- **Foto maken.** Waar de pallet is neergezet, hoe de doos erbij stond, of de
+  schade die er al op zat toen je hem ophaalde. Een handtekening zegt dat iemand
+  tekende; een foto zegt waarvoor. De knop opent meteen de camera, de foto wordt
+  op de telefoon teruggebracht tot 1600 pixels — een paar honderd kB in plaats
+  van een paar megabyte — en komt als miniatuur op de kaart te staan. Meerdere
+  per rit mag, tot tien. Ze staan in het veld `Foto's` bij de rit.
+
+  De klant ziet ze niet. Het klantportaal toont wel de handtekening als
+  afleverbewijs, maar niet de foto's: op een foto kan meer staan dan wat je
+  bedoelde te laten zien. Wil je dat wel, dan is dat één regel in
+  `naarKlantRit()`.
 
 - **Kilometerstand.** Onder die vier getallen zit een blok dat dichtgeklapt één
   regel is: de beginstand bij vertrek en de eindstand bij thuiskomst. Ernaast
@@ -399,13 +416,14 @@ Twee dingen die bewust zo zijn:
 pagina en het script los van elkaar, en een app op het beginscherm houdt de
 pagina hardnekkig vast. Komt er een pagina van gisteren bij een script van
 vandaag, dan zoekt dat script knoppen die er nog niet zijn — en dan valt het
-hele portaal stil. Verander je `assets/portaal.js` of `assets/klant.js`, hoog dat
-nummer dan op, dan horen ze weer bij elkaar. Als tweede vangnet slaat het portaal
+hele portaal stil. Verander je `portaal/portaal.js` of `assets/klant.js`, hoog dat
+nummer dan op, dan horen ze weer bij elkaar. Staat het ook in `KERN` in
+`portaal/sw.js`, hoog het daar dan mee op. Als tweede vangnet slaat het portaal
 de kalender over in plaats van stuk te vallen als het vak er niet staat; daar
 staat een test op.
 
 **Het adres van de Worker hoeft niet in de code.** Laat `CONFIG.portaalUrl` in
-`assets/portaal.js` leeg, dan vraagt het inlogscherm er zelf om en onthoudt de
+`portaal/portaal.js` leeg, dan vraagt het inlogscherm er zelf om en onthoudt de
 telefoon het. Dat scheelt na het uitrollen een wijziging, een commit en een push
 — stappen waar het makkelijk misgaat en die niets opleveren. Vul je het veld wel
 in, dan gaat dat voor en verdwijnt de vraag uit het inlogscherm.
@@ -426,8 +444,40 @@ upload, dan klopt de administratie nog steeds en zegt het portaal dat opnieuw
 getekend moet worden. In Airtable springt het veld `Afleverbewijs` dan op
 *Ontbreekt*, zodat het niet stilletjes wegzakt.
 
-Het portaal werkt niet offline. Val je onderweg uit bereik, dan zegt het dat er
-niets verstuurd is en probeer je het opnieuw zodra je weer bereik hebt.
+**Zonder bereik.** Onderweg is geen bereik geen uitzondering maar een gegeven:
+een laadkuil, een parkeergarage, een bedrijventerrein waar niets doorkomt. Twee
+dingen doen het dan.
+
+*Kijken kan.* Een service worker (`portaal/sw.js`) houdt de pagina, het script
+en het manifest bij zich, zodat het portaal opengaat zonder netwerk. Het laatst
+opgehaalde overzicht wordt per dag op de telefoon bewaard — zeven dagen — en
+teruggezet als er niets doorkomt. Altijd met een balk erboven die zegt dat het
+oud is en van hoe laat. Dat laatste is de hele voorwaarde: iets ouds tonen mag,
+doen alsof het vers is niet.
+
+*Invullen kan ook.* Een status, kilometers, ritkosten, de kilometerstand, een
+handtekening en een foto gaan in een wachtrij op de telefoon en worden op
+volgorde verstuurd zodra er weer bereik is. Op volgorde, want *Onderweg* hoort
+vóór *Uitgevoerd* aan te komen. Op het scherm staat ondertussen wat je invulde,
+met *Nog niet verstuurd* op de kaart en een teller in de balk bovenaan.
+
+Twee dingen die daarbij horen. Wat een antwoord van de tussenlaag nodig heeft om
+verder te kunnen — een aanvraag omzetten, een klant koppelen, een factuur
+opzoeken — gaat *niet* in de rij: die zeggen gewoon dat er geen bereik is, want
+een scherm dat doet alsof er iets gebeurd is terwijl er nog niets is, is erger
+dan een foutmelding. En wat blijvend geweigerd wordt gaat uit de rij en komt in
+een rode balk te staan; het zou anders alles erachter blokkeren, en je hoort te
+weten wat er niet is opgeslagen.
+
+Kwam een verzoek wél aan maar ging het antwoord verloren, dan wordt het opnieuw
+verstuurd. Voor een handtekening en een foto is dat afgevangen: dezelfde
+ondertekenaar of dezelfde bestandsnaam levert geen tweede bijlage op. Twee
+dezelfde krabbels aan één rit is geen beter bewijs.
+
+Omdat een service worker alleen bestanden kan onderscheppen die binnen zijn
+eigen map vallen, staat het script van het portaal in `portaal/portaal.js` en
+niet in `assets/`. Anders zou je zonder bereik wel de pagina krijgen maar niet
+het script, en dat is een leeg scherm met een titel.
 
 ### Een rit buiten de website om
 
@@ -524,7 +574,7 @@ een PDF van maakt staat er bewust niet bij — een concept hoort niet in Airtabl
 
 De berekening staat op vier plekken en moet overal gelijk zijn: `assets/site.js`
 voor de website, het veld *Automatisch totaal excl. BTW* in Airtable, de formule
-*Factuurlink* voor de echte factuur, en `conceptLink()` in `assets/portaal.js`
+*Factuurlink* voor de echte factuur, en `conceptLink()` in `portaal/portaal.js`
 voor het concept. Wijzig je een tarief, loop ze alle vier langs.
 
 ### Inloggen: eigenaar en chauffeurs
