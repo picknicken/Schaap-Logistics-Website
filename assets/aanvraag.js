@@ -206,7 +206,7 @@
       samNoot.textContent  = 'Naar Belgi\u00eb en Duitsland rekenen wij ' + euro.format(rit.start) +
                              ' starttarief plus \u20ac ' + rit.km.toFixed(2).replace('.', ',') +
                              ' per kilometer, met ' +
-                             'een minimum van ' + euro.format(rit.minimum) + ', alles inclusief btw. ' +
+                             'een minimum van ' + euro.format(rit.minimum) + ', alles exclusief btw. ' +
                              'De afstand naar het ' +
                              'buitenland rekenen wij met de hand na, dus bevestigen wij het ' +
                              'exacte bedrag zodra wij uw route hebben bekeken.';
@@ -230,9 +230,8 @@
                            ' km' + (stops > 0
                              ? ' en ' + stops + (stops === 1 ? ' extra stop' : ' extra stops')
                              : '') +
-                           '. Het grote bedrag is exclusief btw; dat is wat er op de ' +
-                           'factuur als subtotaal komt. De definitieve prijs wordt ' +
-                           'bevestigd na controle van de opdracht.' +
+                           ', exclusief btw. De definitieve prijs wordt bevestigd na ' +
+                           'controle van de opdracht.' +
                            (isSpoed()
                              ? ' Wij laten zo snel mogelijk weten hoe laat wij er kunnen zijn.'
                              : '');

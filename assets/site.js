@@ -22,20 +22,21 @@
     voorwaardenVersie: '2026-09-08',
     /* ---------------------------------------------------------- de prijzen
 
-       LET OP: alle bedragen hieronder zijn INCLUSIEF btw. Dat is wat een klant
-       betaalt en wat je hem door de telefoon noemt — "vijfenzeventig euro en
-       een euro per kilometer" is dan het hele verhaal, zonder dat er nog iets
-       bij komt.
+       Alle bedragen hieronder zijn EXCLUSIEF btw, en dat is met opzet: in
+       zakelijk vervoer noemt iedereen zijn prijs zo. Een bedrijf krijgt de btw
+       terug en rekent dus in bedragen zonder btw. Noem je een prijs inclusief,
+       dan legt een inkoper jouw getal naast dat van een concurrent die het
+       exclusief bedoelt, ziet hij hetzelfde getal, en geef je eenentwintig
+       procent weg die niemand opmerkt.
 
-       De factuur werkt andersom: daar staat eerst het bedrag zonder btw en dan
-       de btw erbij. Het omrekenen gebeurt daarom één keer, aan het eind van de
-       hele som, in bereken(). Eén keer aan het eind en niet per regel: anders
-       lopen de centen uiteen met wat de klant hoorde.
+       De btw komt er in bereken() bij, aan het eind, zodat de klant allebei de
+       bedragen ziet: wat er op de factuur als subtotaal komt en wat hij
+       werkelijk betaalt.
 
        Wijzig je hier iets, wijzig het dan ook op /tarieven/, in de formule
        `Automatisch totaal excl. BTW` in de tabel Ritten, en in TARIEVEN in
        portaal/portaal.js. Anders factureer je iets anders dan je belooft. */
-    minimum: 75,                         /* minimumtarief per opdracht, incl. btw */
+    minimum: 75,                         /* minimumtarief per opdracht, excl. btw */
     btw: 0.21,
     /* Per dienst een starttarief en een kilometerprijs. Een dienst mag een
        eigen minimum hebben; staat dat er niet, dan geldt CONFIG.minimum.
@@ -165,13 +166,14 @@
      dan geldt het minimum. Toeslagen — tijdvak en extra stops — komen daar
      bovenop, net als in de factuurberekening in Airtable.
 
-     De hele som loopt op de bedragen uit CONFIG en die zijn inclusief btw. Aan
-     het eind wordt er één keer teruggerekend naar het bedrag zonder btw, want
-     dat is wat er op de factuur als subtotaal hoort te staan.
+     De hele som loopt op de bedragen uit CONFIG en die zijn zonder btw. De btw
+     komt er aan het eind bij, en het bedrag dat de klant betaalt is de som van
+     die twee — niet apart uitgerekend. Zo sluiten subtotaal, btw en totaal
+     altijd op elkaar aan, ook als de btw over een halve cent gaat.
 
-     Er komen twee getallen uit en ze heten allebei wat ze zijn. Een enkel veld
-     `totaal` stond hier eerder en betekende toen zonder btw; dat woord is
-     bewust weg, zodat niemand het per ongeluk voor het andere aanziet. */
+     Er komen drie getallen uit en ze heten allemaal wat ze zijn. Een enkel
+     veld `totaal` stond hier eerder; dat woord is bewust weg, zodat niemand
+     het ene bedrag per ongeluk voor het andere aanziet. */
   function bereken(soort, km, tijd, stops) {
     var r = CONFIG.ritten[soort];
     if (!r) { return null; }
@@ -188,16 +190,18 @@
     var basis = ritprijs + correctie;
     var tijdSom = t.deel ? centen(Math.max(basis * t.deel, t.bodem)) : 0;
 
-    var incl = centen(ritprijs + correctie + tijdSom + stopSom);
-    var excl = centen(incl / (1 + CONFIG.btw));
+    var excl = centen(ritprijs + correctie + tijdSom + stopSom);
+    var btw = centen(excl * CONFIG.btw);
     return {
       tarief: r, tijdstip: t, kmSom: kmSom, correctie: correctie,
       stops: n, stopSom: stopSom, tijdSom: tijdSom,
-      /* Wat de klant betaalt. */
-      totaalIncl: incl,
-      /* Wat er als subtotaal op de factuur komt, met de btw daaronder. */
+      /* Wat er als subtotaal op de factuur komt: het tarief zoals het overal
+         genoemd wordt. */
       totaalExcl: excl,
-      btw: centen(incl - excl)
+      btw: btw,
+      /* Wat de klant betaalt. Opgeteld en niet apart uitgerekend, zodat de drie
+         bedragen op elkaar aansluiten tot op de cent. */
+      totaalIncl: centen(excl + btw)
     };
   }
 

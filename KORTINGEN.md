@@ -1,15 +1,16 @@
 # Wat kun je weggeven zonder erop toe te leggen
 
 > **Let op — de tabel hieronder is opnieuw doorgerekend op 8 september 2026,
-> met de nieuwe tarieven (inclusief btw, kilometerprijzen omlaag naar €1,00 en
-> €1,50). De marges zijn daardoor fors lager dan in de eerste versie van dit
-> stuk. Het kortingsadvies dat ná de tabel staat is nog geschreven voor de oude
-> tarieven en klopt dus niet meer; lees het als richting, niet als bedrag.**
+> met de nieuwe kilometerprijzen (€1,00 standaard, €1,50 spoed en directe
+> spoed, alles zonder btw). De marges zijn daardoor lager dan in de eerste
+> versie van dit stuk. Het kortingsadvies dat ná de tabel staat is nog
+> geschreven voor de oude tarieven; de percentages kloppen nog wel als
+> richting, de bedragen niet meer.**
 >
 > **Wat er uit de nieuwe cijfers springt: een standaardrit van 200 km levert
-> €31 per uur op vóór belasting.** Dat is met kosten van €0,50 per kilometer,
-> en dat is een voorzichtige aanname. Zit je daarboven, dan blijft er van een
-> lange standaardrit vrijwel niets over. Zie de laatste alinea van dit stuk.
+> €43 per uur op vóór belasting**, tegen €67 met het oude tarief. Dat is met
+> kosten van €0,50 per kilometer, en dat is een voorzichtige aanname. Zie de
+> laatste alinea van dit stuk.
 
 Doorgerekend op 4 september 2026, met jouw eigen tarieven. Twee vragen die
 allebei "korting" heten maar een ander antwoord hebben:
@@ -32,30 +33,30 @@ laden, lossen en terugrijden (gerekend met 45 minuten vast plus 60 km/uur).
 
 | Rit | Afstand | Prijs | Kosten | Marge | Per uur |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Standaard | 10 km | € 70,25 | € 5 | € 65,25 | **€ 71** |
-| Standaard | 50 km | € 103,31 | € 25 | € 78,31 | **€ 49** |
-| Standaard | 200 km | € 227,27 | € 100 | € 127,27 | **€ 31** |
-| Spoed | 10 km | € 95,04 | € 5 | € 90,04 | **€ 98** |
-| Spoed | 50 km | € 144,63 | € 25 | € 119,63 | **€ 76** |
-| Spoed | 200 km | € 330,58 | € 100 | € 230,58 | **€ 56** |
-| Directe spoed | 50 km | € 165,29 | € 25 | € 140,29 | **€ 89** |
-| Internationaal | 200 km | € 454,55 | € 100 | € 354,55 | **€ 87** |
+| Standaard | 10 km | € 85 | € 5 | € 80 | **€ 87** |
+| Standaard | 50 km | € 125 | € 25 | € 100 | **€ 63** |
+| Standaard | 200 km | € 275 | € 100 | € 175 | **€ 43** |
+| Spoed | 10 km | € 115 | € 5 | € 110 | **€ 120** |
+| Spoed | 50 km | € 175 | € 25 | € 150 | **€ 95** |
+| Spoed | 200 km | € 400 | € 100 | € 300 | **€ 73** |
+| Directe spoed | 50 km | € 200 | € 25 | € 175 | **€ 111** |
+| Internationaal | 200 km | € 550 | € 100 | € 450 | **€ 110** |
 
 De prijskolom is het bedrag **zonder btw** — dat is wat er van een rit bij jou
 binnenkomt. De btw is niet van jou; die gaat door naar de Belastingdienst.
 
-**Wat hier uit springt: je verdient per uur het minst aan lange standaardritten,
-en dat is met de nieuwe tarieven scherper geworden.** Een rit van 200 km levert
-meer op dan een rit van 10 km, maar per uur van je dag veel minder — €31 tegen
-€71. Je kilometerprijs van €1,00 dekt de kilometer nog wel, maar de tijd die
-erin gaat zitten nauwelijks.
+**Wat hier uit springt: je verdient per uur het minst aan lange
+standaardritten.** Een rit van 200 km levert meer op dan een rit van 10 km, maar
+per uur van je dag veel minder — €43 tegen €87. Je kilometerprijs van €1,00 dekt
+de kilometer, maar de tijd die erin gaat zitten maar net.
 
-Zet €31 per uur naast wat het moet dekken: je eigen loon, de vakantie die je
+Zet €43 per uur naast wat het moet dekken: je eigen loon, de vakantie die je
 niet doorbetaald krijgt, de dagen dat je ziek bent, je pensioen, en de uren dat
-je administratie doet in plaats van rijdt. Een lange standaardrit is met dit
-tarief geen goede dag werk. Twee wegen daaruit: het kilometertarief voor
-standaard omhoog, of standaardritten boven de honderd kilometer niet aannemen
-tenzij er een retourvracht bij zit.
+je administratie doet in plaats van rijdt. Het kan uit, maar ruim is het niet.
+Twee dingen om in de gaten te houden: of het kilometertarief voor standaard op
+termijn omhoog moet, en of een lange standaardrit een retourvracht kan krijgen.
+Spoed en directe spoed zitten er met €73 tot €120 een stuk comfortabeler bij —
+dat is de hoek waar je klanten moet zoeken.
 
 Dat is geen fout in je tarieven, dat is hoe kilometerprijzen werken. Maar het
 bepaalt wel waar je korting mag geven en waar niet.

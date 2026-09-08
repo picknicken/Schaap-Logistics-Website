@@ -1507,24 +1507,15 @@
      lopen. Wat er niet in kan zitten zijn de klantgegevens: adres, btw-nummer
      en debiteurnummer staan in Airtable en niet op de ritkaart. Die blijven
      dus leeg tot de factuur er echt is. */
-  /* Dezelfde bedragen als op de site en in Airtable, en net als daar zijn ze
-     INCLUSIEF btw — dat is wat de klant betaalt. De factuurpagina rekent in
-     bedragen zonder btw, dus gaat alles hieronder er gedeeld door 1,21 heen.
-
-     Dat delen gebeurt zonder tussentijds afronden. Een euro per kilometer is
-     82,6446… cent zonder btw; rond je dat per regel af op 83 cent, dan loopt
-     het subtotaal een cent uit de pas met wat de klant is beloofd. De
-     factuurpagina telt de onafgeronde bedragen op en rondt één keer, aan het
-     eind. Dat de losse regels op het scherm daardoor een cent naast hun eigen
-     optelsom kunnen staan hoort bij prijzen die inclusief btw rond zijn. */
+  /* Dezelfde bedragen als op de site en in Airtable, en net als daar zonder
+     btw — zo staat de hele prijslijst, want zo noemt zakelijk vervoer zijn
+     prijzen. De factuurpagina rekent er ook in en zet de btw er zelf onder. */
   var TARIEVEN = {
     'Standaard transport':      { start: 75,  km: 1.00 },
     'Spoedtransport':           { start: 100, km: 1.50 },
     'Directe spoed':            { start: 125, km: 1.50 },
     'Internationaal transport': { start: 150, km: 2.00 }
   };
-  var BTW = 0.21;
-  function zonderBtw(bedrag) { return bedrag / (1 + BTW); }
 
   function conceptLink(rit) {
     var t = TARIEVEN[rit.type] || TARIEVEN['Standaard transport'];
@@ -1551,14 +1542,14 @@
     q.set('naar', rit.aflever || '');
     q.set('oms', rit.type || '');
     q.set('km', String(km));
-    q.set('kmtarief', String(zonderBtw(t.km)));
-    q.set('start', String(zonderBtw(t.start)));
+    q.set('kmtarief', String(t.km));
+    q.set('start', String(t.start));
     q.set('stops', String(Number(rit.stops) || 0));
-    q.set('stoptarief', String(zonderBtw(25)));
-    q.set('tijdtoeslag', String(zonderBtw(tijd)));
+    q.set('stoptarief', '25');
+    q.set('tijdtoeslag', String(tijd));
     q.set('tijdvak', rit.tijdvak || '');
     q.set('wacht', String(wacht));
-    q.set('wachttoeslag', String(zonderBtw(wachttoeslag)));
+    q.set('wachttoeslag', String(wachttoeslag));
     q.set('toeslag', String(Number(rit.doorbereken) || 0));
     q.set('toeslagoms', 'Doorberekende kosten (tol, parkeren, veerpont)');
     q.set('korting', String(Number(rit.korting) || 0));

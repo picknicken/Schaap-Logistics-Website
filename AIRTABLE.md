@@ -437,9 +437,9 @@ wél door te berekenen: die zet je in `Extra kosten`, en dan komt het via de
 
 De formule volgt de website exact: standaard €75 + €1,00/km, spoed €100 + €1,50/km,
 directe spoed €125 + €1,50/km, minimum €75 per opdracht, en daarna pas de extra
-kosten erbij. **Al die bedragen zijn inclusief btw**; de formule deelt de hele som
-één keer door 1,21 om op het subtotaal van de factuur uit te komen. Internationaal
-rekent mee met een eigen tarief: €150 + €2,00/km,
+kosten erbij. Al die bedragen zijn zonder btw, zoals de hele prijslijst; de btw
+komt er in een eigen veld bij. Internationaal rekent mee met een eigen tarief:
+€150 + €2,00/km,
 met een eigen bodem van €200 in plaats van €75. Dat minimum is hoger omdat de
 kortste rit over de grens al gauw een halve dag kost — heen, lossen, en leeg
 terug — terwijl een rit naar Turnhout korter is dan een rit naar Rotterdam.

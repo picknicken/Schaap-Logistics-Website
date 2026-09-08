@@ -92,7 +92,7 @@ doet. Dit kost vooral wachttijd, dus vraag het vroeg.
 
 ### Kijk of je tarieven kloppen
 
-Nu staan ze op (inclusief btw): standaard €75 + €1,00 per km, spoed €100 + €1,50,
+Nu staan ze op (exclusief btw): standaard €75 + €1,00 per km, spoed €100 + €1,50,
 directe spoed €125 + €1,50, internationaal €150 plus €2,00 met een minimum van
 €200. Die
 getallen zijn onderbouwd maar niet getoetst aan de markt. Bel drie concurrenten
