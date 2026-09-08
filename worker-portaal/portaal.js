@@ -245,7 +245,22 @@ const DAGKLUS = '0 5 * * *';
 
 const MAX_BODY_MB    = 4;    /* een handtekening is een paar kB; dit is ruim */
 const MAX_HANDTEK_KB = 800;
-const MAX_DAGEN      = 31;   /* hoeveel dagen je in één keer mag opvragen */
+
+/* Hoeveel dagen je in één keer mag opvragen. Stond op 31, en dat was te krap
+   voor twee dingen die het portaal werkelijk vraagt: de meldingen kijken
+   veertien dagen terug en een maand vooruit (45 dagen), en de kalender toont
+   zes weken in één raster (42 dagen). Die kregen dus stilletjes een 400 terug.
+
+   De rem blijft er wel. Er wordt honderd ritten per keer opgehaald zonder
+   verder te bladeren, dus een venster dat er meer kan bevatten zou een
+   onvolledig antwoord geven zonder dat je het ziet. Twee maanden zit daar
+   voor een eenmanszaak ruim onder. */
+const MAX_DAGEN      = 62;
+
+/* Hoeveel ritten een zoekopdracht hoogstens teruggeeft. Vind je je rit niet
+   in de eerste veertig, dan help je jezelf meer met een preciezere zoekterm
+   dan met een langere lijst. */
+const MAX_ZOEK       = 40;
 
 /* ------------------------------------------------------------------ de rem
 
@@ -304,6 +319,9 @@ function magVanOrigin(origin, toegestaan) {
 const CHAUFFEUR_MAG = new Set([
   'overzicht', 'ritten', 'status', 'handtekening', 'notitie', 'ritkm', 'ritkosten',
   'dagstaat',
+  /* Terugzoeken mag hij ook, maar hij krijgt alleen zijn eigen ritten terug —
+     daar zorgt dezelfde zeef voor als bij het dagoverzicht. */
+  'zoekritten',
   /* Een chauffeur mag zich aanmelden voor meldingen over zijn eigen ritten. */
   'pushaan', 'pushuit', 'pushtest'
 ]);
@@ -483,6 +501,7 @@ async function schakel(env, body, origin, wie) {
   switch (body.actie) {
     case 'overzicht':    return await haalOverzicht(env, body, origin, wie);
     case 'ritten':       return await haalRitten(env, body, origin, wie);
+    case 'zoekritten':   return await zoekRitten(env, body, origin, wie);
     case 'status':       return await zetStatus(env, body, origin);
     case 'handtekening': return await zetHandtekening(env, body, origin);
     case 'notitie':      return await zetNotitie(env, body, origin);
@@ -563,6 +582,52 @@ async function haalRitten(env, body, origin, wie) {
   }
   const ritten = await rittenOphalen(env, van, tot, wie);
   return antwoord(200, { ok: true, van, tot, ritten }, origin, true);
+}
+
+/* Terugzoeken door alle ritten, zonder datum. De dagweergave werkt prima
+   zolang je weet wanneer iets was; dit is voor als je dat juist niet weet —
+   "die rit naar Venlo voor Bakker, ergens in het voorjaar".
+
+   Gezocht wordt in het ritnummer, de klantnaam en de twee adressen. Bewust
+   niet in de opmerkingen: daar staat vaak een contactpersoon of een
+   routebeschrijving in, en dan levert zoeken op een plaatsnaam ritten op die
+   met die plaats niets te maken hebben. */
+async function zoekRitten(env, body, origin, wie) {
+  /* Wat je hier intypt gaat een Airtable-formule in. Aanhalingstekens,
+     backslashes en accolades kunnen die formule laten omslaan in iets anders,
+     dus die gaan eruit. Letters met accenten blijven staan: daar zitten
+     plaatsnamen vol mee. */
+  const veilig = String(body.tekst || '')
+    .replace(/['"\\{}()]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 60);
+  if (veilig.length < 2) {
+    return antwoord(400, { fout: 'Geef minstens twee tekens om op te zoeken' }, origin, true);
+  }
+
+  const naar = veilig.toUpperCase();
+  const filter = 'OR(' + [R.rit, R.klant, R.ophaal, R.aflever]
+    .map((veld) => `FIND('${naar}', UPPER({${veld}} & '')) > 0`)
+    .join(', ') + ')';
+
+  const zoek = new URLSearchParams();
+  zoek.set('filterByFormula', filter);
+  zoek.set('pageSize', String(MAX_ZOEK));
+  /* Nieuwste eerst. Zoek je op een vaste klant, dan is de rit van vorige week
+     bijna altijd wat je zoekt en niet die van twee jaar terug. */
+  zoek.append('sort[0][field]', R.datum);
+  zoek.append('sort[0][direction]', 'desc');
+  const data = await airtable(env, `${env.AIRTABLE_RITTEN}?${zoek}`);
+  const records = data.records || [];
+
+  /* Dezelfde zeef als bij het dagoverzicht: een chauffeur die terugzoekt komt
+     alleen zijn eigen ritten tegen, en dan zonder bedragen. */
+  const ritten = (!wie || wie.rol === 'Eigenaar')
+    ? records.map(naarRit)
+    : records.filter((r) => ritIsVan(r, wie)).map(naarRitVoorChauffeur);
+
+  return antwoord(200, { ok: true, tekst: veilig, ritten }, origin, true);
 }
 
 async function zetStatus(env, body, origin) {

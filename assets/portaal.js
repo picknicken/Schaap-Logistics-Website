@@ -57,6 +57,17 @@
      opblazen voor iets wat je een paar keer per week opzoekt. */
   var facturen = {};
   var factuurZoek = [];
+  /* De ritten per maand voor de kalender, met 'JJJJ-MM' als sleutel. Bij het
+     openen tekenen we meteen wat we al hebben en halen we het daarna opnieuw
+     op: zo staat er nooit een leeg raster, en klopt het een tel later alsnog
+     ook als er intussen een rit bij kwam. */
+  var maanden = {};
+  var maand = vandaag().slice(0, 7);
+  /* Elke zoekopdracht krijgt een nummer. Antwoorden komen niet altijd terug in
+     de volgorde waarin ze weggingen, en alleen het laatste wat je intypte mag
+     op het scherm komen. */
+  var zoekBeurt = 0;
+  var zoekWacht = null;
   var tabblad = 'ritten';
   var klantVoor = null;
   var tekentVoor = null;
@@ -92,9 +103,75 @@
     return new Date(iso + 'T12:00:00')
       .toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' });
   }
+  /* Met het jaar erbij. In een zoekuitslag staan ritten van jaren door elkaar,
+     en dan is "12 sep" niet genoeg om te weten welke je voor je hebt. */
+  function datumMetJaar(iso) {
+    if (!iso) { return ''; }
+    return new Date(iso + 'T12:00:00')
+      .toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+  function maandNaam(maandSl) {
+    var n = new Date(maandSl + '-01T12:00:00')
+      .toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' });
+    return n.charAt(0).toUpperCase() + n.slice(1);
+  }
   function klok(iso) {
     if (!iso) { return ''; }
     return new Date(iso).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  var MAANDEN = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli',
+                 'augustus', 'september', 'oktober', 'november', 'december'];
+  var MAANDKORT = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul',
+                   'aug', 'sep', 'okt', 'nov', 'dec'];
+
+  /* Een datum maken van drie getallen, of niets als het er geen is. Nodig
+     omdat een Date 31 februari stilletjes doorrolt naar 3 maart: dan krijg je
+     een andere dag dan je intypte zonder dat iemand het zegt. */
+  function bouwDatum(jaar, maandNr, dagNr) {
+    if (!(jaar >= 2000 && jaar <= 2100)) { return ''; }
+    if (!(maandNr >= 1 && maandNr <= 12)) { return ''; }
+    if (!(dagNr >= 1 && dagNr <= 31)) { return ''; }
+    var d = new Date(jaar, maandNr - 1, dagNr, 12, 0, 0);
+    if (d.getMonth() !== maandNr - 1 || d.getDate() !== dagNr) { return ''; }
+    return alsDatum(d);
+  }
+
+  /* Wat je intypt als je een datum bedoelt in plaats van een klantnaam:
+     12-3, 12/3/26, 12.3.2026, 12 maart, 12 mrt 2025, 2026-03-12. Zonder jaar
+     is het dit jaar. Levert het niets op, dan was het gewoon een zoekterm. */
+  function leesDatum(tekst) {
+    var t = String(tekst || '').trim().toLowerCase();
+    var ditJaar = new Date().getFullYear();
+
+    var iso = /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/.exec(t);
+    if (iso) { return bouwDatum(+iso[1], +iso[2], +iso[3]); }
+
+    var cijfers = /^(\d{1,2})[-/. ](\d{1,2})(?:[-/. ](\d{2}|\d{4}))?$/.exec(t);
+    if (cijfers) {
+      var jaar = cijfers[3] === undefined ? ditJaar : +cijfers[3];
+      if (jaar < 100) { jaar += 2000; }
+      return bouwDatum(jaar, +cijfers[2], +cijfers[1]);
+    }
+
+    var woord = /^(\d{1,2})[. ]+([a-z]{3,})\.?(?:[. ]+(\d{2}|\d{4}))?$/.exec(t);
+    if (woord) {
+      var nr = 0;
+      for (var i = 0; i < MAANDEN.length; i++) {
+        /* Zowel "maart" als "mrt": het hele woord als beginstuk, of de vaste
+           Nederlandse afkorting. Twee lijsten, want "maart" en "mrt" delen
+           hun eerste drie letters niet. */
+        if (MAANDEN[i].indexOf(woord[2]) === 0 || MAANDKORT[i] === woord[2].slice(0, 3)) {
+          nr = i + 1;
+          break;
+        }
+      }
+      if (!nr) { return ''; }
+      var jaar2 = woord[3] === undefined ? ditJaar : +woord[3];
+      if (jaar2 < 100) { jaar2 += 2000; }
+      return bouwDatum(jaar2, nr, +woord[1]);
+    }
+    return '';
   }
   /* Wanneer iets binnenkwam, zoals je het aan iemand zou zeggen: vandaag alleen
      de tijd, gisteren het woord, en daarvoor de datum erbij. */
@@ -251,6 +328,246 @@
   function gaNaar(nieuweDag) {
     dag = nieuweDag;
     haalDag();
+    /* Staat de kalender open, dan moet de gekozen dag meeverspringen. Kom je
+       daarmee in een andere maand, dan die maand erbij halen — anders kijk je
+       naar augustus met een gekozen dag die daar niet in staat. */
+    if (!el('kalender').hidden) {
+      if (dag.slice(0, 7) !== maand) { maand = dag.slice(0, 7); haalMaand(maand); }
+      tekenMaand();
+      el('dag-sprong').value = dag;
+    }
+  }
+
+  /* ------------------------------------------------------ zoeken en kalender
+
+     Per dag bladeren werkt zolang je weet wanneer een rit was. Dit is voor als
+     je dat niet weet: een maand in één oogopslag met een stip per rit, en
+     zoeken op de klant, de plaats of het ritnummer. Typ je een datum in, dan
+     komt daar een regel bij om er meteen heen te springen. */
+
+  el('dag-kies').addEventListener('click', function () {
+    zetKalender(el('kalender').hidden);
+  });
+
+  function zetKalender(open) {
+    el('kalender').hidden = !open;
+    el('dag-kies').setAttribute('aria-expanded', String(open));
+    if (!open) { return; }
+    maand = dag.slice(0, 7);
+    el('dag-sprong').value = dag;
+    tekenMaand();
+    haalMaand(maand);
+  }
+
+  el('maand-vorige').addEventListener('click', function () { andereMaand(-1); });
+  el('maand-volgende').addEventListener('click', function () { andereMaand(1); });
+
+  function andereMaand(stap) {
+    var d = new Date(maand + '-01T12:00:00');
+    d.setMonth(d.getMonth() + stap);
+    maand = alsDatum(d).slice(0, 7);
+    tekenMaand();
+    haalMaand(maand);
+  }
+
+  /* De maandag op of vóór de eerste van de maand. Daarna zes volle weken, zodat
+     elke maand in hetzelfde raster van 42 vakjes past en de kalender niet van
+     hoogte springt als je doorbladert. Een Nederlandse week begint op maandag;
+     getDay() vindt van zichzelf dat het zondag is. */
+  function rasterStart(maandSl) {
+    var eerste = new Date(maandSl + '-01T12:00:00');
+    return verschuif(alsDatum(eerste), -((eerste.getDay() + 6) % 7));
+  }
+
+  function haalMaand(sleutel) {
+    var van = rasterStart(sleutel);
+    verstuur('ritten', { van: van, tot: verschuif(van, 41) })
+      .then(function (data) {
+        maanden[sleutel] = data.ritten || [];
+        if (maand === sleutel && !el('kalender').hidden) { tekenMaand(); }
+      })
+      .catch(function () {
+        /* Lukt het ophalen niet, dan blijft de kalender gewoon staan — alleen
+           zonder stippen. Je kunt er nog steeds een dag mee kiezen, en daar is
+           hij in de eerste plaats voor. Een foutmelding over het hele scherm
+           zou hier meer in de weg zitten dan helpen. */
+      });
+  }
+
+  function tekenMaand() {
+    el('maand-naam').textContent = maandNaam(maand);
+    var net = el('kalender-net');
+    net.innerHTML = '';
+
+    var perDag = {};
+    (maanden[maand] || []).forEach(function (r) {
+      if (!r.datum) { return; }
+      (perDag[r.datum] = perDag[r.datum] || []).push(r);
+    });
+
+    var start = rasterStart(maand);
+    var nu = vandaag();
+    for (var i = 0; i < 42; i++) {
+      net.appendChild(dagVakje(verschuif(start, i), perDag, nu));
+    }
+  }
+
+  function dagVakje(datum, perDag, nu) {
+    var opDeze = perDag[datum] || [];
+    var knop = maak('button', 'kalender__dag');
+    knop.type = 'button';
+    if (datum.slice(0, 7) !== maand) { knop.setAttribute('data-buiten', ''); }
+    if (datum === nu)  { knop.setAttribute('data-vandaag', ''); }
+    if (datum === dag) { knop.setAttribute('data-gekozen', ''); }
+    knop.setAttribute('data-dag', datum);
+    /* Een schermlezer krijgt hier hetzelfde te horen als wat de stippen laten
+       zien, want stippen leest hij niet voor. */
+    knop.setAttribute('aria-label', datumLang(datum) + ', ' +
+      (opDeze.length === 0 ? 'geen ritten'
+                           : opDeze.length + (opDeze.length === 1 ? ' rit' : ' ritten')));
+    knop.appendChild(maak('span', '', String(Number(datum.slice(8, 10)))));
+    knop.appendChild(stippen(opDeze));
+    knop.addEventListener('click', function () { kiesDag(datum); });
+    return knop;
+  }
+
+  function stippen(opDeze) {
+    var vak = maak('span', 'kalender__stip');
+    opDeze.slice(0, 3).forEach(function (r) {
+      var stip = maak('i', '');
+      if (r.status === 'Gepland' || r.status === 'Onderweg') { stip.setAttribute('data-open', ''); }
+      else if (r.status === 'Uitgevoerd') { stip.setAttribute('data-klaar', ''); }
+      vak.appendChild(stip);
+    });
+    /* Vier ritten op één dag past niet in drie stippen. Het plusje zegt: er is
+       meer, kijk maar. Het exacte aantal staat een tik later toch op je scherm. */
+    if (opDeze.length > 3) { vak.appendChild(maak('b', '', '+')); }
+    return vak;
+  }
+
+  function kiesDag(nieuweDag) {
+    zetKalender(false);
+    wisZoek();
+    gaNaar(nieuweDag);
+  }
+
+  /* De datumkiezer van de telefoon zelf. Voor een dag in een heel ander jaar
+     is dat één beweging, waar doorbladeren er twintig zou zijn. */
+  el('dag-sprong').addEventListener('change', function () {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(this.value)) { kiesDag(this.value); }
+  });
+
+  /* -------------------------------------------------------------- zoeken */
+
+  el('rit-zoek').addEventListener('input', function () {
+    var tekst = this.value.trim();
+    el('rit-zoek-leeg').hidden = !this.value;
+    if (zoekWacht) { clearTimeout(zoekWacht); zoekWacht = null; }
+    if (tekst.length < 2) { zoekBeurt++; toonZoek(false); return; }
+    /* Even wachten met versturen. Anders gaat er bij het intypen van "Bakker"
+       zes keer een verzoek weg terwijl alleen het laatste ertoe doet. */
+    zoekWacht = setTimeout(function () { zoekRitten(tekst); }, 350);
+  });
+
+  el('rit-zoek-leeg').addEventListener('click', function () {
+    wisZoek();
+    el('rit-zoek').focus();
+  });
+
+  function wisZoek() {
+    if (zoekWacht) { clearTimeout(zoekWacht); zoekWacht = null; }
+    zoekBeurt++;
+    el('rit-zoek').value = '';
+    el('rit-zoek-leeg').hidden = true;
+    toonZoek(false);
+  }
+
+  /* Zoeken en de kalender delen dezelfde ruimte: zoek je, dan wijkt het
+     raster. Allebei tegelijk zou een paneel opleveren dat niet meer op een
+     telefoonscherm past. */
+  function toonZoek(bezig) {
+    el('zoekuitslag').hidden = !bezig;
+    el('kalendervak').hidden = !!bezig;
+    if (!bezig) { el('zoekuitslag').innerHTML = ''; }
+  }
+
+  function zoekRitten(tekst) {
+    var beurt = ++zoekBeurt;
+    var sprong = leesDatum(tekst);
+    toonZoek(true);
+    tekenZoek(sprong, null, tekst, '', 'Zoeken…');
+
+    verstuur('zoekritten', { tekst: tekst })
+      .then(function (data) {
+        if (beurt !== zoekBeurt) { return; }
+        tekenZoek(sprong, data.ritten || [], tekst, '');
+      })
+      .catch(function (fout) {
+        if (beurt !== zoekBeurt) { return; }
+        tekenZoek(sprong, null, tekst, fout.message);
+      });
+  }
+
+  function tekenZoek(sprong, gevonden, tekst, fout, bezig) {
+    var vak = el('zoekuitslag');
+    vak.innerHTML = '';
+    /* De datumregel eerst, en ook als het zoeken zelf misging: een datum
+       herkennen doet dit scherm zelf en daar is geen verbinding voor nodig. */
+    if (sprong) { vak.appendChild(sprongRij(sprong)); }
+
+    if (bezig)  { vak.appendChild(maak('div', 'zoekleeg', bezig)); return; }
+    if (fout)   { vak.appendChild(maak('div', 'zoekleeg', fout)); return; }
+    if (!gevonden.length) {
+      vak.appendChild(maak('div', 'zoekleeg',
+        (sprong ? 'Verder geen ritten' : 'Geen ritten') + ' gevonden voor \u201c' + tekst + '\u201d.'));
+      return;
+    }
+    gevonden.forEach(function (rit) { vak.appendChild(zoekRij(rit)); });
+  }
+
+  /* Alleen de plaats. Naast de datum en de status is er in een zoekregel op een
+     telefoon geen ruimte voor twee volledige adressen, en dan valt het
+     afleveradres er juist af — terwijl dat is waar je op zoekt. Een Nederlands
+     adres eindigt op de plaatsnaam; staat er geen komma in, dan is het adres
+     zelf al kort genoeg. */
+  function plaatsVan(adres) {
+    var stukken = String(adres || '').split(',');
+    var laatste = stukken[stukken.length - 1].trim();
+    /* "5611 AB Eindhoven" — de postcode hoeft er niet bij. */
+    return laatste.replace(/^\d{4}\s*[A-Za-z]{0,2}\s+/, '') || '?';
+  }
+
+  function sprongRij(datum) {
+    var rij = maak('button', 'zoekrij zoekrij--sprong');
+    rij.type = 'button';
+    rij.appendChild(maak('span', 'zoekrij__datum', 'Datum'));
+    var midden = maak('span', 'zoekrij__midden');
+    midden.appendChild(maak('span', 'zoekrij__klant', 'Ga naar ' + datumLang(datum)));
+    midden.appendChild(maak('span', 'zoekrij__route', dagNaam(datum)));
+    rij.appendChild(midden);
+    rij.addEventListener('click', function () { kiesDag(datum); });
+    return rij;
+  }
+
+  function zoekRij(rit) {
+    var rij = maak('button', 'zoekrij');
+    rij.type = 'button';
+    rij.appendChild(maak('span', 'zoekrij__datum', datumMetJaar(rit.datum) || 'Geen datum'));
+
+    var midden = maak('span', 'zoekrij__midden');
+    midden.appendChild(maak('span', 'zoekrij__klant', rit.klant || rit.naam || 'Rit'));
+    midden.appendChild(maak('span', 'zoekrij__route',
+      plaatsVan(rit.ophaal) + '  \u2192  ' + plaatsVan(rit.aflever)));
+    rij.appendChild(midden);
+
+    if (rit.status) {
+      rij.appendChild(maak('span', 'zoekrij__status s-' + rit.status.toLowerCase(), rit.status));
+    }
+    /* Een rit zonder datum kun je nergens naartoe openen. Dan is de regel er
+       om te laten zien dat hij bestaat, en verder niets. */
+    if (!rit.datum) { rij.disabled = true; }
+    else { rij.addEventListener('click', function () { kiesDag(rit.datum); }); }
+    return rij;
   }
 
   function haalDag() {
@@ -330,6 +647,25 @@
     tekenAanvragen();
     tekenPlanning();
     tekenBadges();
+    stipBij();
+  }
+
+  /* De ritten van de dag die op het scherm staat zijn verser dan wat er in de
+     maandvoorraad van de kalender ligt. Zet je een rit op Uitgevoerd, dan
+     hoort die stip meteen groen te worden — en niet pas als je de kalender
+     opnieuw opent. Alleen de maanden waarvan het raster deze dag laat zien
+     worden bijgewerkt; die overlappen aan het begin en het eind. */
+  function stipBij() {
+    Object.keys(maanden).forEach(function (sleutel) {
+      var start = rasterStart(sleutel);
+      var hoort = dag >= start && dag <= verschuif(start, 41);
+      var had = maanden[sleutel].some(function (r) { return r.datum === dag; });
+      if (!hoort && !had) { return; }
+      maanden[sleutel] = maanden[sleutel]
+        .filter(function (r) { return r.datum !== dag; })
+        .concat(hoort ? ritten : []);
+    });
+    if (!el('kalender').hidden) { tekenMaand(); }
   }
 
   /* -------------------------------------------------------- tabbladen */
@@ -1407,6 +1743,7 @@
     tekenTegels();
     tekenLijst();
     tekenBadges();
+    stipBij();
   }
 
   function wijzigStatus(rit, status, knop) {

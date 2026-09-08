@@ -241,13 +241,112 @@ input{font:inherit}
   width:38px;height:38px;flex:none;border-radius:10px;
   background:rgba(255,255,255,.08);color:#fff;display:grid;place-items:center;
 }
-.dagbalk__nu{flex:1;text-align:center;color:#fff;line-height:1.25}
+/* De datum in het midden is zelf de knop naar de kalender. Een aparte knop
+   erbij zou de balk op een telefoon van 390 pixels te vol maken, en dit is
+   waar je toch al naar kijkt als je je afvraagt welke dag je ziet. */
+.dagbalk__nu{
+  flex:1;text-align:center;color:#fff;line-height:1.25;
+  width:auto!important;height:auto!important;border-radius:10px;
+  background:none;border:0;font:inherit;padding:3px 6px;cursor:pointer;
+  display:block;
+}
 .dagbalk__nu b{display:block;font-size:.95rem;font-weight:700}
 .dagbalk__nu span{font-size:.75rem;color:#8fa2be}
+.dagbalk__pijl{
+  display:inline-block;vertical-align:-1px;margin-left:4px;color:#8fa2be;
+  transition:transform .15s;
+}
+.dagbalk__nu[aria-expanded="true"]{background:rgba(255,255,255,.08)}
+.dagbalk__nu[aria-expanded="true"] .dagbalk__pijl{transform:rotate(180deg)}
 .dagbalk__vandaag{
   font-size:.72rem;color:var(--amber);border:1px solid rgba(255,176,32,.4);
   border-radius:99px;padding:4px 10px;width:auto!important;height:auto!important;
 }
+
+/* -------------------------------------------------- zoeken en kalender
+
+   Twee manieren om een rit terug te vinden die je niet op de dag zelf zoekt:
+   een maand in één oogopslag met een stip per rit, en zoeken op wat je je nog
+   wél herinnert — de klant, de plaats of het ritnummer. Wie een datum intypt
+   krijgt daar een regel bij om er meteen heen te springen. */
+/* Zelf padding aan de bovenkant, en het zoekvak zonder marge. Anders valt de
+   bovenmarge van dat vak buiten dit blok en zie je een streep van de
+   achtergrond tussen de dagbalk en de kalender. */
+.kalender{background:var(--paper);border-bottom:1px solid var(--line);padding:14px 16px}
+.zoekvak--kalender{margin-top:0}
+
+.kalender__kop{display:flex;align-items:center;gap:8px;margin:14px 0 8px}
+.kalender__kop b{flex:1;text-align:center;font-size:.95rem;color:var(--heading)}
+.kalender__kop button{
+  width:34px;height:34px;flex:none;border:1px solid var(--line);border-radius:9px;
+  background:var(--paper);color:var(--muted);display:grid;place-items:center;cursor:pointer;
+}
+.kalender__dagen{
+  display:grid;grid-template-columns:repeat(7,1fr);gap:2px;padding-bottom:4px;
+  font-size:.66rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--muted);text-align:center;
+}
+.kalender__net{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.kalender__dag{
+  position:relative;aspect-ratio:1;border:0;background:none;font:inherit;
+  border-radius:9px;cursor:pointer;color:var(--heading);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  font-variant-numeric:tabular-nums;font-size:.9rem;
+}
+/* De dagen van de maand ervoor en erna staan er wel, maar zachter: ze horen
+   bij het raster en niet bij de maand waar je naar kijkt. Aantikken mag. */
+.kalender__dag[data-buiten]{color:var(--muted);opacity:.5}
+.kalender__dag[data-vandaag]{box-shadow:inset 0 0 0 1.5px var(--muted)}
+.kalender__dag[data-gekozen]{background:var(--navy);color:#fff;font-weight:700;opacity:1}
+.kalender__dag[data-gekozen][data-vandaag]{box-shadow:none}
+/* Een stip per rit, hoogstens drie en daarna een plusje. Amber staat voor
+   werk dat nog moet, groen voor gereden, grijs voor afgezegd. */
+.kalender__stip{display:flex;gap:2px;height:5px;align-items:center}
+.kalender__stip i{width:5px;height:5px;border-radius:50%;background:#9aa8bd;display:block}
+.kalender__stip i[data-open]{background:var(--amber)}
+.kalender__stip i[data-klaar]{background:var(--ok)}
+.kalender__stip b{font-size:.62rem;font-weight:700;color:var(--muted);line-height:1}
+/* Op de gekozen dag staat alles op donkerblauw; daar houdt grijs geen
+   contrast. De kleuren mis je niet: die ritten staan eronder. */
+.kalender__dag[data-gekozen] .kalender__stip i,
+.kalender__dag[data-gekozen] .kalender__stip b{background:#fff;color:#fff}
+
+.kalender__voet{
+  display:flex;align-items:center;gap:10px;margin-top:12px;
+  border-top:1px solid var(--line);padding-top:12px;
+}
+.kalender__voet label{font-size:.82rem;font-weight:600;color:var(--muted);flex:none}
+.kalender__voet input{
+  flex:1;min-width:0;min-height:40px;font:inherit;font-size:.95rem;padding:8px 11px;
+  border:1px solid var(--line);border-radius:9px;background:var(--paper);color:inherit;
+  -webkit-appearance:none;appearance:none;
+}
+
+.zoekuitslag{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.zoekrij{
+  display:flex;align-items:flex-start;gap:10px;width:100%;text-align:left;
+  background:var(--paper-2);border:1px solid var(--line);border-radius:11px;
+  padding:10px 12px;font:inherit;color:inherit;cursor:pointer;
+}
+.zoekrij__datum{
+  flex:none;width:70px;font-size:.72rem;font-weight:700;color:var(--muted);
+  line-height:1.35;padding-top:2px;
+}
+.zoekrij__midden{flex:1;min-width:0}
+.zoekrij__klant{display:block;font-weight:700;color:var(--heading);font-size:.92rem}
+.zoekrij__route{
+  display:block;font-size:.78rem;color:var(--muted);margin-top:2px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.zoekrij__status{
+  flex:none;align-self:center;font-size:.64rem;font-weight:700;letter-spacing:.04em;
+  text-transform:uppercase;border-radius:999px;padding:3px 8px;
+}
+/* De regel "ga naar 12 maart 2026" als je een datum intypt in plaats van een
+   naam. Amber, zodat hij niet op een gevonden rit lijkt. */
+.zoekrij--sprong{border-color:var(--amber);background:#fff8ea}
+.zoekrij--sprong .zoekrij__datum{color:#8a5a00}
+.zoekleeg{color:var(--muted);font-size:.88rem;padding:10px 2px}
 
 /* -------------------------------------------------------------- tegels */
 .tegels{
@@ -723,14 +822,58 @@ input{font:inherit}
     <button id="dag-vorige" type="button" aria-label="Vorige dag">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
     </button>
-    <div class="dagbalk__nu">
+    <button class="dagbalk__nu" id="dag-kies" type="button"
+            aria-expanded="false" aria-controls="kalender">
       <b id="dag-naam">—</b>
       <span id="dag-datum"></span>
-    </div>
+      <svg class="dagbalk__pijl" width="13" height="13" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+           aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
     <button class="dagbalk__vandaag" id="dag-vandaag" type="button">Vandaag</button>
     <button id="dag-volgende" type="button" aria-label="Volgende dag">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
     </button>
+  </div>
+
+  <!-- Zoeken en de maandkalender. Per dag bladeren werkt zolang je weet
+       wanneer iets was; dit is voor als je dat niet weet. Zit dicht totdat je
+       op de datum drukt, want op een gewone werkdag wil je de ritten zien en
+       niet de kalender. -->
+  <div class="kalender" id="kalender" hidden>
+    <div class="zoekvak zoekvak--kalender">
+      <svg class="zoekvak__loep" width="17" height="17" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/>
+      </svg>
+      <input id="rit-zoek" type="search" autocomplete="off"
+             placeholder="Klant, plaats, ritnummer of een datum"
+             aria-label="Rit of datum opzoeken">
+      <button class="zoekvak__leeg" id="rit-zoek-leeg" type="button" hidden
+              aria-label="Zoekopdracht wissen">&times;</button>
+    </div>
+
+    <div id="zoekuitslag" class="zoekuitslag" hidden></div>
+
+    <div id="kalendervak">
+      <div class="kalender__kop">
+        <button id="maand-vorige" type="button" aria-label="Vorige maand">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <b id="maand-naam">—</b>
+        <button id="maand-volgende" type="button" aria-label="Volgende maand">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
+      <div class="kalender__dagen" aria-hidden="true">
+        <span>ma</span><span>di</span><span>wo</span><span>do</span><span>vr</span><span>za</span><span>zo</span>
+      </div>
+      <div class="kalender__net" id="kalender-net"></div>
+      <div class="kalender__voet">
+        <label for="dag-sprong">Andere datum</label>
+        <input id="dag-sprong" type="date">
+      </div>
+    </div>
   </div>
 
   <div class="tegels">

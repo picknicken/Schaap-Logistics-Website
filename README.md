@@ -216,6 +216,23 @@ tabblad dat je kiest schuift vanzelf in beeld.
 
 - Bovenaan het aantal ritten, hoeveel er nog openstaan, de kilometers en de omzet
   van die dag. Met pijltjes blader je naar gisteren of morgen.
+- **Kalender en zoeken.** Druk op de datum in de balk en er klapt een maand open,
+  met per dag een stip per rit: amber voor wat nog moet, groen voor gereden, grijs
+  voor afgezegd, en een plusje zodra het er meer dan drie zijn. Zo zie je in één
+  oogopslag welke dagen vol staan. Eronder zit een datumkiezer voor een dag in
+  een heel ander jaar.
+
+  In hetzelfde vak zit het **zoekveld**. Daarmee vind je een rit terug zonder te
+  weten wanneer hij was: typ een klantnaam, een plaats of een ritnummer en je
+  krijgt de ritten van alle jaren, nieuwste eerst. Tik er een aan en je staat op
+  die dag. Typ je een datum in plaats van een naam — `12-3`, `12 maart`,
+  `12 mrt 2025` — dan komt daar een regel bij om er direct heen te springen.
+
+  Het zoeken kijkt in het ritnummer, de klantnaam en de twee adressen. Bewust
+  niet in de opmerkingen: daar staat vaak een contactpersoon of een
+  routebeschrijving in, en dan levert zoeken op een plaatsnaam ritten op die met
+  die plaats niets te maken hebben. Een chauffeur mag ook zoeken, maar komt
+  alleen zijn eigen ritten tegen en ziet daar geen bedragen bij.
 - **Status omzetten.** *Onderweg* legt meteen het vertrektijdstip vast, zodat je
   achteraf ziet hoe lang een rit werkelijk duurde.
 - **Route starten.** Bij een geplande rit wijst de knop naar het ophaaladres, bij
