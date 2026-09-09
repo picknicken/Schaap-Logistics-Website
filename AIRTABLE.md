@@ -347,6 +347,31 @@ schadelijk is het niet, maar het staat slordig.
 Hetzelfde geldt in het klantportaal: daar komt de factuur binnen via
 `zonderBeheer`, en die functie is de enige plek waar dat gebeurt.
 
+### Het toegangslog
+
+De tabel `Toegangslog` (`tblieegCnsk3Pjd4i`) houdt bij wie er bij het portaal
+aanklopte. De tussenlaag schrijft er; met de hand aanpassen heeft geen zin.
+
+| Wat | Wanneer |
+| --- | --- |
+| **Geweigerd** | Altijd. Die horen zeldzaam te zijn — jij en je chauffeurs typen je code één keer en de telefoon onthoudt hem. Staan er ineens twintig op een avond, dan is dat het signaal |
+| **Binnen** | Hoogstens één keer per persoon per land per dag |
+
+Dat tweede is een keuze en geen slordigheid. Elk verzoek uit het portaal draagt
+de code mee, dus elke tik op een knop is technisch een aanmelding. Die allemaal
+opschrijven zou de tabel binnen een week vullen en er tegelijk niets uit te
+lezen maken. Wat je wilt weten is: kwam er vandaag iemand binnen, en vanwaar.
+
+**Wat er níét in staat.** De geprobeerde code niet — die is nooit interessant
+en wel gevaarlijk om te bewaren. En van het IP-adres alleen het netwerk:
+`83.128.14.7` wordt `83.128.x.x`. Genoeg om te zien of pogingen van dezelfde
+plek komen, te weinig om iemand aan te wijzen. Een volledig IP is een
+persoonsgegeven en dat hoort hier niet te blijven staan.
+
+De ochtendklus gooit regels ouder dan zestig dagen weg. Wil je het uitzetten,
+maak dan `AIRTABLE_TOEGANGSLOG` leeg in `wrangler.toml`; dan wordt er niets
+vastgelegd en werkt de rest gewoon door.
+
 ### Een lastige klant: drie remmen
 
 Op `Klanten` staan twee velden die je in het portaal bedient, plus de

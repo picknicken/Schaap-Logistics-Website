@@ -1,6 +1,6 @@
 # Faaltests
 
-Deze acht bestanden testen niet of iets werkt. Ze proberen het stuk te krijgen.
+Deze negen bestanden testen niet of iets werkt. Ze proberen het stuk te krijgen.
 
 Dat is een ander soort proef dan de gewone tests, en hij hoort er apart te
 staan. Een gewone test vraagt: doet de knop wat de knop moet doen. Deze vragen:
@@ -23,6 +23,7 @@ node faal-portaal.mjs        # het portaal: rollen, grenzen, lekken
 node faal-zelfde-som.mjs     # rekent de prijs op de server na tegen de browser
 node faal-zelfde-som-airtable.mjs   # en tegen de formule in Airtable
 node faal-klantplicht.mjs    # geen factuur zonder klant, en de dagmeldingen
+node faal-toegang.mjs        # de rem op raden en het logboek erachter
 ```
 
 `faal-portaal.mjs` laadt de portaal-Worker, en die importeert de Anthropic-SDK
@@ -47,7 +48,7 @@ adres, dan `SITE_ADRES=http://127.0.0.1:8080`.
 Elk bestand eindigt met `alles goed` of met het aantal fouten, en geeft een
 foutcode terug als er iets misgaat.
 
-Ze draaien ook vanzelf: `.github/workflows/faaltests.yml` voert ze alle acht uit
+Ze draaien ook vanzelf: `.github/workflows/faaltests.yml` voert ze alle negen uit
 bij elke push naar `main` en bij elke pull request. Die workflow staat los van
 `worker-uitrollen.yml` omdat die laatste alleen mag afgaan als er werkelijk
 iets aan een Worker verandert, en `on:` in GitHub Actions per workflow geldt
@@ -122,6 +123,28 @@ tekst gaat over hem, en dat is het soort lek dat je pas ontdekt als het al
 gelezen is. En bij de zelfbediening wordt niet alleen gekeken of de knoppen
 verdwijnen maar of het verzoek ook geweigerd wordt als iemand het zelf in elkaar
 zet; dat is het verschil tussen een slot en een bordje.
+
+**`faal-toegang.mjs`** — de deur zelf. Of de rem op het raden van codes werkt,
+en of het logboek erachter laat zien dát er geraden werd.
+
+Het lastige stuk hier is de rem nabootsen. Cloudflare draait meerdere
+exemplaren van de Worker naast elkaar, elk met zijn eigen geheugen — en dat was
+precies het gat: vijftien pogingen gold per exemplaar en niet in totaal. De
+oplossing is een teller in de cache van Cloudflare, die alle exemplaren in
+hetzelfde datacentrum delen. Om te bewijzen dát die er iets toe doet, laadt de
+proef de Worker een tweede keer als een verse module: dan is het geheugen leeg
+zoals bij een nieuw exemplaar, terwijl de cache blijft staan. Zonder die omweg
+slaagt de proef ook als je de cachelaag eruit sloopt, en bewijst hij niets.
+
+Verder: dat de geprobeerde code nooit in het logboek belandt, dat er van een
+IP-adres alleen het netwerk wordt bewaard en niet de aansluiting, dat een
+geslaagde toegang hoogstens één regel per persoon per land per dag oplevert —
+anders is de tabel binnen een week vol — en dat een stukke of ontbrekende
+logtabel het portaal nooit tegenhoudt.
+
+Wat deze proef **niet** kan zeggen: of je eigen `PORTAAL_CODE` lang en
+willekeurig genoeg is. Die staat als secret in Cloudflare en hoort daar. Is die
+te raden, dan doet de rest er niet toe.
 
 **`faal-site.mjs`** — de factuurpagina krijgt alles uit de adresregel, dus
 iedereen die een link kan maken bepaalt wat erop staat. Script, onzinbedragen,

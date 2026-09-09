@@ -56,6 +56,11 @@ jobs:
         working-directory: tests
         run: node faal-zelfde-som.mjs
 
+      # De deur van het portaal: de rem op raden en het logboek erachter.
+      - name: De toegang tot het portaal
+        working-directory: tests
+        run: node faal-toegang.mjs
+
       # Geen factuur zonder klant, en de meldingen die uit de dagklus komen.
       - name: De klantplicht en de dagmeldingen
         working-directory: tests

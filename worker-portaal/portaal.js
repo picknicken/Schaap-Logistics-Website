@@ -304,23 +304,89 @@ const REM_VENSTER = 5 * 60 * 1000;
 const REM_MAX     = 15;
 const remTeller   = new Map();
 
-function opWacht(ip) {
+/* De teller hierboven staat in het geheugen van één exemplaar van de Worker,
+   en Cloudflare draait er meerdere naast elkaar. Vijftien pogingen gold dus
+   per exemplaar en niet in totaal — een rem die het tempo remde maar niet de
+   poging.
+
+   Daarom staat er nu een tweede teller naast, in de cache van Cloudflare. Die
+   wordt gedeeld door alle exemplaren in hetzelfde datacentrum, en dat is waar
+   een aanhoudende poging vandaan komt: verkeer van één plek belandt in de
+   regel in één datacentrum.
+
+   Sluitend is het nog steeds niet — twee verzoeken die tegelijk binnenkomen
+   kunnen allebei dezelfde stand lezen, en iemand met een botnet over de halve
+   wereld ontloopt hem alsnog. Wat het wél doet is de enige aanval die er
+   werkelijk toe doet onmogelijk maken: iemand die vanaf één plek uren achter
+   elkaar codes probeert. Dat is precies wat er hiervoor niet gebeurde.
+
+   Waarom niet KV of een Durable Object: allebei moet je aanzetten en beheren,
+   en dit kost niets en werkt op het gratis plan. */
+const REM_ADRES = 'https://rem.schaap.intern/';
+
+function remSleutel(ip) {
+  return new Request(REM_ADRES + encodeURIComponent(String(ip)));
+}
+
+/* De cache is er niet in Node, en niet in elke omgeving. Dan blijft het bij de
+   teller in het geheugen — minder streng, maar nooit stuk. */
+function heeftCache() {
+  try { return typeof caches !== 'undefined' && !!caches.default; }
+  catch (fout) { return false; }
+}
+
+async function opWacht(ip) {
   const nu = Date.now();
   for (const [sleutel, rij] of remTeller) {
     if (nu - rij.begin > REM_VENSTER) { remTeller.delete(sleutel); }
   }
   const rij = remTeller.get(ip);
-  return !!rij && rij.aantal > REM_MAX;
+  if (rij && rij.aantal > REM_MAX) { return true; }
+
+  if (!heeftCache()) { return false; }
+  try {
+    const res = await caches.default.match(remSleutel(ip));
+    if (!res) { return false; }
+    const stand = await res.json();
+    return !!stand && (nu - stand.begin) < REM_VENSTER && stand.aantal > REM_MAX;
+  } catch (fout) {
+    /* Een stukke cache mag nooit de reden zijn dat niemand meer binnenkomt. */
+    console.log('Rem lezen mislukt: ' + fout.message);
+    return false;
+  }
 }
 
-function telMislukking(ip) {
+async function telMislukking(ip) {
   const nu = Date.now();
   const rij = remTeller.get(ip);
   if (!rij || nu - rij.begin > REM_VENSTER) {
     remTeller.set(ip, { begin: nu, aantal: 1 });
-    return;
+  } else {
+    rij.aantal += 1;
   }
-  rij.aantal += 1;
+
+  if (!heeftCache()) { return; }
+  try {
+    const sleutel = remSleutel(ip);
+    const oud = await caches.default.match(sleutel);
+    let stand = { begin: nu, aantal: 0 };
+    if (oud) {
+      const gelezen = await oud.json();
+      if (gelezen && (nu - gelezen.begin) < REM_VENSTER) { stand = gelezen; }
+    }
+    stand.aantal += 1;
+
+    /* De cache van Cloudflare bewaart alleen iets met een geldigheidsduur.
+       Die zetten we op de rest van het venster, zodat de stand vanzelf
+       verdwijnt zonder dat er iets hoeft op te ruimen. */
+    const rest = Math.max(1, Math.ceil((REM_VENSTER - (nu - stand.begin)) / 1000));
+    await caches.default.put(sleutel, new Response(JSON.stringify(stand), {
+      headers: { 'Content-Type': 'application/json',
+                 'Cache-Control': 'max-age=' + rest }
+    }));
+  } catch (fout) {
+    console.log('Rem bijwerken mislukt: ' + fout.message);
+  }
 }
 
 /* Meer dan een adres toestaan. Tijdens een verhuizing naar een eigen
@@ -368,7 +434,9 @@ export default {
        ene keer per dag doet het factuurwerk, de rest van de minuten kijkt
        alleen of er iets is om naar je telefoon te sturen. */
     if (gebeurtenis && gebeurtenis.cron === DAGKLUS) {
-      ctx.waitUntil(markeerTeLateFacturen(env).then(() => ochtendbericht(env)));
+      ctx.waitUntil(markeerTeLateFacturen(env)
+        .then(() => ochtendbericht(env))
+        .then(() => ruimToegangslogOp(env)));
       return;
     }
     ctx.waitUntil(pushRonde(env));
@@ -397,7 +465,7 @@ export default {
       return antwoord(500, { fout: 'PORTAAL_CODE ontbreekt in de Worker' }, origin, true);
     }
     const ip = verzoek.headers.get('CF-Connecting-IP') || 'onbekend';
-    if (opWacht(ip)) {
+    if (await opWacht(ip)) {
       return antwoord(429, {
         fout: 'Te veel pogingen. Probeer het over een paar minuten opnieuw.'
       }, origin, true);
@@ -444,14 +512,23 @@ export default {
 
     if (!wie) {
       try {
-        const uit = await klantPoort(env, code, body, origin);
-        if (uit.status === 401) { telMislukking(ip); }
+        /* Het logboek wordt binnen klantPoort geschreven: daar is bekend om
+           welke klant het gaat, en een tweede opvraging bij Airtable alleen
+           om een naam zou het logboek duurder maken dan wat het bewaakt. */
+        const uit = await klantPoort(env, code, body, origin, verzoek);
+        if (uit.status === 401) { await telMislukking(ip); }
         return uit;
       } catch (fout) {
         console.log('Klantportaal: ' + fout.message);
         return antwoord(502, { fout: fout.message }, origin, true);
       }
     }
+
+    /* Wie er werkelijk binnenkwam. Hoogstens één regel per persoon per land
+       per dag; zie logToegang. */
+    await logToegang(env, verzoek, 'Binnen',
+      wie.rol === 'Eigenaar' && wie.hoofdsleutel ? 'Eigenaar'
+        : `${wie.naam || 'Onbekend'} (${wie.rol})`);
 
     /* Wat een chauffeur mag. Een allowlist en geen verbodenlijst: vergeet je
        er een bij een verbodenlijst, dan staat hij open. Vergeet je er een
@@ -1866,6 +1943,121 @@ async function wijzigverzoekenMelden(env) {
   }
 }
 
+/* ========================================================== het toegangslog
+
+   Wie er aanklopte, zodat je het ziet als er iemand rondneust. Twee soorten
+   regels, en ze hebben elk een eigen reden om er te staan.
+
+   Een geweigerde poging leggen we altijd vast. Die horen zeldzaam te zijn: jij
+   en je chauffeurs typen je code één keer en de telefoon onthoudt hem. Staan
+   er ineens twintig op een avond, dan is dat het signaal.
+
+   Een geslaagde toegang leggen we hoogstens één keer per persoon per land per
+   dag vast. Elk verzoek uit het portaal draagt de code mee, dus elke tik op een
+   knop is technisch een aanmelding; die allemaal opschrijven zou de tabel
+   binnen een week vullen en er tegelijk niets uit te lezen maken. Wat je wilt
+   weten is: kwam er vandaag iemand binnen, en vanwaar.
+
+   Alles hier is stil. Een logboek dat een verzoek laat mislukken is erger dan
+   geen logboek: dan staat je portaal stil omdat de administratie hikt. */
+
+const TL = {
+  wat:      'Gebeurtenis',
+  wanneer:  'Wanneer',
+  soort:    'Soort',
+  wie:      'Wie',
+  herkomst: 'Herkomst',
+  netwerk:  'Netwerk'
+};
+
+/* Wat er van een IP-adres wordt bewaard: het netwerk, niet de aansluiting.
+   83.128.14.7 wordt 83.128.x.x. Genoeg om te zien of pogingen van dezelfde
+   plek komen; te weinig om iemand mee aan te wijzen. Een volledig IP is een
+   persoonsgegeven en dat willen we hier niet bewaren. */
+function netwerkVan(ip) {
+  const tekst = String(ip || '').trim();
+  const v4 = /^(\d{1,3})\.(\d{1,3})\.\d{1,3}\.\d{1,3}$/.exec(tekst);
+  if (v4) { return `${v4[1]}.${v4[2]}.x.x`; }
+  /* IPv6: de eerste drie groepen zeggen genoeg over het netwerk. */
+  if (tekst.includes(':')) {
+    return tekst.split(':').slice(0, 3).join(':') + ':x';
+  }
+  return tekst ? 'onbekend' : '';
+}
+
+function herkomstVan(verzoek) {
+  const land = verzoek.headers.get('CF-IPCountry') || '';
+  const stad = (verzoek.cf && verzoek.cf.city) || '';
+  if (stad && land) { return `${stad}, ${land}`; }
+  return land || stad || '';
+}
+
+/* Eén regel per persoon per land per dag. De stand staat in het geheugen van
+   dit exemplaar: raakt hij kwijt bij een herstart, dan komt er hoogstens één
+   regel te veel. Dat is de goede kant om fout te gaan. */
+const alGezien = new Map();
+
+function alGelogd(sleutel) {
+  const vandaag = new Date().toISOString().slice(0, 10);
+  if (alGezien.get(sleutel) === vandaag) { return true; }
+  /* Niet oneindig laten groeien; een dag heeft er hooguit een handvol. */
+  if (alGezien.size > 500) { alGezien.clear(); }
+  alGezien.set(sleutel, vandaag);
+  return false;
+}
+
+async function logToegang(env, verzoek, soort, wie) {
+  if (!env.AIRTABLE_TOEGANGSLOG) { return; }
+  try {
+    const ip = verzoek.headers.get('CF-Connecting-IP') || '';
+    const herkomst = herkomstVan(verzoek);
+    const netwerk = netwerkVan(ip);
+
+    if (soort === 'Binnen') {
+      if (alGelogd(`${wie}|${herkomst}`)) { return; }
+    }
+
+    await maak(env, env.AIRTABLE_TOEGANGSLOG, {
+      [TL.wat]: soort === 'Binnen'
+        ? `${wie || 'Iemand'} binnen${herkomst ? ' vanuit ' + herkomst : ''}`
+        : `Geweigerd${herkomst ? ' vanuit ' + herkomst : ''}`,
+      [TL.wanneer]:  new Date().toISOString(),
+      [TL.soort]:    soort,
+      [TL.wie]:      String(wie || '').slice(0, 120),
+      [TL.herkomst]: herkomst.slice(0, 120),
+      [TL.netwerk]:  netwerk.slice(0, 60)
+    });
+  } catch (fout) {
+    /* Zie de kop hierboven: nooit de reden dat er iets misgaat. */
+    console.log('Toegangslog mislukt: ' + fout.message);
+  }
+}
+
+/* Opruimen in de ochtendklus. Zestig dagen is lang genoeg om terug te kijken
+   als je iets vermoedt, en kort genoeg om de tabel klein te houden. */
+async function ruimToegangslogOp(env) {
+  if (!env.AIRTABLE_TOEGANGSLOG) { return 0; }
+  try {
+    const grens = new Date(Date.now() - 60 * 864e5).toISOString();
+    const zoek = new URLSearchParams();
+    zoek.set('filterByFormula', `IS_BEFORE({${TL.wanneer}}, '${grens}')`);
+    zoek.set('pageSize', '100');
+    const data = await airtable(env, `${env.AIRTABLE_TOEGANGSLOG}?${zoek}`);
+    const oud = data.records || [];
+    if (!oud.length) { return 0; }
+
+    for (const brok of inBrokken(oud, 10)) {
+      const q = brok.map((r) => 'records[]=' + encodeURIComponent(r.id)).join('&');
+      await airtable(env, `${env.AIRTABLE_TOEGANGSLOG}?${q}`, { method: 'DELETE' });
+    }
+    console.log(`Toegangslog opgeruimd: ${oud.length} regels`);
+    return oud.length;
+  } catch (fout) {
+    console.log('Toegangslog opruimen mislukt: ' + fout.message);
+    return 0;
+  }
+}
+
 /* --------------------------------------------------------- de acties */
 
 /* De pushdiensten van de browsers. Elk abonnement komt van precies een van
@@ -2396,17 +2588,23 @@ const WIJZIGSOORTEN = ['Extra stop', 'Ander afleveradres',
 const ZELF_UIT = 'Voor wijzigingen aan deze zending kunt u ons het beste even ' +
                  'bellen, dan regelen wij het samen.';
 
-async function klantPoort(env, code, body, origin) {
+async function klantPoort(env, code, body, origin, verzoek) {
   const schoon = schoneCode(code);
   if (!schoon || !KLANT_ACTIES.includes(body.actie)) {
     await new Promise((r) => setTimeout(r, 700));
+    if (verzoek) { await logToegang(env, verzoek, 'Geweigerd', ''); }
     return antwoord(401, { fout: 'Onjuiste toegangscode' }, origin, true);
   }
 
   const klant = await klantBijCode(env, schoon);
   if (!klant) {
     await new Promise((r) => setTimeout(r, 700));
+    if (verzoek) { await logToegang(env, verzoek, 'Geweigerd', ''); }
     return antwoord(401, { fout: 'Onjuiste toegangscode' }, origin, true);
+  }
+
+  if (verzoek) {
+    await logToegang(env, verzoek, 'Binnen', 'Klant ' + (klant.naam || 'onbekend'));
   }
 
   if (body.actie === 'klantannuleer') {

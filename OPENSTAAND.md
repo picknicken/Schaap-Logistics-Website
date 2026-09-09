@@ -343,6 +343,36 @@ meteen binnen, met SPOED in de titel als het spoed is.
 niet: die ritten maak je zelf aan, en je telefoon laten piepen om je te vertellen
 wat je net zelf hebt getikt is ruis.
 
+### De deur van het portaal
+
+Twee dingen bijgezet na een keer goed kijken naar de beveiliging.
+
+**De rem op raden telt nu over meerdere exemplaren.** Cloudflare draait
+meerdere kopieën van de tussenlaag naast elkaar, elk met zijn eigen geheugen —
+en de teller stond in dat geheugen. Vijftien foute pogingen per vijf minuten
+gold dus per kopie en niet in totaal. Nu staat er een teller naast in de cache
+van Cloudflare, die alle kopieën in hetzelfde datacentrum delen. Iemand die
+vanaf één plek uren achter elkaar codes probeert komt nu niet ver meer.
+
+Sluitend is het niet: met een botnet over de halve wereld ontloop je hem
+alsnog. Wat het onmogelijk maakt is de enige aanval die er in de praktijk toe
+doet.
+
+**Er is een logboek.** In Airtable, tabel `Toegangslog`. Geweigerde pogingen
+altijd, geslaagde toegang één keer per persoon per land per dag. Daar zie je
+het aan als er iemand rondneust — en ook als jij zelf ineens vanuit een land
+binnenkomt waar je niet bent.
+
+**Wat hier nog wél open staat.** Het bestand `_headers` — met `X-Frame-Options`
+en `Referrer-Policy` — doet niets zolang de site op GitHub Pages draait; die
+leest het niet. Dat gaat pas gelden bij de verhuizing naar Cloudflare Pages.
+Zet die verhuizing dus vóór live gaan en niet erna.
+
+En het belangrijkste blijft buiten mijn bereik: je eigen `PORTAAL_CODE`. Die
+staat als secret in Cloudflare, ik heb hem nooit gezien en dat hoort zo. Kun je
+hem onthouden, dan is hij te kort. Twijfel je, zet er dan een nieuwe — dat is
+één `wrangler secret put` en één keer opnieuw inloggen.
+
 ### Als een klant lastig wordt
 
 Drie dingen op de klantkaart in je portaal:
