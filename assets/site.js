@@ -47,7 +47,7 @@
                        kort: 'Geplande rit op een afgesproken tijdstip' },
       spoed:         { naam: 'Spoedtransport',         start: 100, km: 1.50, spoed: true,
                        kort: 'Rit die vandaag nog van A naar B gaat' },
-      direct:        { naam: 'Directe spoed',          start: 125, km: 1.50, spoed: true,
+      direct:        { naam: 'Directe spoed',          start: 125, km: 2.00, spoed: true,
                        kort: 'Ik spring nu in de auto en ben onderweg' },
       internationaal:{ naam: 'Internationaal transport', start: 150, km: 2.00, minimum: 200,
                        buitenland: true,

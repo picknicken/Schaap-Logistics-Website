@@ -232,7 +232,7 @@ Zodat je niet twee keer naar hetzelfde kijkt.
 
 **De keten klopt van begin tot eind.** Prijs op de site = prijs in Airtable =
 prijs op de factuur, inclusief stops, tijdvak, wachttijd, doorberekende kosten en
-korting. Starttarieven €75 / €100 / €125, kilometerprijzen €1,00 / €1,50 / €1,50,
+korting. Starttarieven €75 / €100 / €125, kilometerprijzen €1,00 / €1,50 / €2,00,
 internationaal €150 + €2,00 met een minimum van €200, alles exclusief btw.
 
 **Het klantportaal** laat een klant zijn eigen zendingen en facturen zien, zijn

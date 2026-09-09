@@ -436,7 +436,7 @@ wél door te berekenen: die zet je in `Extra kosten`, en dan komt het via de
 `Factuurlink` als eigen regel op de factuur te staan.
 
 De formule volgt de website exact: standaard €75 + €1,00/km, spoed €100 + €1,50/km,
-directe spoed €125 + €1,50/km, minimum €75 per opdracht, en daarna pas de extra
+directe spoed €125 + €2,00/km, minimum €75 per opdracht, en daarna pas de extra
 kosten erbij. Al die bedragen zijn zonder btw, zoals de hele prijslijst; de btw
 komt er in een eigen veld bij. Internationaal rekent mee met een eigen tarief:
 €150 + €2,00/km,

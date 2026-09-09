@@ -1,7 +1,7 @@
 # Wat kun je weggeven zonder erop toe te leggen
 
 > **Let op — de tabel hieronder is opnieuw doorgerekend op 8 september 2026,
-> met de nieuwe kilometerprijzen (€1,00 standaard, €1,50 spoed en directe
+> met de nieuwe kilometerprijzen (€1,00 standaard, €1,50 spoed, €2,00 directe
 > spoed, alles zonder btw). De marges zijn daardoor lager dan in de eerste
 > versie van dit stuk. Het kortingsadvies dat ná de tabel staat is nog
 > geschreven voor de oude tarieven; de percentages kloppen nog wel als
@@ -39,7 +39,7 @@ laden, lossen en terugrijden (gerekend met 45 minuten vast plus 60 km/uur).
 | Spoed | 10 km | € 115 | € 5 | € 110 | **€ 120** |
 | Spoed | 50 km | € 175 | € 25 | € 150 | **€ 95** |
 | Spoed | 200 km | € 400 | € 100 | € 300 | **€ 73** |
-| Directe spoed | 50 km | € 200 | € 25 | € 175 | **€ 111** |
+| Directe spoed | 50 km | € 225 | € 25 | € 200 | **€ 126** |
 | Internationaal | 200 km | € 550 | € 100 | € 450 | **€ 110** |
 
 De prijskolom is het bedrag **zonder btw** — dat is wat er van een rit bij jou
@@ -55,7 +55,7 @@ niet doorbetaald krijgt, de dagen dat je ziek bent, je pensioen, en de uren dat
 je administratie doet in plaats van rijdt. Het kan uit, maar ruim is het niet.
 Twee dingen om in de gaten te houden: of het kilometertarief voor standaard op
 termijn omhoog moet, en of een lange standaardrit een retourvracht kan krijgen.
-Spoed en directe spoed zitten er met €73 tot €120 een stuk comfortabeler bij —
+Spoed en directe spoed zitten er met €73 tot €126 een stuk comfortabeler bij —
 dat is de hoek waar je klanten moet zoeken.
 
 Dat is geen fout in je tarieven, dat is hoe kilometerprijzen werken. Maar het

@@ -93,7 +93,7 @@ doet. Dit kost vooral wachttijd, dus vraag het vroeg.
 ### Kijk of je tarieven kloppen
 
 Nu staan ze op (exclusief btw): standaard €75 + €1,00 per km, spoed €100 + €1,50,
-directe spoed €125 + €1,50, internationaal €150 plus €2,00 met een minimum van
+directe spoed €125 + €2,00, internationaal €150 plus €2,00 met een minimum van
 €200. Die
 getallen zijn onderbouwd maar niet getoetst aan de markt. Bel drie concurrenten
 in de regio en vraag een prijs voor een rit die jij kent. Beter nu dan nadat je

@@ -1513,7 +1513,7 @@
   var TARIEVEN = {
     'Standaard transport':      { start: 75,  km: 1.00 },
     'Spoedtransport':           { start: 100, km: 1.50 },
-    'Directe spoed':            { start: 125, km: 1.50 },
+    'Directe spoed':            { start: 125, km: 2.00 },
     'Internationaal transport': { start: 150, km: 2.00 }
   };
 
