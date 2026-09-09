@@ -32,6 +32,43 @@
   var ritten = [];
   var facturen = [];
 
+
+  /* ----------------------------------------------------- adressen uit gegevens
+
+     Een adres dat uit de tussenlaag komt gaat hier eerst langs. Alles wat geen
+     gewoon web-, mail- of telefoonadres is wordt een leeg adres.
+
+     Waarom dit er staat terwijl de tussenlaag alleen adressen van Airtable
+     doorgeeft: een adres uit gegevens in een link zetten zonder te kijken wat
+     het is, is de manier waarop javascript:-links ontstaan. Dat er vandaag geen
+     weg is waarlangs zoiets binnenkomt is geen eigenschap van deze pagina maar
+     van alles wat ervoor zit. Deze regel geldt hier, en blijft gelden als daar
+     iets verandert.
+
+     Een relatief adres (../factuur/?...) mag ook: dat maken we zelf. */
+  function veiligAdres(w) {
+    var tekst = String(w === undefined || w === null ? '' : w).trim();
+    if (!tekst) { return ''; }
+    /* Geen dubbelpunt voor het eerste schuine streepje betekent geen schema,
+       en dus een adres binnen onze eigen site. */
+    var schema = /^([a-zA-Z][a-zA-Z0-9+.-]*):/.exec(tekst);
+    if (!schema) { return tekst; }
+    return ['http', 'https', 'mailto', 'tel'].indexOf(schema[1].toLowerCase()) >= 0
+      ? tekst : '';
+  }
+
+  /* Hetzelfde voor een afbeelding. Daar hoort ook data: bij, want een foto die
+     nog niet verstuurd is staat als data:image in het scherm. Alleen
+     data:image, en met opzet geen data:image/svg+xml: een svg is geen plaatje
+     maar een document dat script kan bevatten. */
+  function veiligePlaat(w) {
+    var tekst = String(w === undefined || w === null ? '' : w).trim();
+    if (/^data:image\/(?!svg)[a-z0-9.+-]+;/i.test(tekst)) { return tekst; }
+    if (/^blob:/i.test(tekst)) { return tekst; }
+    var uit = veiligAdres(tekst);
+    return /^(mailto|tel):/i.test(uit) ? '' : uit;
+  }
+
   /* ------------------------------------------------------------- datums */
 
   function datumLang(iso) {
@@ -272,11 +309,11 @@
          wilt hem kunnen zien, niet alleen lezen dat hij bestaat. */
       if (r.krabbel) {
         var vak = maak('a', 'krabbel');
-        vak.href = r.krabbel;
+        vak.href = veiligAdres(r.krabbel);
         vak.target = '_blank';
         vak.rel = 'noopener';
         var afb = document.createElement('img');
-        afb.src = r.krabbel;
+        afb.src = veiligePlaat(r.krabbel);
         afb.alt = 'Handtekening van ' + (r.getekend || 'de ontvanger');
         afb.loading = 'lazy';
         vak.appendChild(afb);
@@ -326,7 +363,7 @@
     var raster = maak('div', 'fotos');
     r.fotos.forEach(function (f, nr) {
       var link = maak('a', '');
-      link.href = f.url;
+      link.href = veiligAdres(f.url);
       link.target = '_blank';
       link.rel = 'noopener';
       var plaat = document.createElement('img');
@@ -344,7 +381,7 @@
     vak.addEventListener('toggle', function () {
       if (!vak.open) { return; }
       Array.prototype.forEach.call(raster.querySelectorAll('img[data-bron]'), function (plaat) {
-        plaat.src = plaat.getAttribute('data-bron');
+        plaat.src = veiligePlaat(plaat.getAttribute('data-bron'));
         plaat.removeAttribute('data-bron');
       });
     });
@@ -569,13 +606,13 @@
     var knoppen = maak('div', 'knoppen');
     if (f.pdf) {
       var pdf = maak('a', 'knop knop--rand', 'Factuur als PDF');
-      pdf.href = f.pdf;
+      pdf.href = veiligAdres(f.pdf);
       pdf.target = '_blank';
       pdf.rel = 'noopener';
       knoppen.appendChild(pdf);
     } else if (f.link) {
       var web = maak('a', 'knop knop--rand', 'Factuur bekijken');
-      web.href = f.link;
+      web.href = veiligAdres(f.link);
       web.target = '_blank';
       web.rel = 'noopener';
       knoppen.appendChild(web);

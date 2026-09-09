@@ -72,6 +72,43 @@
   var klantVoor = null;
   var tekentVoor = null;
 
+
+  /* ----------------------------------------------------- adressen uit gegevens
+
+     Een adres dat uit de tussenlaag komt gaat hier eerst langs. Alles wat geen
+     gewoon web-, mail- of telefoonadres is wordt een leeg adres.
+
+     Waarom dit er staat terwijl de tussenlaag alleen adressen van Airtable
+     doorgeeft: een adres uit gegevens in een link zetten zonder te kijken wat
+     het is, is de manier waarop javascript:-links ontstaan. Dat er vandaag geen
+     weg is waarlangs zoiets binnenkomt is geen eigenschap van deze pagina maar
+     van alles wat ervoor zit. Deze regel geldt hier, en blijft gelden als daar
+     iets verandert.
+
+     Een relatief adres (../factuur/?...) mag ook: dat maken we zelf. */
+  function veiligAdres(w) {
+    var tekst = String(w === undefined || w === null ? '' : w).trim();
+    if (!tekst) { return ''; }
+    /* Geen dubbelpunt voor het eerste schuine streepje betekent geen schema,
+       en dus een adres binnen onze eigen site. */
+    var schema = /^([a-zA-Z][a-zA-Z0-9+.-]*):/.exec(tekst);
+    if (!schema) { return tekst; }
+    return ['http', 'https', 'mailto', 'tel'].indexOf(schema[1].toLowerCase()) >= 0
+      ? tekst : '';
+  }
+
+  /* Hetzelfde voor een afbeelding. Daar hoort ook data: bij, want een foto die
+     nog niet verstuurd is staat als data:image in het scherm. Alleen
+     data:image, en met opzet geen data:image/svg+xml: een svg is geen plaatje
+     maar een document dat script kan bevatten. */
+  function veiligePlaat(w) {
+    var tekst = String(w === undefined || w === null ? '' : w).trim();
+    if (/^data:image\/(?!svg)[a-z0-9.+-]+;/i.test(tekst)) { return tekst; }
+    if (/^blob:/i.test(tekst)) { return tekst; }
+    var uit = veiligAdres(tekst);
+    return /^(mailto|tel):/i.test(uit) ? '' : uit;
+  }
+
   /* ------------------------------------------------------------- datums */
 
   /* Bewust niet via toISOString: die rekent naar UTC, en dan valt een rit van
@@ -1710,7 +1747,7 @@
   function afstandLink(van, naar) {
     if (!van || !naar) { return null; }
     var a = maak('a', 'veldlink', 'Kortste route opzoeken in Maps');
-    a.href = routeVan(van, naar);
+    a.href = veiligAdres(routeVan(van, naar));
     a.target = '_blank';
     a.rel = 'noopener';
     return a;
@@ -1847,11 +1884,11 @@
          en is het geen bewijs dat je onderweg even laat zien. */
       if (rit.krabbel) {
         var vak = maak('a', 'krabbel');
-        vak.href = rit.krabbel;
+        vak.href = veiligAdres(rit.krabbel);
         vak.target = '_blank';
         vak.rel = 'noopener';
         var afb = document.createElement('img');
-        afb.src = rit.krabbel;
+        afb.src = veiligePlaat(rit.krabbel);
         afb.alt = 'Handtekening van ' + (rit.getekend || 'de ontvanger');
         afb.loading = 'lazy';
         vak.appendChild(afb);
@@ -1881,14 +1918,14 @@
       var fotovak = maak('div', 'fotos');
       rit.fotos.forEach(function (f, nr) {
         var vakje = maak('a', '');
-        vakje.href = f.url;
+        vakje.href = veiligAdres(f.url);
         vakje.target = '_blank';
         vakje.rel = 'noopener';
         var plaat = document.createElement('img');
         /* De miniatuur die Airtable zelf maakte; is die er niet, dan de hele
            foto. Vier foto's op ware grootte op één ritkaart zijn een paar
            megabyte over mobiel internet. */
-        plaat.src = f.klein || f.url;
+        plaat.src = veiligePlaat(f.klein || f.url);
         plaat.alt = 'Foto ' + (nr + 1) + ' bij deze rit';
         plaat.loading = 'lazy';
         vakje.appendChild(plaat);
@@ -2019,7 +2056,7 @@
       if (doel) {
         var nav = maak('a', 'knop knop--rand',
           rit.status === 'Gepland' ? 'Route naar ophaaladres' : 'Route naar afleveradres');
-        nav.href = routeNaar(doel);
+        nav.href = veiligAdres(routeNaar(doel));
         nav.target = '_blank';
         nav.rel = 'noopener';
         knoppen.appendChild(nav);
@@ -2306,7 +2343,7 @@
     }
     if (a.email) {
       var mail = maak('a', 'knop knop--rand', 'Mail');
-      mail.href = 'mailto:' + a.email;
+      mail.href = veiligAdres('mailto:' + a.email);
       knoppen.appendChild(mail);
     }
 
@@ -2446,7 +2483,7 @@
     var knoppen = maak('div', 'factuur__knoppen');
     if (f.link) {
       var open = maak('a', 'knop knop--rand', 'Bekijken');
-      open.href = f.link;
+      open.href = veiligAdres(f.link);
       open.target = '_blank';
       open.rel = 'noopener';
       knoppen.appendChild(open);
@@ -2458,7 +2495,7 @@
     }
     if (f.pdf) {
       var pdf = maak('a', 'knop knop--stil', 'PDF');
-      pdf.href = f.pdf;
+      pdf.href = veiligAdres(f.pdf);
       pdf.target = '_blank';
       pdf.rel = 'noopener';
       knoppen.appendChild(pdf);
@@ -2758,12 +2795,12 @@
     }
     if (k.email) {
       var mail = maak('a', 'knop knop--rand', 'Mailen');
-      mail.href = 'mailto:' + k.email;
+      mail.href = veiligAdres('mailto:' + k.email);
       knoppen.appendChild(mail);
     }
     if (k.adres) {
       var route = maak('a', 'knop knop--rand', 'Route');
-      route.href = routeNaar(k.adres);
+      route.href = veiligAdres(routeNaar(k.adres));
       route.target = '_blank';
       route.rel = 'noopener';
       knoppen.appendChild(route);

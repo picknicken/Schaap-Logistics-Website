@@ -398,6 +398,14 @@ export default {
       return antwoord(400, { fout: 'Ongeldige JSON' }, origin, true);
     }
 
+    /* `null` is geldige JSON en kwam hier dus langs het vangnet hierboven.
+       Daarna werd er meteen body.actie van gelezen en viel het om — een
+       verzoek van vier tekens gaf een 502 met een uitzondering in het log.
+       Geldige JSON is nog geen verzoek. */
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return antwoord(400, { fout: 'Ongeldig verzoek' }, origin, true);
+    }
+
     /* ------------------------------------------------------------------
        Hier splitst het. Boven de streep hoort de chauffeurscode, daaronder
        een klantcode. Die twee komen elkaar nergens tegen: de klantacties
@@ -1686,6 +1694,45 @@ async function afzeggingenMelden(env) {
 
 /* --------------------------------------------------------- de acties */
 
+/* De pushdiensten van de browsers. Elk abonnement komt van precies een van
+   deze; een browser verzint dat adres niet zelf.
+
+   Waarom dit een lijst is en niet "elk https-adres". Wat hier binnenkomt is
+   een adres waar de Worker later uit zichzelf naartoe gaat posten, elke ronde
+   opnieuw. Zonder lijst kan iemand met een chauffeurscode er zijn eigen server
+   neerzetten en heeft hij een knop waarmee onze Worker verkeer naar hem stuurt
+   — de inhoud is versleuteld, maar het verkeer is er wel, en het kost ons
+   verzoeken. Een adres dat geen pushdienst is, is geen aanmelding.
+
+   Komt er een browser bij met een eigen dienst, dan hoort daar een regel bij.
+   Dat je dat merkt is het punt: je merkt het aan een nette weigering in plaats
+   van aan verkeer dat ergens anders heen gaat. */
+const PUSHDIENSTEN = [
+  'fcm.googleapis.com',                 /* Chrome, Edge, Android */
+  'web.push.apple.com',                 /* Safari, iPhone, iPad */
+  'push.services.mozilla.com',          /* Firefox */
+  'notify.windows.com'                  /* Windows */
+];
+
+/* Hoe lang een endpoint hoogstens mag zijn. Een echte is een paar honderd
+   tekens; dit is ruim en houdt tegen dat er honderdduizend tekens in een
+   Airtable-veld belanden. */
+const MAX_ENDPOINT = 500;
+
+function isPushdienst(endpoint) {
+  let host;
+  try {
+    const adres = new URL(endpoint);
+    if (adres.protocol !== 'https:') { return false; }
+    host = adres.hostname.toLowerCase();
+  } catch {
+    return false;
+  }
+  /* Exact de host, of een subdomein ervan. Niet "eindigt op", want dan zou
+     kwaadaardigfcm.googleapis.com.example.nl er ook langs komen. */
+  return PUSHDIENSTEN.some((d) => host === d || host.endsWith('.' + d));
+}
+
 async function meldPushAan(env, body, origin, wie) {
   if (!pushKan(env)) {
     return antwoord(501, { fout: 'Pushmeldingen zijn nog niet ingesteld.' }, origin, true);
@@ -1693,8 +1740,13 @@ async function meldPushAan(env, body, origin, wie) {
   const endpoint = String(body.endpoint || '').trim();
   const p256dh = String(body.p256dh || '').trim();
   const auth = String(body.auth || '').trim();
-  if (!/^https:\/\/[^\s]+$/.test(endpoint) || !p256dh || !auth) {
+  if (!endpoint || endpoint.length > MAX_ENDPOINT || !p256dh || !auth) {
     return antwoord(400, { fout: 'Onvolledige aanmelding' }, origin, true);
+  }
+  if (!isPushdienst(endpoint)) {
+    return antwoord(400, {
+      fout: 'Dit adres hoort niet bij een bekende pushdienst.'
+    }, origin, true);
   }
 
   const velden = {
@@ -1723,7 +1775,9 @@ async function meldPushAf(env, body, origin, wie) {
     return antwoord(501, { fout: 'Pushmeldingen zijn nog niet ingesteld.' }, origin, true);
   }
   const endpoint = String(body.endpoint || '').trim();
-  if (!endpoint) { return antwoord(400, { fout: 'Geen apparaat opgegeven' }, origin, true); }
+  if (!endpoint || endpoint.length > MAX_ENDPOINT) {
+    return antwoord(400, { fout: 'Geen apparaat opgegeven' }, origin, true);
+  }
 
   const bestaand = await zoekApparaat(env, endpoint);
   if (bestaand) {

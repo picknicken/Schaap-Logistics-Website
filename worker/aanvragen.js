@@ -11,17 +11,73 @@
      TOEGESTANE_ORIGIN  https://schaaplogistics.nl,https://picknicken.github.io
    ========================================================================= */
 
-/* Alleen deze velden gaan door naar Airtable. Alles wat de aanvrager verder
-   meestuurt wordt genegeerd — een open endpoint moet nooit zelf bepalen welke
-   kolommen het beschrijft. De namen zijn exact de kolomnamen in de tabel. */
-const TOEGESTANE_VELDEN = [
-  'Status', 'Bron', 'Dienst', 'Tijdvak',
-  'Ophaallocatie', 'Ophaalpostcode', 'Afleverlocatie', 'Afleverpostcode',
-  'Datum', 'Ophaaltijd', 'Extra stops',
-  'Omschrijving', 'Aantal colli', 'Gewicht', 'Afmetingen',
-  'Bedrijf', 'Contactpersoon', 'Telefoon', 'E-mail', 'Opmerkingen',
-  'Geschatte afstand km', 'Prijsindicatie excl btw'
-];
+/* Alleen deze velden gaan door naar Airtable, en niet zomaar: per veld staat
+   erbij wat er hoogstens in mag. Alles wat de aanvrager verder meestuurt wordt
+   genegeerd — een open endpoint moet nooit zelf bepalen welke kolommen het
+   beschrijft. De namen zijn exact de kolomnamen in de tabel.
+
+   Waarom er een grens achter elk veld staat. Dit adres is openbaar. Zonder
+   grens kan iemand er tweehonderdduizend tekens in een opmerkingveld doorheen
+   duwen, vijf keer per minuut, en dan loopt niet alleen de tabel vol maar
+   wordt het portaal ook onbruikbaar: die tekst komt op een ritkaart terecht.
+   De maten zijn ruim genomen — een echte opmerking is twee zinnen — maar ze
+   zijn er.
+
+   `getal` betekent: alleen een getal binnen dit bereik, en anders niets. Een
+   negatieve afstand of een negatieve prijsindicatie is geen aanvraag maar een
+   poging, en die hoort niet in je administratie te belanden. */
+const VELDREGELS = {
+  'Dienst':                  { tekst: 60 },
+  'Tijdvak':                 { tekst: 60 },
+  'Ophaallocatie':           { tekst: 200 },
+  'Ophaalpostcode':          { tekst: 10 },
+  'Afleverlocatie':          { tekst: 200 },
+  'Afleverpostcode':         { tekst: 10 },
+  'Datum':                   { tekst: 30 },
+  'Ophaaltijd':              { tekst: 20 },
+  'Extra stops':             { tekst: 10 },
+  'Omschrijving':            { tekst: 2000 },
+  'Aantal colli':            { tekst: 60 },
+  'Gewicht':                 { tekst: 60 },
+  'Afmetingen':              { tekst: 60 },
+  'Bedrijf':                 { tekst: 150 },
+  'Contactpersoon':          { tekst: 150 },
+  'Telefoon':                { tekst: 40 },
+  'E-mail':                  { tekst: 150 },
+  'Opmerkingen':             { tekst: 2000 },
+  'Geschatte afstand km':    { getal: { min: 0, max: 5000 } },
+  'Prijsindicatie excl btw': { getal: { min: 0, max: 100000 } }
+};
+
+/* Wat de server zelf invult, wat er ook binnenkomt.
+
+   Deze twee stonden eerst gewoon op de lijst hierboven omdat het formulier ze
+   meestuurt. Dat betekende dat iedereen ze kon meesturen — ook een status die
+   zegt dat de aanvraag al is omgezet, en dan staat hij nergens meer in je
+   lijstje en rijd je die rit niet. Wat de server kan weten, hoort de server te
+   bepalen. */
+const SERVERVELDEN = { 'Status': 'Nieuw', 'Bron': 'Website' };
+
+/* Eén waarde uit de aanvraag, teruggebracht tot wat er in mag. Geeft null
+   terug als er niets bruikbaars in zit; die velden worden overgeslagen.
+
+   Een object of een lijst wordt niet omgezet maar geweigerd. `String({})`
+   levert "[object Object]" op, en dat in je administratie zetten is erger dan
+   het weglaten: dan denk je dat de klant dat heeft ingevuld. */
+function schoonVeld(regel, w) {
+  if (w === null || w === undefined || w === '') { return null; }
+  if (typeof w === 'object') { return null; }
+
+  if (regel.getal) {
+    const n = Number(w);
+    if (!isFinite(n)) { return null; }
+    if (n < regel.getal.min || n > regel.getal.max) { return null; }
+    return n;
+  }
+
+  const tekst = String(w).slice(0, regel.tekst).trim();
+  return tekst === '' ? null : tekst;
+}
 
 /* Zonder deze velden is een aanvraag niet op te volgen. */
 const VERPLICHT = ['Bedrijf', 'Contactpersoon', 'Telefoon', 'E-mail'];
@@ -81,6 +137,24 @@ const FOTONAMEN   = "Foto's meegestuurd";
 const MAX_FOTO_MB = 5;     /* limiet van het Airtable-uploadendpoint */
 const MAX_BODY_MB = 30;    /* hele verzoek, base64 meegerekend */
 
+/* Wat er als foto binnen mag komen. Een lijst en geen "alles wat met image/
+   begint": image/svg+xml begint daar ook mee, en een svg is geen plaatje maar
+   een document dat script kan bevatten. Dat wil je niet als bijlage bij een
+   aanvraag hebben staan, ook al opent Airtable hem op zijn eigen adres. */
+const FOTOSOORTEN = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+
+/* Een bestandsnaam gaat mee naar Airtable. Schuine strepen horen er niet in,
+   en een naam van vijfduizend tekens ook niet. Dezelfde schoonmaak als in het
+   chauffeursportaal, want daar kwam dit eerder al langs. */
+function schoneBestandsnaam(w) {
+  const schoon = String(w || '')
+    .replace(/[^A-Za-z0-9._-]/g, '')
+    .replace(/\.{2,}/g, '.')
+    .replace(/^[.-]+/, '')
+    .slice(0, 60);
+  return schoon || 'foto';
+}
+
 /* Meer dan een adres toestaan. Tijdens een verhuizing naar een eigen
    domeinnaam draaien het oude en het nieuwe adres een tijd naast elkaar; met
    een enkele waarde zou je moeten kiezen welke van de twee stuk mag. Scheiden
@@ -132,6 +206,14 @@ export default {
       return antwoord(400, { fout: 'Ongeldige JSON' }, origin, true);
     }
 
+    /* `null`, `42` en `[]` zijn alle drie geldige JSON en kwamen hier dus
+       langs de vangnet hierboven. Daarna werd er meteen een veld van gelezen
+       en viel de Worker om — een verzoek van vier tekens gaf een 500. Geldige
+       JSON is nog geen aanvraag. */
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return antwoord(400, { fout: 'Ongeldige aanvraag' }, origin, true);
+    }
+
     /* Honeypot: het formulier heeft een verborgen veld dat een mens leeg laat.
        Ingevuld betekent een bot. We melden succes, zodat de bot niets leert. */
     if (typeof body.controle === 'string' && body.controle.trim() !== '') {
@@ -140,13 +222,15 @@ export default {
 
     const binnen = body.velden && typeof body.velden === 'object' ? body.velden : {};
     const velden = {};
-    for (const naam of TOEGESTANE_VELDEN) {
-      const w = binnen[naam];
-      /* Lege waarden weglaten: een lege string naar een keuzeveld is een fout
-         in Airtable, en een leeg veld hoort gewoon leeg te blijven. */
-      if (w === null || w === undefined || w === '') { continue; }
+    for (const naam of Object.keys(VELDREGELS)) {
+      /* Lege en onbruikbare waarden weglaten: een lege string naar een
+         keuzeveld is een fout in Airtable, en een leeg veld hoort gewoon leeg
+         te blijven. */
+      const w = schoonVeld(VELDREGELS[naam], binnen[naam]);
+      if (w === null) { continue; }
       velden[naam] = w;
     }
+    Object.assign(velden, SERVERVELDEN);
 
     const ontbreekt = VERPLICHT.filter((n) => !velden[n]);
     if (ontbreekt.length) {
@@ -166,7 +250,8 @@ export default {
 
     const fotos = Array.isArray(body.fotos) ? body.fotos.slice(0, 5) : [];
     if (fotos.length) {
-      velden[FOTONAMEN] = fotos.map((f) => String(f && f.naam || 'onbekend')).join(', ');
+      velden[FOTONAMEN] = fotos.map((f) => schoneBestandsnaam(f && f.naam)).join(', ')
+        .slice(0, 500);
     }
 
     velden['Aanvraag'] = korteOmschrijving(velden);
@@ -243,13 +328,17 @@ async function voegFotosToe(env, recordId, fotos) {
   const uitkomst = { gelukt: 0, overgeslagen: [] };
 
   for (const foto of fotos) {
-    const naam = String(foto && foto.naam || 'foto');
+    const naam = schoneBestandsnaam(foto && foto.naam);
     const match = /^data:([^;]+);base64,(.+)$/.exec(String(foto && foto.data || ''));
     if (!match) {
       uitkomst.overgeslagen.push(`${naam} (onleesbaar)`);
       continue;
     }
     const [, type, base64] = match;
+    if (!FOTOSOORTEN.includes(type.toLowerCase())) {
+      uitkomst.overgeslagen.push(`${naam} (geen foto)`);
+      continue;
+    }
     /* base64 is ongeveer 4/3 van de oorspronkelijke bytes */
     if (base64.length * 0.75 > MAX_FOTO_MB * 1024 * 1024) {
       uitkomst.overgeslagen.push(`${naam} (groter dan ${MAX_FOTO_MB} MB)`);

@@ -67,6 +67,9 @@ worker/
   wrangler.toml   instellingen voor het uitrollen (zonder geheimen)
 worker-portaal/
   portaal.js      tweede Worker, voor het chauffeursportaal
+
+tests/
+  faal-*.mjs      proeven die proberen het stuk te krijgen; zie tests/LEESMIJ.md
   wrangler.toml   instellingen voor het uitrollen (zonder geheimen)
 ```
 
@@ -879,6 +882,33 @@ tussenlaag elke aanvraag met "de voorwaarden zijn gewijzigd".
 
 Oude akkoorden blijven staan zoals ze waren: in `Voorwaarden geaccepteerd` staat
 per aanvraag welke versie gold. Dat is precies waarvoor dat veld er is.
+
+## Faaltests
+
+In `tests/` staan vier proeven die niet controleren of iets werkt, maar of het
+stuk te krijgen is. Hoe je ze draait staat in `tests/LEESMIJ.md`.
+
+Ze zijn er gekomen na een ronde waarin alles is aangevallen, ook de delen waar
+op dat moment niets aan veranderd was. Dat leverde zestien echte fouten op, en
+de vier die het meest de moeite waard zijn om te onthouden:
+
+- **Een verzoek van vier tekens liet allebei de Workers omvallen.** `null` is
+  geldige JSON en kwam daarmee langs de controle op kapotte JSON; de regel
+  erna las er meteen een veld van. Nu wordt er gekeken of er een object staat.
+- **Het openbare aanvraagadres kende geen enkele lengtegrens.** Tweehonderd-
+  duizend tekens in een opmerkingveld werden gewoon doorgeschreven, vijf keer
+  per minuut. Elk veld heeft nu een maat, en getallen een bereik.
+- **De status van een aanvraag kwam van de aanvrager.** Het formulier stuurt
+  `Status: Nieuw` mee, dus iedereen kon `Omgezet naar opdracht` meesturen — en
+  dan staat een aanvraag nergens meer in je lijstje. Die twee velden vult de
+  server nu zelf in.
+- **Beide portalen zetten adressen uit de gegevens ongecontroleerd in links.**
+  Een `javascript:`-adres bij een foto of een factuur werd een werkende link.
+  Er is nu geen weg waarlangs zo'n adres binnenkomt, maar dat is een
+  eigenschap van alles wat ervoor zit en niet van de pagina zelf; die kijkt nu
+  zelf wat voor adres het is.
+
+De rest staat in de commit die de tests toevoegde.
 
 ## Formulieren versturen
 
