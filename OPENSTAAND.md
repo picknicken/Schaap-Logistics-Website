@@ -306,10 +306,19 @@ Daarna: open het portaal **vanaf je beginscherm** (niet in een Safari-tabblad,
 dan kan iOS het niet), ga naar *Meldingen* en druk op **Meldingen aanzetten**.
 Druk meteen daarna op **Proefmelding** — piept je telefoon, dan staat het.
 
-**Wat ik niet heb kunnen testen.** Dat de versleuteling klopt is wél bewezen:
-een test pakt uit wat de tussenlaag verstuurt en leest de tekst terug, en het
-VAPID-bewijs wordt op handtekening gecontroleerd. Maar of Apple die melding
-daadwerkelijk op jouw scherm zet, kan hier niemand aantonen. Dat weet je pas
+**Wat ik niet heb kunnen testen.** Dat de versleuteling klopt is wél bewezen,
+en die proef staat in `tests/faal-push.mjs`: hij maakt de sleutels in een echte
+browser op diezelfde pagina, voert ze aan de echte tussenlaag, en pakt uit wat
+er de deur uit gaat — met een eigen uitwerking van het protocol, niet met de
+code van de tussenlaag zelf. De tekst komt er leesbaar uit, met de sleutel van
+een andere telefoon gaat hij niet open, en de handtekening op het VAPID-bewijs
+klopt. Ook de vier manieren waarop je de sleutel verkeerd kunt plakken zijn
+nagelopen: dan komt er geen melding, maar valt er ook niets om en blijft geen
+aanvraag stilletjes op afgehandeld staan. Die proef draait voortaan bij elke
+wijziging mee.
+
+Maar of Apple die melding daadwerkelijk op jouw scherm zet, kan hier niemand
+aantonen — daar is een telefoon voor nodig en die heb ik niet. Dat weet je pas
 met die proefmelding. Werkt hij niet, laat het me weten met wat er op het
 scherm staat.
 

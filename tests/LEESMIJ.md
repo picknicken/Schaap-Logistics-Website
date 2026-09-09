@@ -1,6 +1,6 @@
 # Faaltests
 
-Deze vier bestanden testen niet of iets werkt. Ze proberen het stuk te krijgen.
+Deze zes bestanden testen niet of iets werkt. Ze proberen het stuk te krijgen.
 
 Dat is een ander soort proef dan de gewone tests, en hij hoort er apart te
 staan. Een gewone test vraagt: doet de knop wat de knop moet doen. Deze vragen:
@@ -35,6 +35,7 @@ python3 -m http.server 8097 --bind 127.0.0.1     # in een tweede venster
 cd tests
 node faal-site.mjs           # de factuurpagina en de rekenmachine
 node faal-portalen.mjs       # beide portalen met vijandige gegevens
+node faal-push.mjs           # de sleutelpagina en de hele pushketen
 ```
 
 Staat Playwright niet op de standaardplek, wijs er dan naar met
@@ -44,7 +45,7 @@ adres, dan `SITE_ADRES=http://127.0.0.1:8080`.
 Elk bestand eindigt met `alles goed` of met het aantal fouten, en geeft een
 foutcode terug als er iets misgaat.
 
-Ze draaien ook vanzelf: `.github/workflows/faaltests.yml` voert alle vijf uit
+Ze draaien ook vanzelf: `.github/workflows/faaltests.yml` voert ze alle zes uit
 bij elke push naar `main` en bij elke pull request. Die workflow staat los van
 `worker-uitrollen.yml` omdat die laatste alleen mag afgaan als er werkelijk
 iets aan een Worker verandert, en `on:` in GitHub Actions per workflow geldt
@@ -72,6 +73,18 @@ grenswaarden op alle getallen, en pushmeldingen als achterdeur.
 iedereen die een link kan maken bepaalt wat erop staat. Script, onzinbedragen,
 en of subtotaal, btw en totaal altijd op elkaar aansluiten.
 
+**`faal-push.mjs`** — de meldingen, van `scripts/pushsleutels.html` tot aan de
+pushdienst. Die sleutelpagina is het enige stuk van dit bouwwerk dat één keer
+met de hand wordt bediend, en als hij een sleutel in het verkeerde formaat
+afgeeft merk je dat aan niets: de pushdienst neemt het pakketje netjes aan met
+een 201 en de telefoon gooit het stilletjes weg. Deze proef maakt de sleutels in
+een echte browser, voert ze aan de echte Worker, en maakt het versleutelde
+pakketje weer open zoals een telefoon dat doet — met een eigen uitwerking van
+RFC 8291, niet met de code van de Worker, want anders bewijs je alleen dat de
+Worker het eens is met zichzelf. Verder: de handtekening op het VAPID-bewijs,
+een verlopen abonnement dat de rest niet meesleept, een pushdienst die plat
+ligt, en de vier manieren waarop je de sleutel verkeerd kunt plakken.
+
 **`faal-portalen.mjs`** — hier doen we alsof de tussenlaag is overgenomen of
 gewoon kapot is. Script in elk veld, `javascript:`-adressen, velden die er niet
 zijn, een antwoord dat geen JSON is, en een geheugen van de telefoon vol rommel.
@@ -81,6 +94,14 @@ zijn, een antwoord dat geen JSON is, en een geheugen van de telefoon vol rommel.
 Ze raken Airtable niet aan en ze sturen geen echt verkeer de deur uit: de
 Workers krijgen een nagebootste Airtable, en de portalen krijgen een
 nagebootste tussenlaag. Je kunt ze dus zo vaak draaien als je wilt.
+
+En één ding in het bijzonder: `faal-push.mjs` bewijst niet dat er een melding
+op een telefoon verschijnt. Dat kan geen enkele proef hier. Het bericht gaat
+correct ondertekend en versleuteld de deur uit en is met de sleutel van de
+telefoon weer open te maken — daarmee houdt het op. Of Apple of Google hem
+doorzet, of iOS hem toont, en of de telefoon het portaal überhaupt vanaf het
+beginscherm heeft geopend: dat zie je alleen door op **Proefmelding** te
+drukken en te kijken of het ding piept.
 
 Ze zeggen ook niets over de gewone werking. Dat is wat de andere proeven doen;
 groen hier betekent alleen dat het niet stukging, niet dat het klopt.

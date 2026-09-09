@@ -87,3 +87,13 @@ jobs:
         env:
           PLAYWRIGHT_PAD: ${{ github.workspace }}/node_modules/playwright/index.js
         run: node faal-portalen.mjs
+
+      # Deze heeft een browser nodig omdat de sleutelpagina de WebCrypto van de
+      # browser gebruikt, en juist of die sleutels op de Worker passen is wat
+      # hier bewezen wordt. Wat hij niet bewijst — dat er werkelijk een melding
+      # op een telefoon verschijnt — staat in tests/LEESMIJ.md.
+      - name: De pushmeldingen, van sleutel tot pushdienst
+        working-directory: tests
+        env:
+          PLAYWRIGHT_PAD: ${{ github.workspace }}/node_modules/playwright/index.js
+        run: node faal-push.mjs
