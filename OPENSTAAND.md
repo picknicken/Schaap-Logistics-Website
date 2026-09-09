@@ -285,46 +285,51 @@ Ook aan laten, en dat zijn er twee die je waarschijnlijk niet bedoelde:
   krijgt. Zet je hem uit, dan komt niemand er meer in. Hij gaat één keer per
   klant, dus hij kost je vrijwel niets.
 
-### Pushmeldingen: drie stappen, eenmalig
+### Pushmeldingen
 
-Gebouwd. Je telefoon piept nu bij een spoedaanvraag en bij een klant die
-afzegt, ook als het portaal dicht is. Elke minuut kijkt de tussenlaag of er
+**Staat aan sinds 9 september 2026, en de proefmelding is op de telefoon
+binnengekomen.** Je telefoon piept nu bij een spoedaanvraag en bij een klant
+die afzegt, ook als het portaal dicht is. Elke minuut kijkt de tussenlaag of er
 iets nieuws is; een stempelveld zorgt dat je nooit twee keer hetzelfde bericht
 krijgt.
 
-1. **Maak de sleutels.** Open `scripts/pushsleutels.html` in je browser en druk
-   op *Sleutels maken*. Dat gebeurt in je eigen browser: er wordt niets
-   verstuurd of opgeslagen, ook niet naar mij.
-2. **`VAPID_PUBLIEK`** zet je in `worker-portaal/wrangler.toml` tussen de lege
-   aanhalingstekens. Die mag openbaar zijn — je telefoon heeft hem nodig om
-   zich aan te melden. Push naar `main` en de Worker rolt zichzelf uit.
-3. **`VAPID_PRIVE`** zet je als **Secret** in Cloudflare, bij
-   *schaap-portaal → Settings → Variables and Secrets*. Die stuur je nooit
-   door — niet naar mij, niet via WhatsApp, niet in een document.
+De sleutels zijn eenmalig gezet: `VAPID_PUBLIEK` staat in
+`worker-portaal/wrangler.toml` (die hoort openbaar te zijn — je telefoon heeft
+hem nodig om zich aan te melden) en `VAPID_PRIVE` staat als **Secret** in
+Cloudflare bij *schaap-portaal → Settings → Variables and Secrets*. Die private
+helft komt nergens anders te staan.
 
-Daarna: open het portaal **vanaf je beginscherm** (niet in een Safari-tabblad,
-dan kan iOS het niet), ga naar *Meldingen* en druk op **Meldingen aanzetten**.
-Druk meteen daarna op **Proefmelding** — piept je telefoon, dan staat het.
+Moet je ooit een nieuw paar maken — sleutel kwijt, of hij is ergens
+terechtgekomen waar hij niet hoort — dan doe je dat met
+`scripts/pushsleutels.html`, in je eigen browser. Let op: na een nieuw paar
+moet **elke telefoon zich opnieuw aanmelden**. Doe het dus alleen als het moet.
 
-**Wat ik niet heb kunnen testen.** Dat de versleuteling klopt is wél bewezen,
-en die proef staat in `tests/faal-push.mjs`: hij maakt de sleutels in een echte
+Een nieuwe telefoon aanmelden: portaal openen **vanaf je beginscherm** (niet in
+een Safari-tabblad, dan kan iOS het niet), *Meldingen* → **Meldingen
+aanzetten** → **Proefmelding**.
+
+**Wat er bewezen is.** `tests/faal-push.mjs` maakt de sleutels in een echte
 browser op diezelfde pagina, voert ze aan de echte tussenlaag, en pakt uit wat
 er de deur uit gaat — met een eigen uitwerking van het protocol, niet met de
 code van de tussenlaag zelf. De tekst komt er leesbaar uit, met de sleutel van
 een andere telefoon gaat hij niet open, en de handtekening op het VAPID-bewijs
 klopt. Ook de vier manieren waarop je de sleutel verkeerd kunt plakken zijn
 nagelopen: dan komt er geen melding, maar valt er ook niets om en blijft geen
-aanvraag stilletjes op afgehandeld staan. Die proef draait voortaan bij elke
-wijziging mee.
+aanvraag stilletjes op afgehandeld staan. Die proef draait bij elke wijziging
+mee. Dat er werkelijk een melding op het scherm verschijnt is daarna met de
+hand vastgesteld — geen enkele proef hier kan dat.
 
-Maar of Apple die melding daadwerkelijk op jouw scherm zet, kan hier niemand
-aantonen — daar is een telefoon voor nodig en die heb ik niet. Dat weet je pas
-met die proefmelding. Werkt hij niet, laat het me weten met wat er op het
-scherm staat.
+**De twee mails staan nog aan, met opzet.** `Seintje bij een nieuwe aanvraag`
+en `Seintje bij een annulering door de klant` in Airtable blijven voorlopig
+staan. De proefmelding bewijst de leiding, niet de praktijk: hij werd gestuurd
+terwijl het portaal openstond en de telefoon in de hand lag. Wat nog niet
+bewezen is, is een melding om half elf 's avonds met de telefoon in je zak en
+het portaal dicht — juist het geval waarvoor het gebouwd is. iOS mag webpush
+vertragen of laten vallen als het toestel lang niet gebruikt is.
 
-Zodra de proefmelding werkt kun je `Seintje bij een nieuwe aanvraag` en
-`Seintje bij een annulering door de klant` uitzetten in Airtable. Niet eerder:
-zolang push niet bewezen werkt is die mail je enige seintje.
+Laat ze aan tot je een paar échte aanvragen op je scherm hebt zien komen. Pas
+dan uitzetten, en één tegelijk. Ze kosten een automatiseringsrun per stuk van
+de honderd per maand, dus haast is er niet bij.
 
 ### Eenmalige klanten en vaste klanten
 
