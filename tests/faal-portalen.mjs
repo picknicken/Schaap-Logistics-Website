@@ -503,6 +503,73 @@ console.log('\n=== het hamburgermenu ===');
   }
 }
 
+/* =========================================================================
+   Het tabblad Chauffeurs, met jezelf erin.
+
+   Je logt in met je eigen persoonlijke code in plaats van met de hoofdsleutel.
+   Dan sta je zelf in de lijst, en dan moet die lijst twee dingen doen: laten
+   zien welke rij van jou is, en je niet de knop aanbieden die je bij de
+   volgende oproep buiten je eigen portaal zet.
+   ========================================================================= */
+console.log('\n=== jezelf in het tabblad Chauffeurs ===');
+{
+  const antwoord = { ok: true, dag,
+    ik: { rol: 'Eigenaar', naam: 'Shane', id: 'recSHANEDEBAAS001' },
+    ritten: [], aanvragen: [], opdrachten: [], klanten: [],
+    chauffeurs: [
+      { id: 'recSHANEDEBAAS001', naam: 'Shane', rol: 'Eigenaar', actief: true,
+        heeftCode: true },
+      { id: 'recPIETRIJDER0001', naam: 'Piet', rol: 'Chauffeur', actief: true,
+        heeftCode: true }
+    ] };
+
+  const { ctx, p } = await opent(antwoord);
+  await p.click('#tabmenu-knop');
+  await p.click('#tabmenu button:has-text("Chauffeurs")');
+  await p.waitForSelector('#lijst-chauffeurs .klantkaart', { timeout: 5000 })
+    .catch(() => {});
+
+  const kaarten = await p.$$eval('#lijst-chauffeurs .klantkaart', (l) => l.map((k) => ({
+    naam: (k.querySelector('.klantkaart__naam') || {}).textContent || '',
+    merk: (k.querySelector('.klantkaart__soort') || {}).textContent || '',
+    knoppen: Array.from(k.querySelectorAll('.klantkaart__knoppen button, .klantkaart__knoppen a'))
+      .map((b) => (b.textContent || '').trim())
+  })));
+  keur('beide chauffeurs staan er', kaarten.length === 2,
+    JSON.stringify(kaarten.map((k) => k.naam)));
+
+  const ik = kaarten.find((k) => k.naam === 'Shane') || { merk: '', knoppen: [] };
+  const ander = kaarten.find((k) => k.naam === 'Piet') || { merk: '', knoppen: [] };
+
+  keur('je eigen rij is als zodanig gemerkt', ik.merk === 'Jij', ik.merk);
+  keur('en die van een ander niet', ander.merk !== 'Jij', ander.merk);
+
+  keur('op je eigen rij staat geen non-actiefknop',
+    !ik.knoppen.some((t) => /non-actief|Weer actief/.test(t)), ik.knoppen.join(' | '));
+  keur('bij een ander wel', ander.knoppen.some((t) => /Op non-actief/.test(t)),
+    ander.knoppen.join(' | '));
+  keur('en je eigen code opvragen kan nog steeds',
+    ik.knoppen.some((t) => /Code tonen/.test(t)), ik.knoppen.join(' | '));
+  await ctx.close();
+}
+
+/* Met de hoofdsleutel is er geen eigen rij: dan hoort niemand als "Jij" te
+   staan en horen alle knoppen er gewoon te zijn. */
+{
+  const { ctx, p } = await opent({ ok: true, dag,
+    ik: { rol: 'Eigenaar', naam: 'Shane', id: null },
+    ritten: [], aanvragen: [], opdrachten: [], klanten: [],
+    chauffeurs: [{ id: 'recSHANEDEBAAS001', naam: 'Shane', rol: 'Eigenaar',
+                   actief: true, heeftCode: true }] });
+  await p.click('#tabmenu-knop');
+  await p.click('#tabmenu button:has-text("Chauffeurs")');
+  await p.waitForSelector('#lijst-chauffeurs .klantkaart', { timeout: 5000 })
+    .catch(() => {});
+  const merk = await p.textContent('#lijst-chauffeurs .klantkaart__soort');
+  keur('met de hoofdsleutel staat er niemand als Jij', merk.trim() !== 'Jij', merk);
+  await ctx.close();
+}
+
 console.log('\n=== het klantportaal met vijandige gegevens ===');
 {
   const { ctx, p, stuk, geraakt, popup } = await opent({

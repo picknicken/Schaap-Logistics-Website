@@ -406,6 +406,18 @@ een achternaam achter.
 persoon gereden heeft. Verander je hem alleen hier, dan zijn die ritten van
 niemand meer. Doe het in Airtable én op de ritten, of laat het.
 
+**Rol Eigenaar geeft alle rechten.** De tussenlaag kijkt naar het veld `Rol` en
+niet naar wélke code er is ingetikt. Staat er bij jouw rij *Eigenaar*, dan kun
+je met je eigen persoonlijke code alles wat de hoofdsleutel kan — en hoeft die
+hoofdsleutel nergens gedeeld of ingetikt te worden. Leeg of *Chauffeur* betekent
+chauffeur; de veiligste stand is de stand die je krijgt als je vergeet iets in
+te vullen.
+
+**Jezelf uitzetten kan niet vanuit het portaal.** Zit je op je eigen rij, dan
+staat de knop *Op non-actief* er niet, en de tussenlaag weigert het ook als je
+het langs de knop om probeert — net als jezelf terugzetten naar *Chauffeur*.
+Vanuit Airtable kan het natuurlijk wel; dan is de hoofdsleutel de weg terug.
+
 ### Het toegangslog
 
 De tabel `Toegangslog` (`tblieegCnsk3Pjd4i`) houdt bij wie er bij het portaal
@@ -415,6 +427,12 @@ aanklopte. De tussenlaag schrijft er; met de hand aanpassen heeft geen zin.
 | --- | --- |
 | **Geweigerd** | Altijd. Die horen zeldzaam te zijn — jij en je chauffeurs typen je code één keer en de telefoon onthoudt hem. Staan er ineens twintig op een avond, dan is dat het signaal |
 | **Binnen** | Hoogstens één keer per persoon per land per dag |
+
+Bij **Binnen** staat wie het was: `Shane (Eigenaar)`, `Piet (Chauffeur)`, of
+`Hoofdsleutel` als er met de `PORTAAL_CODE` uit Cloudflare is ingelogd. Die
+laatste heet met opzet anders dan jij: log je dagelijks met je eigen code in,
+dan hoort *Hoofdsleutel* daar niet meer te staan, en valt het op als het er
+toch staat.
 
 Dat tweede is een keuze en geen slordigheid. Elk verzoek uit het portaal draagt
 de code mee, dus elke tik op een knop is technisch een aanmelding. Die allemaal

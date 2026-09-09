@@ -19,6 +19,7 @@ const env = {
 };
 const ORIGIN = 'https://schaaplogistics.nl';
 const CHAUF = 'chauffeur-code-1234';
+const BAAS = 'eigen-code-van-de-baas-5678';
 const KLANT = 'klantcode-abcdefgh';
 
 let gesprek = [];
@@ -38,9 +39,16 @@ function zetKlaar() {
     Klantnaam: 'Klant BV', Portaalcode: KLANT, 'Soort klant': 'Vaste klant',
     Ritten: [rit.id], Facturen: []
   } };
+  /* Id's in de vorm die Airtable werkelijk teruggeeft: rec plus veertien
+     tekens. Stond er iets korters, dan wijst de tussenlaag het af op de vorm
+     en slaagt een proef omdat hij struikelt in plaats van omdat hij weigert. */
   medewerkers = [
-    { id: 'recC1', fields: { Chauffeur: 'Piet Rijder', Toegangscode: CHAUF,
-                             Rol: { id: 'r2', name: 'Chauffeur' }, Actief: true } }
+    { id: 'recPIETRIJDER0001', fields: { Chauffeur: 'Piet Rijder', Toegangscode: CHAUF,
+                             Rol: { id: 'r2', name: 'Chauffeur' }, Actief: true } },
+    /* De eigenaar met een eigen persoonlijke code, naast de hoofdsleutel. Zo
+       logt hij dagelijks in; de hoofdsleutel blijft de reservesleutel. */
+    { id: 'recSHANEDEBAAS001', fields: { Chauffeur: 'Shane', Toegangscode: BAAS,
+                             Rol: { id: 'r1', name: 'Eigenaar' }, Actief: true } }
   ];
 }
 zetKlaar();
@@ -452,6 +460,103 @@ console.log('\nals Airtable of de omgeving wegvalt');
   const n = await doe({ actie: 'overzicht', dag: '2026-09-03' });
   keur('een netwerkfout ook 502', n.res.status === 502, n.res.status);
   globalThis.fetch = oud;
+}
+
+/* =========================================================================
+   Inloggen met je eigen code in plaats van met de hoofdsleutel.
+
+   De hoofdsleutel uit Cloudflare hoort een reservesleutel te zijn, geen
+   dagelijkse. Staat er bij jouw rij in Chauffeurs de rol Eigenaar, dan geeft
+   je persoonlijke code precies dezelfde rechten — zonder dat de hoofdsleutel
+   ergens gedeeld of getoond hoeft te worden. Dat moet hier bewezen worden en
+   niet aangenomen: het verschil tussen "mag alles" en "mag zijn eigen ritten"
+   is het hele portaal.
+   ========================================================================= */
+console.log('\ninloggen met je eigen code in plaats van de hoofdsleutel');
+{
+  zetKlaar();
+
+  /* Een eigenaarsactie die een chauffeur nooit mag: de klantenlijst. */
+  let r = await doe({ actie: 'chauffeurs' }, { code: BAAS });
+  keur('de eigen code van de baas mag een eigenaarsactie', r.res.status === 200,
+    r.res.status + ' ' + r.tekst.slice(0, 120));
+
+  r = await doe({ actie: 'chauffeurs' }, { code: CHAUF });
+  keur('een gewone chauffeurscode mag dat niet', r.res.status === 403, r.res.status);
+
+  /* En het overzicht: een eigenaar krijgt klanten en aanvragen, een chauffeur
+     krijgt lege lijsten. Dat is het echte verschil, niet alleen de statuscode. */
+  r = await doe({ actie: 'overzicht', dag: '2026-09-03' }, { code: BAAS });
+  keur('en hij krijgt het volledige overzicht',
+    r.res.status === 200 && Array.isArray(r.data.klanten) && r.data.klanten.length > 0,
+    r.res.status + ' klanten=' + JSON.stringify(r.data.klanten));
+  keur('met zijn eigen naam erbij', r.data.ik && r.data.ik.naam === 'Shane',
+    JSON.stringify(r.data.ik));
+  keur('en de rol Eigenaar', r.data.ik && r.data.ik.rol === 'Eigenaar',
+    JSON.stringify(r.data.ik));
+  keur('en zijn eigen rij-id, zodat het portaal weet welke rij hij zelf is',
+    r.data.ik && r.data.ik.id === 'recSHANEDEBAAS001', JSON.stringify(r.data.ik));
+
+  /* De hoofdsleutel blijft werken — dat is de hele reden dat hij bestaat. */
+  r = await doe({ actie: 'chauffeurs' });
+  keur('de hoofdsleutel blijft ernaast gewoon werken', r.res.status === 200,
+    r.res.status);
+  keur('en die heeft geen rij-id', r.data.ik === undefined || !r.data.ik.id,
+    JSON.stringify(r.data.ik));
+
+  /* Wat er niet mag gebeuren: de code teruggeven aan wie hem opvraagt zonder
+     dat hij erom vroeg. */
+  r = await doe({ actie: 'overzicht', dag: '2026-09-03' }, { code: BAAS });
+  keur('geen enkele toegangscode lift mee in het overzicht',
+    !r.tekst.includes(BAAS) && !r.tekst.includes(CHAUF) &&
+    !r.tekst.includes(env.PORTAAL_CODE));
+
+  /* Uit gezet, dan is het voorbij — ook voor een eigenaarsrij. */
+  medewerkers[1].fields.Actief = false;
+  r = await doe({ actie: 'chauffeurs' }, { code: BAAS });
+  keur('op non-actief werkt zijn eigen code niet meer', r.res.status === 401,
+    r.res.status);
+  r = await doe({ actie: 'chauffeurs' });
+  keur('en dan komt hij er met de hoofdsleutel nog steeds in',
+    r.res.status === 200, r.res.status);
+  medewerkers[1].fields.Actief = true;
+}
+
+console.log('\njezelf buitensluiten');
+{
+  zetKlaar();
+
+  /* De knop bestaat niet op je eigen rij, maar de tussenlaag moet het ook
+     weigeren: het portaal is niet de plek waar dit wordt afgedwongen. */
+  let r = await doe({ actie: 'chauffeurbij', id: 'recSHANEDEBAAS001', actief: false },
+    { code: BAAS });
+  keur('jezelf op non-actief zetten wordt geweigerd', r.res.status === 409,
+    r.res.status + ' ' + r.tekst.slice(0, 120));
+  keur('en er ging niets naar Airtable', patches().length === 0,
+    JSON.stringify(patches()));
+
+  r = await doe({ actie: 'chauffeurbij', id: 'recSHANEDEBAAS001', rol: 'Chauffeur' },
+    { code: BAAS });
+  keur('jezelf degraderen ook niet', r.res.status === 409, r.res.status);
+
+  /* Iemand anders uitzetten mag wel — anders is de knop nutteloos. */
+  r = await doe({ actie: 'chauffeurbij', id: 'recPIETRIJDER0001', actief: false },
+    { code: BAAS });
+  keur('een ander op non-actief zetten mag wel', r.res.status === 200,
+    r.res.status + ' ' + r.tekst.slice(0, 120));
+
+  /* En je eigen gegevens bijwerken blijft gewoon kunnen; alleen uitzetten en
+     degraderen zijn geblokkeerd. */
+  r = await doe({ actie: 'chauffeurbij', id: 'recSHANEDEBAAS001', kenteken: '12-ab-34' },
+    { code: BAAS });
+  keur('je eigen kenteken bijwerken mag nog steeds', r.res.status === 200,
+    r.res.status);
+
+  /* Met de hoofdsleutel is er geen eigen rij, dus daar geldt de rem niet —
+     dan is er ook niets om jezelf mee buiten te sluiten. */
+  r = await doe({ actie: 'chauffeurbij', id: 'recSHANEDEBAAS001', actief: false });
+  keur('met de hoofdsleutel kan het wel, want die sluit niets af',
+    r.res.status === 200, r.res.status);
 }
 
 console.log(fouten ? '\n' + fouten + ' fout(en)\n' : '\nalles goed\n');

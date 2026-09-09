@@ -552,8 +552,13 @@ export default {
 
     /* Wie er werkelijk binnenkwam. Hoogstens één regel per persoon per land
        per dag; zie logToegang. */
+    /* De hoofdsleutel krijgt met opzet een eigen naam in het logboek. Log je
+       dagelijks in met je persoonlijke code, dan hoort er nooit meer
+       'Hoofdsleutel' te staan — staat het er toch, dan is dat jij op een ander
+       apparaat, of iemand anders. Dat verschil zie je alleen als de twee niet
+       hetzelfde heten. */
     await logToegang(env, verzoek, 'Binnen',
-      wie.rol === 'Eigenaar' && wie.hoofdsleutel ? 'Eigenaar'
+      wie.hoofdsleutel ? 'Hoofdsleutel'
         : `${wie.naam || 'Onbekend'} (${wie.rol})`);
 
     /* Wat een chauffeur mag. Een allowlist en geen verbodenlijst: vergeet je
@@ -667,7 +672,7 @@ async function schakel(env, body, origin, wie) {
     case 'klantsoort':   return await zetKlantsoort(env, body, origin);
     case 'chauffeurs':   return await haalChauffeurs(env, body, origin);
     case 'nieuwechauffeur': return await nieuweChauffeur(env, body, origin);
-    case 'chauffeurbij':    return await werkChauffeurBij(env, body, origin);
+    case 'chauffeurbij':    return await werkChauffeurBij(env, body, origin, wie);
     case 'chauffeurcode':   return await haalChauffeurcode(env, body, origin);
     case 'klantnotitie': return await zetKlantnotitie(env, body, origin);
     case 'klantzelf':    return await zetZelfbediening(env, body, origin);
@@ -707,7 +712,7 @@ async function haalOverzicht(env, body, origin, wie) {
       ok: true, dag, ritten, aanvragen: [], opdrachten: [], klanten: [], dagstaat,
       kan: { leesbericht: false, push: pushKan(env) },
       pushSleutel: pushKan(env) ? env.VAPID_PUBLIEK : '',
-      ik: { naam: wie.naam, rol: wie.rol }
+      ik: { naam: wie.naam, rol: wie.rol, id: wie.id || null }
     }, origin, true);
   }
 
@@ -725,7 +730,7 @@ async function haalOverzicht(env, body, origin, wie) {
 
   return antwoord(200, { ok: true, dag, ritten, aanvragen, opdrachten, klanten, kan,
                          dagstaat, pushSleutel: pushKan(env) ? env.VAPID_PUBLIEK : '',
-                         ik: { naam: wie.naam, rol: wie.rol } },
+                         ik: { naam: wie.naam, rol: wie.rol, id: wie.id || null } },
                   origin, true);
 }
 
@@ -3896,9 +3901,29 @@ async function nieuweChauffeur(env, body, origin) {
    staat op elke rit die deze persoon rijdt, en hem hier wijzigen zou die
    ritten losmaken van hun chauffeur. Naam veranderen doe je in Airtable, en
    dan ook op de ritten. */
-async function werkChauffeurBij(env, body, origin) {
+async function werkChauffeurBij(env, body, origin, wie) {
   const id = recordId(body.id);
   if (!id) { return antwoord(400, { fout: 'Ongeldig chauffeur-id' }, origin, true); }
+
+  /* Je eigen rij mag je niet uitzetten of degraderen. Log je in met je
+     persoonlijke code — en dat is de bedoeling — dan is dat de code waarmee je
+     op dit moment binnen bent; hem hier uitzetten sluit je bij de volgende
+     oproep buiten je eigen portaal. De hoofdsleutel zou je er weer in laten,
+     maar dan zoek je eerst waar die ook alweer stond.
+
+     Iemand anders op non-actief zetten mag gewoon. */
+  if (wie && wie.id && wie.id === id) {
+    if (body.actief === false) {
+      return antwoord(409, {
+        fout: 'Je kunt jezelf niet op non-actief zetten. Dan sluit je jezelf buiten.'
+      }, origin, true);
+    }
+    if (body.rol === 'Chauffeur') {
+      return antwoord(409, {
+        fout: 'Je kunt je eigen rol niet verlagen. Dan raak je je eigen knoppen kwijt.'
+      }, origin, true);
+    }
+  }
 
   const velden = {};
   if (body.telefoon !== undefined) {

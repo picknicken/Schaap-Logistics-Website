@@ -994,8 +994,16 @@
     b.hidden = !aantal;
   }
 
-  var TABBLADEN = ['ritten', 'aanvragen', 'prijs', 'planning', 'meldingen',
-                   'klanten', 'chauffeurs'];
+  /* De volgorde van de tabbladen, en daarmee ook van het menu. Niet willekeurig
+     gegroeid maar gegroepeerd: eerst wat op je ligt te wachten (Ritten,
+     Aanvragen, Meldingen), dan het vooruitzicht (Planning), dan met wie je
+     werkt (Klanten, Chauffeurs), en als laatste het gereedschap (Prijs).
+
+     Dat de eerste drie ook de drie zijn die zonder vegen op een telefoon
+     passen is het punt: wat om aandacht vraagt hoort in beeld te staan. De
+     rekenmachine stond daar eerst, en die pak je er juist af en toe bij. */
+  var TABBLADEN = ['ritten', 'aanvragen', 'meldingen', 'planning',
+                   'klanten', 'chauffeurs', 'prijs'];
 
   function kiesTab(naam) {
     tabblad = naam;
@@ -1120,7 +1128,12 @@
     titel.appendChild(maak('div', 'klantkaart__sub', onder.join(' \u00b7 ')));
     kop.appendChild(titel);
 
-    var merk = maak('span', 'klantkaart__soort', c.actief ? 'Actief' : 'Uit');
+    /* Jouw eigen rij. Zodra er meer dan een chauffeur staat wil je in een
+       oogopslag zien welke van jou is — anders druk je op de verkeerde knop bij
+       iemand die dezelfde rol heeft. */
+    var ditBenIk = !!(wieIkBen && wieIkBen.id && wieIkBen.id === c.id);
+    var merk = maak('span', 'klantkaart__soort',
+      ditBenIk ? 'Jij' : (c.actief ? 'Actief' : 'Uit'));
     if (c.actief) { merk.setAttribute('data-vast', ''); }
     kop.appendChild(merk);
     kaart.appendChild(kop);
@@ -1181,17 +1194,22 @@
       knoppen.appendChild(nieuw);
     }
 
-    var uit = maak('button', 'knop knop--rand', c.actief ? 'Op non-actief' : 'Weer actief');
-    uit.type = 'button';
-    uit.addEventListener('click', function () {
-      bezig(uit, 'Bezig…', function (klaar) {
-        meldApp('');
-        verstuur('chauffeurbij', { id: c.id, actief: !c.actief })
-          .then(function () { chauffeurs = []; haalChauffeurs(); })
-          .catch(function (fout) { meldApp(fout.message); klaar(false); });
+    /* Niet op je eigen rij. Jezelf op non-actief zetten sluit je bij de
+       volgende oproep buiten je eigen portaal; de tussenlaag weigert het ook,
+       maar een knop die altijd een foutmelding geeft hoort er niet te staan. */
+    if (!ditBenIk) {
+      var uit = maak('button', 'knop knop--rand', c.actief ? 'Op non-actief' : 'Weer actief');
+      uit.type = 'button';
+      uit.addEventListener('click', function () {
+        bezig(uit, 'Bezig…', function (klaar) {
+          meldApp('');
+          verstuur('chauffeurbij', { id: c.id, actief: !c.actief })
+            .then(function () { chauffeurs = []; haalChauffeurs(); })
+            .catch(function (fout) { meldApp(fout.message); klaar(false); });
+        });
       });
-    });
-    knoppen.appendChild(uit);
+      knoppen.appendChild(uit);
+    }
     kaart.appendChild(knoppen);
     return kaart;
   }

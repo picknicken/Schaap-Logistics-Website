@@ -453,6 +453,41 @@ van je telefoon. Een code die daarin meelift ligt daar dan ook.
 rijdt; hem hier veranderen zou die ritten losmaken van hun chauffeur. Moet het
 toch, doe het dan in Airtable en pas de ritten aan.
 
+### Inloggen met je eigen code, met alle rechten
+
+Je vroeg of de hoofdsleutel aan je chauffeurscode gekoppeld kan worden zonder
+die sleutel prijs te geven. Dat kan, en het werkte al: er hoefde niets
+gekoppeld te worden. Bij jouw rij in `Chauffeurs` staat **Rol: Eigenaar**, en
+de tussenlaag kijkt naar die rol en niet naar wélke code je gebruikte. Je
+persoonlijke code geeft dus precies dezelfde rechten als de hoofdsleutel; de
+hoofdsleutel zelf blijft waar hij hoort, als secret in Cloudflare.
+
+Dat is bewezen en niet aangenomen: de faaltest logt in met een persoonlijke
+eigenaarscode en controleert dat een eigenaarsactie slaagt, dat dezelfde actie
+met een gewone chauffeurscode een 403 geeft, en dat het overzicht compleet
+binnenkomt.
+
+**Waarom dit beter is dan de hoofdsleutel gebruiken.** In het toegangslogboek
+stond de hoofdsleutel eerst als "Eigenaar" — niet te onderscheiden van jou.
+Nu heet hij **Hoofdsleutel**, en jij heet **Shane (Eigenaar)**. Log je
+voortaan met je eigen code in, dan hoort er nooit meer "Hoofdsleutel" in dat
+logboek te verschijnen. Staat het er toch, dan ben jij dat op een ander
+apparaat — of iemand anders. Dat verschil zie je alleen als de twee niet
+hetzelfde heten.
+
+En je kunt je code laten vervangen zonder aan Cloudflare te komen: *Nieuwe
+code* in het tabblad Chauffeurs, klaar.
+
+**Jezelf buitensluiten kan niet.** Nu je in je eigen lijst staat, kun je op je
+eigen rij op *Op non-actief* drukken — dat zou je bij de volgende oproep uit je
+eigen portaal zetten. Die knop staat er op je eigen rij niet meer, en de
+tussenlaag weigert het ook als je het langs de knop om probeert; hetzelfde geldt
+voor jezelf terugzetten naar Chauffeur. Je eigen rij staat gemerkt met **Jij**,
+zodat je bij meer chauffeurs ziet welke van jou is.
+
+Raak je je persoonlijke code toch kwijt of zet je jezelf per ongeluk uit in
+Airtable, dan is de hoofdsleutel er nog. Daar is hij voor.
+
 ### De deur van het portaal
 
 Twee dingen bijgezet na een keer goed kijken naar de beveiliging.
@@ -617,9 +652,9 @@ netjes van h1 naar h2 zonder gaten, en de foutpagina werkt weer — die verwees 
 de domeinverhuizing nog naar het oude adres en kwam daardoor zonder opmaak en met
 dode links binnen.
 
-**694 controles draaien groen**, verdeeld over negen faaltests: 189 in een
-echte browser (`faal-portalen` 131, `faal-site` 58), 412 tegen de portaal-Worker
-(`faal-portaal` 137, `faal-klantplicht` 195, `faal-toegang` 26, `faal-push` 54),
+**723 controles draaien groen**, verdeeld over negen faaltests: 196 in een
+echte browser (`faal-portalen` 138, `faal-site` 58), 434 tegen de portaal-Worker
+(`faal-portaal` 154, `faal-klantplicht` 195, `faal-toegang` 31, `faal-push` 54),
 79 tegen de aanvraag-Worker en 14 op de prijsberekening. Daaronder zitten
 controles dat de prijzen op de site kloppen met de calculator, dat een klant
 nooit een cent van jouw kosten te zien krijgt, en dat een creditnota naar de

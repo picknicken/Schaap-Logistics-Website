@@ -20,6 +20,7 @@ const keur = (naam, goed, extra) => {
 };
 
 const CODE = 'geheim-hoofdsleutel-1234';
+const EIGEN = 'persoonlijke-code-van-shane';
 const env = {
   AIRTABLE_TOKEN: 'tok-geheim-niet-lekken', AIRTABLE_BASE: 'appX',
   AIRTABLE_RITTEN: 'tblR', AIRTABLE_OPDRACHTEN: 'tblO', AIRTABLE_AANVRAGEN: 'tblA',
@@ -67,7 +68,17 @@ globalThis.fetch = async (url, opties = {}) => {
     if (m === 'DELETE') { return new Response('{"records":[]}', { status: 200 }); }
     return new Response(JSON.stringify({ records: [] }), { status: 200 });
   }
-  /* Geen chauffeur, geen klant: elke code die niet de hoofdsleutel is, is fout. */
+  /* Eén persoonlijke eigenaarscode, verder niets: elke andere code die niet de
+     hoofdsleutel is, is fout. */
+  if (u.includes('/tblC')) {
+    const leesbaar = decodeURIComponent(u.replace(/\+/g, ' '));
+    const gezocht = (/\{Toegangscode\} = '([^']*)'/.exec(leesbaar) || [])[1];
+    return new Response(JSON.stringify({
+      records: gezocht === EIGEN ? [{ id: 'recSHANEDEBAAS001', fields: {
+        Chauffeur: 'Shane', Toegangscode: EIGEN,
+        Rol: { id: 'r1', name: 'Eigenaar' }, Actief: true } }] : []
+    }), { status: 200 });
+  }
   return new Response(JSON.stringify({ records: [] }), { status: 200 });
 };
 
@@ -174,7 +185,12 @@ console.log('\ngeslaagde toegang, maar niet elke tik');
   const eerste = await doe(CODE, '198.51.100.10', { 'CF-IPCountry': 'BE' });
   keur('de eerste keer binnen wordt vastgelegd', log.length === 1, log.length);
   keur('als Binnen', log[0] && log[0].Soort === 'Binnen', log[0] && log[0].Soort);
-  keur('en met wie', log[0] && log[0].Wie === 'Eigenaar', log[0] && log[0].Wie);
+  /* De hoofdsleutel heet in het logboek met opzet 'Hoofdsleutel' en niet
+     'Eigenaar'. Log je dagelijks in met je persoonlijke code — die schrijft
+     'Shane (Eigenaar)' — dan hoort deze regel er nooit meer te staan, en valt
+     het op als het toch gebeurt. Heetten ze allebei 'Eigenaar', dan zag je dat
+     verschil niet. */
+  keur('en met wie', log[0] && log[0].Wie === 'Hoofdsleutel', log[0] && log[0].Wie);
   keur('het verzoek zelf gaat gewoon door', eerste.status === 200, eerste.status);
 
   /* Elke knop in het portaal stuurt de code mee. Zou elk verzoek een regel
@@ -192,6 +208,29 @@ console.log('\ngeslaagde toegang, maar niet elke tik');
     log.length === 2, log.length);
   keur('en dat land staat erbij',
     log[1] && /RU/.test(log[1].Herkomst || ''), log[1] && log[1].Herkomst);
+}
+
+console.log('\nde hoofdsleutel en je eigen code staan er verschillend in');
+{
+  kast.clear();
+  log = [];
+  await doe(EIGEN, '198.51.100.40', { 'CF-IPCountry': 'DE' });
+  keur('inloggen met je eigen code wordt vastgelegd', log.length === 1, log.length);
+  keur('met je naam en je rol', log[0] && log[0].Wie === 'Shane (Eigenaar)',
+    log[0] && log[0].Wie);
+  keur('en niet als Hoofdsleutel', log[0] && log[0].Wie !== 'Hoofdsleutel',
+    log[0] && log[0].Wie);
+
+  /* Dat verschil is het hele punt: twee regels naast elkaar horen uit elkaar
+     te houden zijn. */
+  await doe(CODE, '198.51.100.41', { 'CF-IPCountry': 'DE' });
+  const namen = log.map((r) => r.Wie);
+  keur('de hoofdsleutel geeft een eigen regel met een eigen naam',
+    namen.length === 2 && namen.includes('Hoofdsleutel') &&
+    namen.includes('Shane (Eigenaar)'), JSON.stringify(namen));
+
+  keur('en geen van beide codes staat in het logboek',
+    !JSON.stringify(log).includes(EIGEN) && !JSON.stringify(log).includes(CODE));
 }
 
 console.log('\nhet logboek mag nooit in de weg zitten');
