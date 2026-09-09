@@ -653,6 +653,36 @@ input{font:inherit}
 .bewijs--wacht{background:#fff8e6;border-color:#f0dfae;color:#7a5a00}
 .bewijs--wacht b{color:#5c4300}
 
+/* De notitie bij een klant. Leeg is hij een grijs regeltje dat niet in de weg
+   zit; staat er iets, dan hoort hij op te vallen — dat is het hele punt. */
+.notitie{margin:0 0 12px}
+.notitie__toon{
+  display:block;width:100%;text-align:left;font:inherit;font-size:.88rem;
+  background:none;border:1px dashed var(--line);border-radius:9px;
+  padding:9px 12px;color:var(--muted);cursor:pointer;white-space:pre-wrap;
+}
+.notitie[data-vol] .notitie__toon{
+  border:1px solid #f0dfae;background:#fff8e6;color:#5c4300;font-weight:600;
+  border-style:solid;
+}
+.notitie__bewerk{display:grid;gap:8px;margin-top:6px}
+.notitie__bewerk textarea{
+  width:100%;font:inherit;font-size:.9rem;padding:9px 11px;
+  border:1px solid var(--line);border-radius:9px;background:var(--paper);
+  resize:vertical;
+}
+
+/* De twee remmen onder het portaalblok: niets voor dagelijks gebruik, dus met
+   een streep ertussen zodat je er niet per ongeluk op drukt. */
+.portaalblok__rem{
+  display:grid;gap:8px;margin-top:12px;padding-top:12px;
+  border-top:1px solid var(--line);
+}
+.portaalblok__waarschuwing{
+  margin:0;font-size:.84rem;color:#8c2415;background:#fdecea;
+  border:1px solid #d9705f;border-radius:9px;padding:9px 12px;
+}
+
 /* De knoppen en de uitleg onder een wijzigverzoek. Ze staan binnen het
    tekstblok van .bewijs, dus ze hoeven alleen wat lucht erboven. */
 .bewijs .knoppen{margin-top:10px}

@@ -115,6 +115,14 @@ Verder de grenzen die een portaal voor buitenstaanders nodig heeft — alleen je
 eigen zending, alleen zolang hij gepland staat, één verzoek tegelijk, en een
 verzonnen soort dat wordt teruggebracht in plaats van doorgegeven aan Airtable.
 
+Sinds kort staan hier ook de drie remmen bij een lastige klant in: de notitie,
+de zelfbediening en het intrekken van de toegang. De belangrijkste controle van
+de drie is dat de notitie nergens in het antwoord aan de klant voorkomt — die
+tekst gaat over hem, en dat is het soort lek dat je pas ontdekt als het al
+gelezen is. En bij de zelfbediening wordt niet alleen gekeken of de knoppen
+verdwijnen maar of het verzoek ook geweigerd wordt als iemand het zelf in elkaar
+zet; dat is het verschil tussen een slot en een bordje.
+
 **`faal-site.mjs`** — de factuurpagina krijgt alles uit de adresregel, dus
 iedereen die een link kan maken bepaalt wat erop staat. Script, onzinbedragen,
 en of subtotaal, btw en totaal altijd op elkaar aansluiten.

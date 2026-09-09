@@ -286,6 +286,18 @@
     if (r.wijzigStand) { lijf.appendChild(wijzigStand(r)); }
     if (r.magWijzigen) { lijf.appendChild(wijzigBlok(r)); }
 
+    /* Staan de knoppen uit, zeg dan waarom. Zonder deze regel is er alleen
+       niets, en denkt iemand dat het portaal stuk is in plaats van dat hij
+       even moet bellen. Waaróm ze uitstaan zeggen we hier niet: dat is tussen
+       jullie, en niet iets waar een scherm een oordeel over hoort te geven. */
+    if (r.zelfbedieningUit && r.status !== 'Geannuleerd' && !r.afgeleverd) {
+      var bel = maak('div', 'afgezegd');
+      bel.appendChild(maak('b', '', 'Iets veranderen aan deze zending?'));
+      bel.appendChild(document.createTextNode(
+        'Belt u ons even, dan regelen wij het samen.'));
+      lijf.appendChild(bel);
+    }
+
     if (r.magAnnuleren) {
       lijf.appendChild(annuleerBlok(r));
     } else if (r.status === 'Geannuleerd') {

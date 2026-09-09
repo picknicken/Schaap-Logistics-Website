@@ -347,6 +347,32 @@ schadelijk is het niet, maar het staat slordig.
 Hetzelfde geldt in het klantportaal: daar komt de factuur binnen via
 `zonderBeheer`, en die functie is de enige plek waar dat gebeurt.
 
+### Een lastige klant: drie remmen
+
+Op `Klanten` staan twee velden die je in het portaal bedient, plus de
+portaalcode die je daar nu ook kunt wissen.
+
+| Veld | Wat het doet |
+| --- | --- |
+| `Notitie` | Voor jou. Staat bovenaan de klantkaart, boven de cijfers — wat je wilt lezen vóór je opneemt. **Komt nooit in het klantportaal**, en daar staat een proef op |
+| `Zelfbediening uit` | Aangevinkt kan deze klant niets meer zelf annuleren of wijzigen. Hij ziet zijn ritten en facturen nog gewoon, maar moet bellen |
+| `Portaalcode` | *Toegang intrekken* wist hem. De link die de klant heeft werkt daarna niet meer, ook niet als hij hem had doorgestuurd |
+
+**Zelfbediening uit is een echte rem en niet alleen een knop die verdwijnt.**
+De knoppen gaan weg in het klantportaal, maar de tussenlaag weigert het verzoek
+ook als iemand het zelf in elkaar zet. Dat is het verschil tussen een slot en
+een bordje.
+
+**Toegang intrekken zet ook `Uitnodiging versturen` uit.** Anders zet de
+automatisering in Airtable er bij de eerstvolgende ronde een nieuwe code op en
+staat de deur meteen weer open. Wil je hem later opnieuw binnenlaten, dan geeft
+*Uitnodigen* of *Link delen* hem een nieuwe code — de oude blijft dood.
+
+Bewust géén schakelaar per dienst. Voor een eenmanszaak is een menu vol vinkjes
+iets wat je nooit aanraakt; dit is de ene knop die het geval dekt waar het
+werkelijk om gaat. De echte knop bij een lastige klant blijft: de volgende rit
+niet aannemen.
+
 ### Wijzigverzoeken van klanten
 
 Een klant kan in zijn portaal om een wijziging vragen voor een zending die nog

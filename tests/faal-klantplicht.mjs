@@ -326,7 +326,7 @@ console.log('\nhet ochtendbericht');
 console.log('\n=== het wijzigverzoek ===\n');
 
 const KLANTCODE = 'klantcode-abcdefgh';
-let klanten, ritSleutels;
+let klantExtra = {};
 
 /* Het klantportaal werkt met een betekenisloze sleutel per rit, niet met het
    record-id. Die sleutel komt uit het overzicht, dus die halen we net zo op
@@ -348,17 +348,27 @@ globalThis.fetch = async (url, opties = {}) => {
        anders krijgt de klant een lege lijst en slaagt de proef nergens door. */
     const klantRec = {
       id: 'recKlant000000001',
-      fields: { Klantnaam: 'Janssen BV', Portaalcode: KLANTCODE,
+      fields: Object.assign({ Klantnaam: 'Janssen BV', Portaalcode: KLANTCODE,
                 'Soort klant': 'Vaste klant', Klantnummer: 7,
-                Ritten: Object.keys(ritten).map((id) => ({ id })) }
+                Ritten: Object.keys(ritten).map((id) => ({ id })) }, klantExtra)
     };
     if (/\/tblK\/rec[A-Za-z0-9]{14}$/.test(u.split('?')[0])) {
+      if (m === 'PATCH') {
+        const velden = JSON.parse(opties.body).fields;
+        Object.assign(klantExtra, velden);
+        return new Response(JSON.stringify({ id: klantRec.id,
+          fields: Object.assign({}, klantRec.fields, velden) }), { status: 200 });
+      }
       return new Response(JSON.stringify(klantRec), { status: 200 });
     }
+    /* Zoeken gaat op de code zoals die er NU staat, niet op de code waarmee
+       deze proef begon. Anders blijft een ingetrokken klant gewoon binnenkomen
+       en bewijst de proef het tegenovergestelde van wat ze beweert. */
     const leesbaar = decodeURIComponent(u.replace(/\+/g, ' '));
     const gezocht = (leesbaar.match(/\{Portaalcode\} = '([^']*)'/) || [])[1];
+    const huidig = String(klantRec.fields.Portaalcode || '');
     return new Response(JSON.stringify({
-      records: gezocht === KLANTCODE ? [klantRec] : [] }), { status: 200 });
+      records: huidig && gezocht === huidig ? [klantRec] : [] }), { status: 200 });
   }
   return oudeFetch(url, opties);
 };
@@ -586,6 +596,147 @@ for (const [ritsoort, dringend] of [
     verstuurd.length === 1 &&
     verstuurd[0].urgency === (dringend ? 'high' : 'normal'),
     (verstuurd[0] || {}).urgency);
+}
+
+/* =========================================================================
+   De drie remmen bij een lastige klant: een notitie, de zelfbediening dicht,
+   en de toegang eruit.
+   ========================================================================= */
+console.log('\n=== de lastige klant ===\n');
+console.log('de notitie');
+{
+  zetKlaar();
+  klantExtra = {};
+  const res = await doe({ actie: 'klantnotitie', klantId: 'recKlant000000001',
+    notitie: '  Betaalt altijd te laat. Alleen vooruitbetaling.  ' });
+  const data = await res.json();
+  keur('een notitie opslaan lukt', res.status === 200, res.status);
+  keur('de witruimte eromheen gaat eraf',
+    klantExtra.Notitie === 'Betaalt altijd te laat. Alleen vooruitbetaling.',
+    JSON.stringify(klantExtra.Notitie));
+  keur('en jij krijgt hem terug', /te laat/.test(data.klant.notitie || ''),
+    data.klant.notitie);
+
+  await doe({ actie: 'klantnotitie', klantId: 'recKlant000000001',
+    notitie: 'X'.repeat(5000) });
+  keur('een notitie van vijfduizend tekens wordt afgekapt',
+    klantExtra.Notitie.length === 2000, klantExtra.Notitie.length);
+
+  await doe({ actie: 'klantnotitie', klantId: 'recKlant000000001', notitie: '' });
+  keur('leeg opslaan haalt hem weg', klantExtra.Notitie === '',
+    JSON.stringify(klantExtra.Notitie));
+}
+
+console.log('\nen die notitie blijft binnen');
+{
+  zetKlaar();
+  klantExtra = { Notitie: 'Belt over alles. Niet meer aannemen na 18:00.',
+                 'Zelfbediening uit': false };
+  ritten = { recGeplandGeen001: { id: 'recGeplandGeen001', fields: {
+    Rit: 'RIT-4', Ritdatum: VANDAAG, Status: 'Gepland', Kilometers: 30,
+    Klant: [{ id: 'recKlant000000001' }] } } };
+
+  const res = await klantDoe({ actie: 'klantoverzicht' });
+  const rauw = await res.text();
+  /* Dit is de controle die er werkelijk toe doet. De notitie is wat jij over
+     een klant denkt; die hoort nooit bij hem op het scherm te komen, ook niet
+     verstopt in een veld dat het portaal niet tekent. */
+  keur('de notitie staat NERGENS in wat de klant terugkrijgt',
+    !/Belt over alles/.test(rauw) && !/18:00/.test(rauw),
+    rauw.slice(0, 200));
+  keur('en het woord notitie komt er niet in voor',
+    !/notitie/i.test(rauw), rauw.slice(0, 200));
+}
+
+console.log('\nde zelfbediening dicht');
+{
+  zetKlaar();
+  klantExtra = {};
+  ritten = { recGeplandGeen001: { id: 'recGeplandGeen001', fields: {
+    Rit: 'RIT-4', Ritdatum: VANDAAG, Status: 'Gepland', Kilometers: 30,
+    Klant: [{ id: 'recKlant000000001' }] } } };
+
+  const aan = await sleutelVan('recGeplandGeen001');
+  keur('met de zelfbediening aan mag hij annuleren', aan.rit.magAnnuleren === true);
+  keur('en wijzigen', aan.rit.magWijzigen === true);
+  keur('en er staat geen uitleg over bellen', aan.rit.zelfbedieningUit === false);
+
+  const uit = await doe({ actie: 'klantzelf', klantId: 'recKlant000000001', uit: true });
+  keur('uitzetten lukt', uit.status === 200, uit.status);
+  keur('het staat aangevinkt in de administratie',
+    klantExtra['Zelfbediening uit'] === true, klantExtra['Zelfbediening uit']);
+
+  const dicht = await sleutelVan('recGeplandGeen001');
+  keur('de annuleerknop is weg', dicht.rit.magAnnuleren === false);
+  keur('de wijzigknop ook', dicht.rit.magWijzigen === false);
+  keur('en hij ziet waaróm', dicht.rit.zelfbedieningUit === true);
+  keur('maar hij ziet zijn zending gewoon nog',
+    dicht.rit.ophaal !== undefined && dicht.rit.status === 'Gepland');
+
+  /* De knoppen weghalen is geen rem. Dit is de rem. */
+  const stiekemA = await klantDoe({ actie: 'klantannuleer', rit: aan.rit.sleutel,
+    reden: 'Toch maar niet.' });
+  keur('zelf een annuleerverzoek in elkaar zetten werkt niet',
+    stiekemA.status === 403, stiekemA.status);
+  keur('en de rit staat er onaangeroerd bij',
+    ritten.recGeplandGeen001.fields.Status === 'Gepland',
+    ritten.recGeplandGeen001.fields.Status);
+
+  const stiekemW = await klantDoe({ actie: 'klantwijzig', rit: aan.rit.sleutel,
+    soort: 'Extra stop', tekst: 'Een doos naar Breda.' });
+  keur('en zelf een wijzigverzoek insturen ook niet',
+    stiekemW.status === 403, stiekemW.status);
+  keur('er staat dus ook geen verzoek klaar',
+    ritten.recGeplandGeen001.fields.Wijzigverzoek === undefined,
+    ritten.recGeplandGeen001.fields.Wijzigverzoek);
+
+  const weer = await doe({ actie: 'klantzelf', klantId: 'recKlant000000001', uit: false });
+  keur('weer aanzetten lukt', weer.status === 200, weer.status);
+  const open = await sleutelVan('recGeplandGeen001');
+  keur('en dan mag hij weer', open.rit.magAnnuleren === true &&
+    open.rit.magWijzigen === true);
+
+  const raar = await doe({ actie: 'klantzelf', klantId: 'recKlant000000001', uit: 'ja' });
+  keur('een niet-schakelaar wordt geweigerd', raar.status === 400, raar.status);
+}
+
+console.log('\nde toegang eruit');
+{
+  zetKlaar();
+  klantExtra = {};
+  const res = await doe({ actie: 'toegangweg', klantId: 'recKlant000000001' });
+  keur('intrekken lukt', res.status === 200, res.status);
+  keur('de portaalcode is leeg', klantExtra.Portaalcode === '',
+    JSON.stringify(klantExtra.Portaalcode));
+  /* Zonder dit zou de automatisering in Airtable er bij de volgende ronde een
+     nieuwe code op zetten en stond de deur meteen weer open. */
+  keur('en het vinkje Uitnodiging versturen staat uit',
+    klantExtra['Uitnodiging versturen'] === false,
+    klantExtra['Uitnodiging versturen']);
+
+  const weer = await klantDoe({ actie: 'klantoverzicht' });
+  keur('de oude link komt er niet meer in', weer.status === 401, weer.status);
+
+  const nogeens = await doe({ actie: 'toegangweg', klantId: 'recKlant000000001' });
+  keur('een tweede keer intrekken zegt netjes dat er niets is',
+    nogeens.status === 409, nogeens.status);
+}
+
+console.log('\nen wat een chauffeur hiermee mag');
+{
+  zetKlaar();
+  const alsChauffeur = (lading) => worker.fetch(new Request('https://p.dev/', {
+    method: 'POST',
+    headers: { Origin: 'https://schaaplogistics.nl', 'Content-Type': 'application/json',
+               'X-Portaal-Code': 'chauffeurcode-1234', 'CF-Connecting-IP': '10.0.2.9' },
+    body: JSON.stringify(lading)
+  }), env);
+  for (const actie of ['klantnotitie', 'klantzelf', 'toegangweg']) {
+    const r = await alsChauffeur({ actie, klantId: 'recKlant000000001',
+      notitie: 'x', uit: true });
+    keur('een chauffeur komt niet bij ' + actie, r.status === 401 || r.status === 403,
+      r.status);
+  }
 }
 
 console.log(fouten ? '\n' + fouten + ' fout(en)\n' : '\nalles goed\n');

@@ -2772,9 +2772,138 @@
       });
     });
     rij.appendChild(deel);
-
     vak.appendChild(rij);
+
+    /* De twee remmen. Ze staan onder de gewone knoppen en niet ertussen: dit
+       is niets wat je dagelijks aanraakt, en het hoort niet naast Uitnodigen
+       te staan waar je er per ongeluk op drukt. */
+    var rem = maak('div', 'portaalblok__rem');
+
+    var zelfUit = !!k.geenZelf;
+    if (zelfUit) {
+      rem.appendChild(maak('p', 'portaalblok__waarschuwing',
+        'Zelfbediening staat uit. Deze klant ziet zijn ritten en facturen nog, ' +
+        'maar kan niets zelf annuleren of wijzigen — hij moet bellen.'));
+    }
+    var zelf = maak('button', 'knop knop--rand',
+      zelfUit ? 'Zelfbediening weer aanzetten' : 'Zelfbediening uitzetten');
+    zelf.type = 'button';
+    zelf.addEventListener('click', function () {
+      bezig(zelf, 'Bezig…', function (klaar) {
+        verstuur('klantzelf', { klantId: k.id, uit: !zelfUit })
+          .then(function (data) { meldApp(''); vervangKlant(data.klant); })
+          .catch(function (fout) { meldApp(fout.message); klaar(false); });
+      });
+    });
+    rem.appendChild(zelf);
+
+    /* Toegang intrekken kan alleen als er toegang ís, en vraagt om een tweede
+       druk. De code is daarna weg: de link die deze klant heeft werkt niet
+       meer, ook niet als hij hem had doorgestuurd. Opnieuw uitnodigen geeft
+       hem een nieuwe code; de oude blijft dood. */
+    if (k.heeftToegang) {
+      var weg = maak('button', 'knop knop--rand', 'Toegang intrekken');
+      weg.type = 'button';
+      var zeker = false;
+      weg.addEventListener('click', function () {
+        if (!zeker) {
+          zeker = true;
+          weg.textContent = 'Zeker weten? Nog een keer drukken';
+          setTimeout(function () {
+            if (zeker) { zeker = false; weg.textContent = 'Toegang intrekken'; }
+          }, 5000);
+          return;
+        }
+        zeker = false;
+        bezig(weg, 'Intrekken…', function (klaar) {
+          verstuur('toegangweg', { klantId: k.id })
+            .then(function (data) {
+              meldApp('De link van deze klant werkt niet meer.');
+              vervangKlant(data.klant);
+            })
+            .catch(function (fout) { meldApp(fout.message); klaar(false); });
+        });
+      });
+      rem.appendChild(weg);
+    } else {
+      rem.appendChild(maak('p', 'portaalblok__uit',
+        'Deze klant heeft nu geen portaaltoegang. Uitnodigen of Link delen ' +
+        'geeft hem een nieuwe code.'));
+    }
+
+    vak.appendChild(rem);
     return vak;
+  }
+
+  /* De notitie bij een klant: aanklikken om te schrijven, leeg laten om hem
+     weg te halen. Staat er niets, dan is het een klein regeltje dat niet in de
+     weg zit; staat er wel iets, dan valt het op. */
+  function notitieBlok(k) {
+    var vak = maak('div', 'notitie');
+    var tekst = String(k.notitie || '');
+    var toon = maak('button', 'notitie__toon',
+      tekst || 'Notitie toevoegen…');
+    toon.type = 'button';
+    if (tekst) { vak.setAttribute('data-vol', ''); }
+
+    var bewerk = maak('div', 'notitie__bewerk');
+    bewerk.hidden = true;
+    var veld = document.createElement('textarea');
+    veld.rows = 3;
+    veld.maxLength = 2000;
+    veld.value = tekst;
+    veld.placeholder = 'Betaalt altijd te laat. Alleen vooruitbetaling.';
+    veld.setAttribute('aria-label', 'Notitie bij ' + (k.naam || 'deze klant'));
+    bewerk.appendChild(veld);
+
+    var rij = maak('div', 'knoppen knoppen--twee');
+    var op = maak('button', 'knop', 'Opslaan');
+    op.type = 'button';
+    var af = maak('button', 'knop knop--rand', 'Annuleren');
+    af.type = 'button';
+    rij.appendChild(op);
+    rij.appendChild(af);
+    bewerk.appendChild(rij);
+
+    toon.addEventListener('click', function () {
+      toon.hidden = true;
+      bewerk.hidden = false;
+      veld.focus();
+    });
+    af.addEventListener('click', function () {
+      veld.value = tekst;
+      bewerk.hidden = true;
+      toon.hidden = false;
+    });
+    op.addEventListener('click', function () {
+      op.disabled = true;
+      af.disabled = true;
+      op.textContent = 'Bezig…';
+      meldApp('');
+      verstuur('klantnotitie', { klantId: k.id, notitie: veld.value })
+        .then(function (data) { vervangKlant(data.klant); })
+        .catch(function (fout) {
+          meldApp(fout.message);
+          op.disabled = false;
+          af.disabled = false;
+          op.textContent = 'Opslaan';
+        });
+    });
+
+    vak.appendChild(toon);
+    vak.appendChild(bewerk);
+    return vak;
+  }
+
+  /* Een klant die net is bijgewerkt terugzetten in de lijst en opnieuw tekenen.
+     Zo blijft het scherm gelijk aan de administratie zonder alles opnieuw op
+     te halen. */
+  function vervangKlant(nieuw) {
+    if (!nieuw || !nieuw.id) { return; }
+    for (var i = 0; i < klanten.length; i++) {
+      if (klanten[i].id === nieuw.id) { klanten[i] = nieuw; break; }
+    }
+    tekenKlanten();
   }
 
   function tekenKlantkaart(k) {
@@ -2795,6 +2924,11 @@
     if (k.soort === 'Vaste klant') { soort.setAttribute('data-vast', ''); }
     kop.appendChild(soort);
     kaart.appendChild(kop);
+
+    /* De notitie staat bovenaan, boven de cijfers en boven het openstaande
+       bedrag. Dit is wat je wilt lezen voordat je opneemt, niet iets wat je
+       onderaan een kaart terugvindt nadat het gesprek al loopt. */
+    kaart.appendChild(notitieBlok(k));
 
     /* Het enige cijfer waar je meteen iets mee moet. */
     if (Number(k.openstaand) > 0) {

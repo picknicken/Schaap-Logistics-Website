@@ -343,6 +343,30 @@ meteen binnen, met SPOED in de titel als het spoed is.
 niet: die ritten maak je zelf aan, en je telefoon laten piepen om je te vertellen
 wat je net zelf hebt getikt is ruis.
 
+### Als een klant lastig wordt
+
+Drie dingen op de klantkaart in je portaal:
+
+**Een notitie**, bovenaan, boven de cijfers. *"Betaalt altijd te laat."*
+*"Alleen vooruitbetaling."* *"Belt over alles."* Dat is wat je wilt lezen
+voordat je opneemt. Die notitie is van jou: hij komt nooit in het klantportaal
+terecht, en daar staat een proef op die het hele antwoord aan de klant afzoekt
+op jouw tekst.
+
+**Zelfbediening uitzetten.** Eén knop. Die klant ziet zijn ritten en facturen
+nog gewoon, maar kan niets meer zelf annuleren of wijzigen — hij moet bellen. In
+zijn portaal staat waarom de knoppen weg zijn, niet dat hij lastig is. En het is
+een echte rem: ook wie het verzoek zelf in elkaar zet komt er niet doorheen.
+
+**Toegang intrekken.** Wist zijn portaalcode. De link die hij heeft werkt
+daarna niet meer, ook niet als hij hem had doorgestuurd. Vraagt om twee keer
+drukken, want dit is niet terug te draaien: opnieuw uitnodigen geeft hem een
+nieuwe code en de oude blijft dood.
+
+Wat er met opzet niet is: een schakelaar per dienst. Een menu vol vinkjes raak
+je nooit aan, en de echte knop bij een lastige klant is de volgende rit niet
+aannemen. Dat is een telefoontje, geen instelling.
+
 ### Wijzigverzoeken: de klant vraagt, jij beslist
 
 Een klant kan in zijn portaal om een wijziging vragen voor een zending die nog

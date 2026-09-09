@@ -233,6 +233,11 @@ const K = {
   uitgenodigd:'Uitnodiging verstuurd op',
   soort:     'Soort klant',
   ritten:    'Aantal ritten',
+  /* Voor jou en nooit voor de klant. naarKlant geeft ze terug aan het
+     eigenaarsportaal; het klantportaal krijgt alleen naam en nummer, en dat
+     staat hardgecodeerd in klantVerzoek. */
+  notitie:   'Notitie',
+  geenZelf:  'Zelfbediening uit',
   /* Wat het opzoeken van een klant pas de moeite waard maakt: wat hij nog
      openstaan heeft, wanneer je hem voor het laatst reed, en wat hij oplevert. */
   openstaand:'Openstaand totaal',
@@ -550,6 +555,9 @@ async function schakel(env, body, origin, wie) {
     case 'nieuweklant':  return await nieuweKlant(env, body, origin);
     case 'uitnodiging':  return await stuurUitnodiging(env, body, origin);
     case 'klantsoort':   return await zetKlantsoort(env, body, origin);
+    case 'klantnotitie': return await zetKlantnotitie(env, body, origin);
+    case 'klantzelf':    return await zetZelfbediening(env, body, origin);
+    case 'toegangweg':   return await trekToegangIn(env, body, origin);
     case 'facturen':     return await haalFacturen(env, body, origin);
     case 'portaallink':  return await haalPortaallink(env, body, origin);
     case 'leesbericht':  return await leesBericht(env, body, origin);
@@ -1445,6 +1453,63 @@ async function zetKlantsoort(env, body, origin) {
   return antwoord(200, { ok: true, klant }, origin, true);
 }
 
+/* Een notitie bij een klant. Voor jou: wat je wilt weten voordat je opneemt.
+   Leegmaken mag — dat is hoe je hem weghaalt. */
+async function zetKlantnotitie(env, body, origin) {
+  const id = recordId(body.klantId);
+  if (!id) { return antwoord(400, { fout: 'Ongeldig klant-id' }, origin, true); }
+  const tekst = String(body.notitie === undefined ? '' : body.notitie).slice(0, 2000);
+  const klant = naarKlant(
+    await patch(env, env.AIRTABLE_KLANTEN, id, { [K.notitie]: tekst.trim() }));
+  return antwoord(200, { ok: true, klant }, origin, true);
+}
+
+/* De zelfbediening van één klant dicht of open. Dicht betekent: hij ziet zijn
+   ritten en facturen nog gewoon, maar kan niets meer zelf annuleren of
+   wijzigen. Voor de klant die de knoppen gebruikt als onderhandeling.
+
+   Bewust geen schakelaar per dienst. Voor een eenmanszaak is een menu vol
+   vinkjes iets wat je nooit aanraakt; dit is de ene knop die het geval dekt
+   waar het werkelijk om gaat. */
+async function zetZelfbediening(env, body, origin) {
+  const id = recordId(body.klantId);
+  if (!id) { return antwoord(400, { fout: 'Ongeldig klant-id' }, origin, true); }
+  if (typeof body.uit !== 'boolean') {
+    return antwoord(400, { fout: 'Geef aan of de zelfbediening uit moet' }, origin, true);
+  }
+  const klant = naarKlant(
+    await patch(env, env.AIRTABLE_KLANTEN, id, { [K.geenZelf]: body.uit }));
+  return antwoord(200, { ok: true, klant }, origin, true);
+}
+
+/* De portaalcode wissen. Vanaf dat moment werkt de link die deze klant heeft
+   niet meer, en dat geldt meteen: schoneCode weigert een lege code, dus er
+   valt niets meer mee binnen te komen.
+
+   Dit is onomkeerbaar in die zin dat de oude code weg is. Nodig je hem later
+   opnieuw uit, dan krijgt hij een nieuwe — de oude link blijft dood. Dat is
+   precies wat je wilt als een code is rondgestuurd. */
+async function trekToegangIn(env, body, origin) {
+  const id = recordId(body.klantId);
+  if (!id) { return antwoord(400, { fout: 'Ongeldig klant-id' }, origin, true); }
+
+  const bestaand = await airtable(env, `${env.AIRTABLE_KLANTEN}/${id}`);
+  if (!String((bestaand.fields || {})[K.code] || '').trim()) {
+    return antwoord(409, {
+      fout: 'Deze klant heeft geen portaaltoegang om in te trekken.'
+    }, origin, true);
+  }
+
+  /* Ook het vinkje 'Uitnodiging versturen' eraf: anders zet de automatisering
+     in Airtable er bij de eerstvolgende ronde een nieuwe code op en staat de
+     deur meteen weer open. */
+  const klant = naarKlant(await patch(env, env.AIRTABLE_KLANTEN, id, {
+    [K.code]: '',
+    [K.uitnodigen]: false
+  }));
+  return antwoord(200, { ok: true, klant }, origin, true);
+}
+
 /* De werkelijk gereden kilometers. De schatting van de website komt van
    postcode naar postcode maal een wegfactor; wat er op de teller staat is iets
    anders, en dat is wat op de factuur hoort. */
@@ -2325,6 +2390,12 @@ const KLANT_ACTIES = ['klantoverzicht', 'klantannuleer', 'klantwijzig'];
 const WIJZIGSOORTEN = ['Extra stop', 'Ander afleveradres',
                        'Andere datum of tijd', 'Iets anders'];
 
+/* Wat een klant te zien krijgt als zijn zelfbediening uitstaat. Geen uitleg
+   waarom — dat is tussen jou en hem, en niet iets waar een scherm een oordeel
+   over hoort te vellen. */
+const ZELF_UIT = 'Voor wijzigingen aan deze zending kunt u ons het beste even ' +
+                 'bellen, dan regelen wij het samen.';
+
 async function klantPoort(env, code, body, origin) {
   const schoon = schoneCode(code);
   if (!schoon || !KLANT_ACTIES.includes(body.actie)) {
@@ -2356,7 +2427,7 @@ async function klantPoort(env, code, body, origin) {
   const magFotos = klant.soort === 'Vaste klant';
 
   const [ritten, facturen] = await Promise.all([
-    klantRitten(env, klant.id, magFotos),
+    klantRitten(env, klant.id, magFotos, !klant.geenZelf),
     klantFacturen(env, klant.id)
   ]);
 
@@ -2383,6 +2454,8 @@ async function klantAnnuleert(env, klant, body) {
   const ids = await klantRitIds(env, klant.id);
   const id = ids.find((r) => ritSleutel(r) === sleutel);
   if (!id) { return { code: 404, fout: 'Onbekende zending' }; }
+
+  if (klant.geenZelf) { return { code: 403, fout: ZELF_UIT }; }
 
   const rit = await airtable(env, `${env.AIRTABLE_RITTEN}/${id}`);
   const status = keuze((rit.fields || {})[R.status]) || 'Gepland';
@@ -2419,6 +2492,8 @@ async function klantAnnuleert(env, klant, body) {
 async function klantWijzigt(env, klant, body) {
   const sleutel = String(body.rit || '');
   if (!/^[a-f0-9]{16}$/.test(sleutel)) { return { code: 400, fout: 'Onbekende zending' }; }
+
+  if (klant.geenZelf) { return { code: 403, fout: ZELF_UIT }; }
 
   const soort = WIJZIGSOORTEN.includes(body.soort) ? body.soort : 'Iets anders';
   const tekst = String(body.tekst || '').trim().slice(0, 1000);
@@ -2503,9 +2578,9 @@ async function klantLinkIds(env, klantId, koppelveld) {
     .filter((id) => /^rec[A-Za-z0-9]{14}$/.test(String(id)));
 }
 
-function klantRitten(env, klantId, magFotos) {
+function klantRitten(env, klantId, magFotos, magZelf) {
   return klantRecords(env, klantId, 'Ritten', env.AIRTABLE_RITTEN,
-                      (record) => naarKlantRit(record, magFotos));
+                      (record) => naarKlantRit(record, magFotos, magZelf));
 }
 
 function klantRitIds(env, klantId) {
@@ -2542,20 +2617,28 @@ function inBrokken(lijst, maat) {
 /* Precies dit, en niets meer. Brandstof, tol, overige ritkosten, totale
    ritkosten, winst en winst per km staan er bewust niet bij: dat is jouw
    bedrijfsvoering en niet die van je klant. */
-function naarKlantRit(record, magFotos) {
+function naarKlantRit(record, magFotos, magZelf) {
   const f = record.fields || {};
   const status = keuze(f[R.status]) || 'Gepland';
+  /* Staat de zelfbediening van deze klant uit, dan verdwijnen de knoppen hier
+     al. Dat is niet de rem — die zit in klantAnnuleert en klantWijzigt, en
+     die weigert ook als iemand het verzoek zelf in elkaar zet. Dit voorkomt
+     alleen dat er een knop staat die niets doet. */
+  const zelf = magZelf !== false;
   return {
     /* Geen record-id, maar de betekenisloze sleutel. Genoeg om er een knop
        aan te hangen, te weinig om iets mee te doen. */
     sleutel:    ritSleutel(record.id),
-    magAnnuleren: status === 'Gepland',
+    magAnnuleren: zelf && status === 'Gepland',
     geannuleerdOp: f[R.annulOp] || '',
+    /* Waarom de knoppen weg zijn. Zonder dit staat er alleen niets, en denkt
+       een klant dat het portaal stuk is in plaats van dat hij moet bellen. */
+    zelfbedieningUit: !zelf,
     /* Zijn eigen wijzigverzoek en wat wij ermee gedaan hebben. Dit is zijn
        eigen tekst, dus die mag hij terugzien — en de stand erbij, zodat hij
        niet hoeft te bellen om te vragen of we het gezien hebben. Vragen mag
        alleen zolang de rit nog gepland staat en er niet al een verzoek ligt. */
-    magWijzigen: status === 'Gepland' && keuze(f[R.wijzigStat]) !== 'Open',
+    magWijzigen: zelf && status === 'Gepland' && keuze(f[R.wijzigStat]) !== 'Open',
     wijzigverzoek: f[R.wijzig] || '',
     wijzigSoort: keuze(f[R.wijzigSoort]) || '',
     wijzigStand: keuze(f[R.wijzigStat]) || '',
@@ -2929,6 +3012,14 @@ function naarKlant(record) {
     nummer:   f[K.nummer] || '',
     soort:    keuze(f[K.soort]) || 'Eenmalig',
     ritten:   f[K.ritten] || 0,
+    /* Alleen voor jou. Het klantportaal krijgt uit klantVerzoek enkel naam en
+       nummer terug, dus deze twee komen daar niet langs. */
+    notitie:  f[K.notitie] || '',
+    geenZelf: !!f[K.geenZelf],
+    /* Of deze klant werkelijk naar binnen kan. De code zelf blijft hier weg —
+       die hoeft de telefoon niet te weten — maar of hij er is wel, anders kun
+       je niet zien of intrekken al gebeurd is. */
+    heeftToegang: !!String(f[K.code] || '').trim(),
     laatste:  f[K.laatste] ? String(f[K.laatste]).slice(0, 10) : '',
     /* Geld. Alleen de eigenaar krijgt dit te zien; zonderBedragen haalt het
        er voor iedereen anders weer uit. */
