@@ -1,6 +1,6 @@
 # Faaltests
 
-Deze zes bestanden testen niet of iets werkt. Ze proberen het stuk te krijgen.
+Deze zeven bestanden testen niet of iets werkt. Ze proberen het stuk te krijgen.
 
 Dat is een ander soort proef dan de gewone tests, en hij hoort er apart te
 staan. Een gewone test vraagt: doet de knop wat de knop moet doen. Deze vragen:
@@ -21,6 +21,7 @@ cd tests
 node faal-aanvragen.mjs      # het openbare aanvraagadres
 node faal-portaal.mjs        # het portaal: rollen, grenzen, lekken
 node faal-zelfde-som.mjs     # rekent de prijs op de server na tegen de browser
+node faal-zelfde-som-airtable.mjs   # en tegen de formule in Airtable
 ```
 
 `faal-portaal.mjs` laadt de portaal-Worker, en die importeert de Anthropic-SDK
@@ -45,7 +46,7 @@ adres, dan `SITE_ADRES=http://127.0.0.1:8080`.
 Elk bestand eindigt met `alles goed` of met het aantal fouten, en geeft een
 foutcode terug als er iets misgaat.
 
-Ze draaien ook vanzelf: `.github/workflows/faaltests.yml` voert ze alle zes uit
+Ze draaien ook vanzelf: `.github/workflows/faaltests.yml` voert ze alle zeven uit
 bij elke push naar `main` en bij elke pull request. Die workflow staat los van
 `worker-uitrollen.yml` omdat die laatste alleen mag afgaan als er werkelijk
 iets aan een Worker verandert, en `on:` in GitHub Actions per workflow geldt
@@ -63,6 +64,27 @@ toont hem, `worker/aanvragen.js` bewaart hem. Deze proef rekent ruim
 zestienhonderd combinaties van dienst, tijdvak, stops en postcodes aan beide
 kanten na. Wijkt er één cent af, dan valt hij om. Draai hem altijd als je een
 tarief wijzigt.
+
+**`faal-zelfde-som-airtable.mjs`** — dezelfde vraag, maar voor de derde kopie:
+de formule `Automatisch totaal excl. BTW` op de tabel Ritten, die bepaalt wat er
+werkelijk gefactureerd wordt. Dat is de gevaarlijkste van de drie — belooft de
+site €287 en factureert Airtable €310, dan merkt de klant het en jij niet.
+
+Hij draait in twee lagen. Zonder sleutel toetst hij een transcriptie van de
+formule, die hier in het bestand staat, over ruim duizend combinaties tegen
+`bereken()` uit site.js. Dat betrapt een tarief dat je op de site wijzigt en in
+Airtable vergeet. Wat die laag per definitie niet kan zien is dat iemand de
+formule in Airtable zélf heeft aangepast — dan verandert de transcriptie immers
+niet mee. Daarvoor is de tweede laag:
+
+```sh
+AIRTABLE_TOKEN=pat... node faal-zelfde-som-airtable.mjs
+```
+
+Dan haalt hij de werkelijke formule uit de base en controleert of de bedragen
+die site.js noemt er letterlijk in staan. Draai dat na elke tariefwijziging. De
+sleutel hoort in je terminal en nergens anders — niet in dit bestand, niet in de
+workflow, niet in een appje.
 
 **`faal-portaal.mjs`** — drie soorten bezoekers en de vraag wat elk van de drie
 te zien of te doen krijgt dat niet voor hem is. Formule-injectie in de codes,

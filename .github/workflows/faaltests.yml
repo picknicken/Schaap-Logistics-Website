@@ -56,6 +56,15 @@ jobs:
         working-directory: tests
         run: node faal-zelfde-som.mjs
 
+      # Deze legt site.js naast de prijsformule in Airtable. Zonder sleutel
+      # toetst hij tegen een transcriptie van die formule — genoeg om een
+      # tariefwijziging in site.js te betrappen. Dat iemand de formule in
+      # Airtable zelf aanpast ziet hij niet; daar is de tokenlaag voor, en die
+      # draai je met de hand. Zie tests/LEESMIJ.md.
+      - name: Dezelfde prijs in Airtable als op de site
+        working-directory: tests
+        run: node faal-zelfde-som-airtable.mjs
+
       # De twee proeven met een browser. Playwright wordt hier geïnstalleerd
       # en niet in het project: de site zelf heeft geen enkele afhankelijkheid
       # en dat blijft zo. --no-save zorgt dat er geen package.json ontstaat.

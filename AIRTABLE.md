@@ -208,6 +208,14 @@ als tekst op `/tarieven/`, en in de formule `Automatisch totaal excl. BTW` in de
 tabel `Ritten` (waar je facturen op gebaseerd worden). Wijzig je een tarief, pas
 het dan op alle drie aan — anders factureer je iets anders dan je op je site belooft.
 
+Twee proeven bewaken dat. `tests/faal-zelfde-som.mjs` legt `site.js` naast de
+Worker; `tests/faal-zelfde-som-airtable.mjs` legt `site.js` naast de formule
+hierboven. Die tweede draait standaard tegen een transcriptie van de formule, en
+met `AIRTABLE_TOKEN=pat... node faal-zelfde-som-airtable.mjs` tegen de formule
+zoals hij op dat moment werkelijk in de base staat. Doe dat laatste na elke
+tariefwijziging: het is het enige dat merkt dat de formule in Airtable zelf is
+aangepast.
+
 De tabel `Tarieven` is een naslagoverzicht, geen bron: daar iets wijzigen verandert
 niets aan je facturen. Er hoort precies één regel per dienst in te staan, ook voor
 internationaal transport.
@@ -451,7 +459,24 @@ dan gaat die afspraak voor op het standaardtarief.
 
 Gecontroleerd tegen de rekenvoorbeelden op `/tarieven/`: 10, 25, 50 en 300 km voor
 alle drie de binnenlandse diensten komen op de cent overeen. Een test op de site
-rekent die tabel en de vanaf-prijzen na met de calculator zelf.
+rekent die tabel en de vanaf-prijzen na met de calculator zelf, en
+`tests/faal-zelfde-som-airtable.mjs` rekent ruim duizend combinaties van dienst,
+tijdvak, stops en kilometers na tegen deze formule.
+
+**Twee plekken waar de formule bewust van de website afwijkt.** "Volgt de website
+exact" klopt voor elke rit die je werkelijk rijdt, maar niet aan de randen, en dat
+is geen slordigheid:
+
+- **Geen kilometers, geen bedrag.** Staat `Kilometers` leeg of op nul, dan blijft
+  `Automatisch totaal excl. BTW` leeg — de website zou €75 tonen. Dat is met opzet:
+  een half ingevulde rit hoort geen prijs te verzinnen. Vul je dan zelf
+  `Totaal excl. BTW` in, dan rekenen de btw en het totaal inclusief daarmee door.
+  Laat je allebei leeg, dan staat er €0,00 inclusief; dat is geen berekening maar
+  een lege rit.
+- **Het aantal stops is hier niet begrensd.** De website en de aanvraag-Worker
+  kappen bij twintig stops af, want dat is een openbaar formulier waar iedereen
+  een getal in kan tikken. De tabel `Ritten` vul je zelf, dus daar telt gewoon wat
+  je invult. Tik je per ongeluk 200, dan rekent hij €5.000 aan stoptoeslag.
 
 ### Betalingsbewaking
 
