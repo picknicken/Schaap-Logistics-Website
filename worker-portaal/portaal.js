@@ -2218,6 +2218,11 @@ function naarKlantRit(record, magFotos) {
     ophaal:     f[R.ophaal] || '',
     aflever:    f[R.aflever] || '',
     km:         f[R.km] || 0,
+    /* Het afgesproken ophaaltijdstip. Dat staat al in de bevestigingsmail die
+       hij kreeg, dus het is niets nieuws — maar hier kan het portaal er een
+       verwachte aankomst uit rekenen, en dat scheelt het telefoontje "hoe laat
+       is hij er ongeveer". */
+    tijd:       f[R.tijd] || '',
     bedrag:     f[R.totaal] || 0,
     getekend:   f[R.getekendD] || '',
     getekendOp: f[R.getekendO] || '',

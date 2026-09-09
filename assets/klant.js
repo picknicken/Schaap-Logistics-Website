@@ -225,6 +225,11 @@
     ]);
     if (dl) { lijf.appendChild(dl); }
 
+    /* Hoe laat het er ongeveer is. Dat is de vraag waarvoor gebeld wordt, en
+       het antwoord staat hier zonder dat er iemand aan de telefoon hoeft. */
+    var verwacht = verwachtBlok(r);
+    if (verwacht) { lijf.appendChild(verwacht); }
+
     /* De weg die de zending heeft afgelegd. Dit stond eerder in losse mailtjes;
        nu staat het hier, waar het blijft staan en waar je het kunt terugkijken
        zonder je postvak door te zoeken. Alleen wat er echt is gebeurd krijgt
@@ -352,6 +357,84 @@
 
      Twee stappen: eerst een knop, dan pas het echte afzeggen. Eén verkeerde tik
      op een telefoon mag geen zending afzeggen. */
+  /* ------------------------------------------------ hoe laat is het er
+
+     De vraag waarvoor gebeld wordt. Het antwoord is een schatting en wordt ook
+     als schatting opgeschreven: een tijdvak van drie kwartier, geen tijdstip
+     op de minuut. Een minuut die op het scherm staat is een belofte, en een
+     eenmansbedrijf dat in de file staat kan die niet nakomen — dan is een
+     scherm dat zweeg beter geweest dan een scherm dat zich vergiste.
+
+     Twee gevallen. Staat de zending nog gepland, dan rekenen we vanaf het
+     afgesproken ophaaltijdstip en is de marge ruim. Is de chauffeur vertrokken,
+     dan rekenen we vanaf dat moment en kan de marge krapper: dan is de helft
+     van de onzekerheid — of hij op tijd wegkomt — al voorbij.
+
+     Wat er niet in zit: druk verkeer, een wegafsluiting, en een klant die bij
+     het laden nog even een tweede pallet klaarzet. Dat staat er ook onder. */
+  var VAST_MIN = 20;      /* laden, lossen, en de stad in en uit */
+  var SNELHEID = 75;      /* gemiddeld over de hele rit, niet op de snelweg */
+
+  function rijminuten(km) {
+    return VAST_MIN + Math.round((Number(km) || 0) / SNELHEID * 60);
+  }
+
+  /* Naar beneden op het kwartier, zodat er nooit een tijd staat als 10:07 —
+     dat leest als een toezegging. */
+  function opKwartier(d, omhoog) {
+    var m = d.getMinutes();
+    var uit = new Date(d.getTime());
+    uit.setSeconds(0, 0);
+    uit.setMinutes(omhoog ? Math.ceil(m / 15) * 15 : Math.floor(m / 15) * 15);
+    return uit;
+  }
+
+  function uurMinuut(d) {
+    return d.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  /* Het vertrekmoment waar we vanaf rekenen, of null als we het niet weten.
+     Zonder ophaaltijd geen schatting: een tijdvak dat op niets berust is
+     erger dan geen tijdvak. */
+  function vertrekVan(r) {
+    if (r.onderwegOp) { return { moment: new Date(r.onderwegOp), onderweg: true }; }
+    if (!r.datum || !/^\d{1,2}:\d{2}$/.test(String(r.tijd || ''))) { return null; }
+    var d = new Date(r.datum.slice(0, 10) + 'T' + ('0' + r.tijd).slice(-5) + ':00');
+    if (isNaN(d.getTime())) { return null; }
+    return { moment: d, onderweg: false };
+  }
+
+  function verwachtBlok(r) {
+    if (r.status === 'Geannuleerd' || r.afgeleverd || r.getekend) { return null; }
+    if (!r.km) { return null; }
+    var van = vertrekVan(r);
+    if (!van) { return null; }
+
+    var rij = rijminuten(r.km);
+    var vroeg = new Date(van.moment.getTime() + rij * 60000);
+    /* Onderweg is de helft van de onzekerheid voorbij, dus mag het venster
+       krapper. Gepland telt ook het risico mee dat het laden uitloopt. */
+    var laat = new Date(vroeg.getTime() + (van.onderweg ? 20 : 45) * 60000);
+
+    /* Is het venster al voorbij, dan hoort er niets te staan. Een zending van
+       vorige week die nog op gepland staat, of een rit die op Onderweg is
+       blijven hangen: dan is er iets anders aan de hand, en een tijdvak dat
+       vanmorgen al verstreken was is geen antwoord maar ruis. Wat er dan wél
+       staat is de tijdlijn eronder, met wanneer wij vertrokken. */
+    if (laat.getTime() < Date.now()) { return null; }
+
+    var vak = maak('div', 'verwacht');
+    vak.appendChild(maak('b', '', 'Verwacht bij u tussen ' +
+      uurMinuut(opKwartier(vroeg, false)) + ' en ' +
+      uurMinuut(opKwartier(laat, true))));
+    vak.appendChild(maak('span', '', van.onderweg
+      ? 'Geschat vanaf het moment dat wij vertrokken, op ' + Math.round(r.km) +
+        ' km. Druk verkeer telt niet mee.'
+      : 'Geschat op de afgesproken ophaaltijd en ' + Math.round(r.km) +
+        ' km. Druk verkeer en wachten bij het laden tellen niet mee.'));
+    return vak;
+  }
+
   function tijdlijn(r) {
     var af = r.afgeleverd || r.getekend;
     var weg = !!r.onderwegOp || af;

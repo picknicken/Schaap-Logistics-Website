@@ -727,6 +727,34 @@ aflevering alleen voor een vaste klant; zie verderop. Dat laatste zit
 structureel dicht: het portaal vraagt niet "geef alle ritten en filter" maar
 "geef de ritten die aan deze klant hangen".
 
+**Hoe laat het er ongeveer is.** Bij een zending die nog moet komen staat een
+tijdvak: *Verwacht bij u tussen 10:30 en 11:00*. Dat is de vraag waarvoor
+gebeld wordt, en nu hoeft daar niemand voor aan de lijn.
+
+Het is een schatting en het staat er ook zo bij: twintig minuten voor laden,
+lossen en de stad in en uit, plus de kilometers bij gemiddeld 75 km/u. Onder
+het tijdvak staat waar het op berust en wat er níét in zit — druk verkeer, en
+bij een geplande rit ook het wachten bij het laden.
+
+Drie keuzes die er niet toevallig in zitten:
+
+- **Een tijdvak, geen tijdstip.** Alles wordt op het kwartier afgerond. "10:37"
+  leest als een toezegging, en die kan een eenmansbedrijf in de file niet
+  nakomen; dan was zwijgen beter geweest dan je vergissen.
+- **Een krappere marge zodra je onderweg bent** (twintig minuten in plaats van
+  drie kwartier). Dan is de helft van de onzekerheid — of je op tijd wegkomt —
+  al voorbij.
+- **Niets als het tijdvak voorbij is,** en niets zonder afgesproken ophaaltijd
+  of zonder kilometers. Een zending van vorige week die nog op *Gepland* staat,
+  of een rit die op *Onderweg* is blijven hangen, krijgt geen tijd: dan is er
+  iets anders aan de hand en is een verstreken tijdvak ruis. De tijdlijn eronder
+  blijft wel staan, met wanneer wij vertrokken.
+
+Voor deze berekening stuurt de Worker het afgesproken ophaaltijdstip mee. Dat
+stond al in de bevestigingsmail die de klant kreeg, dus het is niets nieuws.
+De som staat in `verwachtBlok()` in `assets/klant.js`; `VAST_MIN` en `SNELHEID`
+staan er bovenaan als je ze wilt bijstellen.
+
 **Foto's bij de aflevering — alleen voor vaste klanten.** Heb je bij een rit
 foto's gemaakt, dan kan een vaste klant die terugkijken: onder zijn afgeleverde
 zending zit een dichtgeklapt vak *Foto's bij de aflevering* met het aantal

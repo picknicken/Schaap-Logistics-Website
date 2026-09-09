@@ -192,6 +192,18 @@ input{font:inherit}
 .tijdlijn__stap--klaar b{color:var(--heading)}
 .tijdlijn__wanneer{display:block;font-size:.82rem;color:var(--muted);margin-top:1px}
 
+/* Hoe laat het er ongeveer is. Blauw en niet groen: groen is hier de kleur van
+   iets wat af is, en dit is een verwachting. De regel eronder staat er niet
+   voor de vorm — een tijdvak zonder voorbehoud leest als een toezegging. */
+.verwacht{
+  background:var(--onderweg-vlak);border:1px solid #b9d4f2;border-radius:10px;
+  padding:11px 14px;
+}
+.verwacht b{display:block;font-size:.95rem;color:#0a4d94;line-height:1.35}
+.verwacht span{
+  display:block;font-size:.79rem;color:#4a6c92;margin-top:3px;line-height:1.45;
+}
+
 .bewijs{
   display:flex;gap:10px;align-items:flex-start;
   background:var(--ok-vlak);border:1px solid var(--ok);border-radius:10px;
