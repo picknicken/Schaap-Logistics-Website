@@ -23,6 +23,10 @@ node faal-portaal.mjs        # het portaal: rollen, grenzen, lekken
 node faal-zelfde-som.mjs     # rekent de prijs op de server na tegen de browser
 ```
 
+`faal-portaal.mjs` laadt de portaal-Worker, en die importeert de Anthropic-SDK
+voor het lezen van een appje. Staat `worker-portaal/node_modules` er nog niet,
+draai dan eerst eenmalig `npm install` in die map.
+
 Twee met een browser. Zet eerst de site op een adres neer — een gewone
 bestandsserver is genoeg, deze proeven zetten de tussenlaag zelf klaar:
 

@@ -38,6 +38,14 @@ jobs:
         working-directory: tests
         run: node faal-aanvragen.mjs
 
+      # De portaal-Worker importeert de Anthropic-SDK, voor het lezen van een
+      # appje van een klant. Op een schone checkout staat die er niet, en dan
+      # kan de proef de Worker niet eens laden. Dezelfde stap staat in
+      # worker-uitrollen.yml, om dezelfde reden.
+      - name: Afhankelijkheid van het chauffeursportaal
+        working-directory: worker-portaal
+        run: npm install --no-audit --no-fund
+
       - name: Het portaal, rollen en grenzen
         working-directory: tests
         run: node faal-portaal.mjs
