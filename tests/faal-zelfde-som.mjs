@@ -144,5 +144,58 @@ keur('het minimumtarief is aan beide kanten 75',
   SL.CONFIG.minimum === 75 && server5['Prijsindicatie excl btw'] >= 75, uitSite);
 keur('de stoptoeslag is aan beide kanten 25', SL.CONFIG.stoptoeslag === 25);
 
+/* ---------------------------------------------------------------------------
+   De marge op de kilometers.
+
+   De regel staat op drie plekken in mensentaal — de voorwaarden, de
+   tarievenpagina en de offerte — en op één plek in code. Deze proef bewaakt
+   die ene plek, want als de code iets anders doet dan er op papier staat is
+   het de code die de factuur maakt.
+   --------------------------------------------------------------------------- */
+{
+  const M = SL.CONFIG.kmMarge;
+  keur('de marge staat op 10% met een bodem van 5 km',
+    M.deel === 0.10 && M.bodem === 5, JSON.stringify(M));
+
+  /* Bij een korte rit wint de bodem: 10% van 20 km is 2, en dan zou elke
+     omleiding al meetellen. */
+  let o = SL.kmOordeel(20, 24);
+  keur('20 geschat, 24 gereden valt binnen de bodem van 5 km',
+    !o.buiten && o.factureer === 20, JSON.stringify(o));
+  o = SL.kmOordeel(20, 26);
+  keur('20 geschat, 26 gereden valt erbuiten',
+    o.buiten && o.factureer === 26, JSON.stringify(o));
+
+  /* Bij een lange rit wint het percentage. */
+  o = SL.kmOordeel(200, 215);
+  keur('200 geschat, 215 gereden valt binnen de 10%',
+    !o.buiten && o.factureer === 200, JSON.stringify(o));
+  o = SL.kmOordeel(200, 225);
+  keur('200 geschat, 225 gereden valt erbuiten',
+    o.buiten && o.factureer === 225, JSON.stringify(o));
+
+  /* Precies op de grens telt niet als afwijking: de marge is inclusief. */
+  o = SL.kmOordeel(200, 220);
+  keur('precies op de grens telt nog als binnen de marge',
+    !o.buiten && o.factureer === 200, JSON.stringify(o));
+
+  /* En hij werkt beide kanten op. Een marge die alleen omhoog werkt is geen
+     marge maar een opslag, en dat is precies wat een klant je nadraagt. */
+  o = SL.kmOordeel(200, 160);
+  keur('korter dan afgesproken telt ook mee',
+    o.buiten && o.factureer === 160, JSON.stringify(o));
+  o = SL.kmOordeel(20, 17);
+  keur('maar een beetje korter niet',
+    !o.buiten && o.factureer === 20, JSON.stringify(o));
+
+  /* Zonder schatting valt er niets te vergelijken. */
+  o = SL.kmOordeel(0, 40);
+  keur('zonder schatting is wat er gereden is wat je factureert',
+    !o.vergelijkbaar && o.factureer === 40, JSON.stringify(o));
+  o = SL.kmOordeel(40, 0);
+  keur('en zonder gereden kilometers valt er ook niets te oordelen',
+    !o.vergelijkbaar && !o.buiten, JSON.stringify(o));
+}
+
 console.log(fouten ? '\n' + fouten + ' fout(en)\n' : '\nalles goed\n');
 process.exit(fouten ? 1 : 0);

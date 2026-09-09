@@ -128,6 +128,66 @@ console.log('\nonzinbedragen');
     omschrijvingen.join(' | '));
 }
 
+console.log('\nhet factuurnummer en waar de klant het moet vermelden');
+{
+  /* Een echte factuur: het nummer hoort op alle drie de plekken hetzelfde te
+     staan. Lopen ze uiteen, dan betaalt de klant onder een ander kenmerk dan
+     er in de boekhouding staat, en dan sluit de aflettering niet. */
+  await p.goto(BASIS + '/factuur/?nr=SL-2026-0042&km=100&kmtarief=1.5&start=75',
+    { waitUntil: 'networkidle' });
+  const boven = (await p.textContent('#v-nr')).trim();
+  keur('het factuurnummer staat bovenaan', boven === 'SL-2026-0042', boven);
+  keur('en het label heet Factuurnr.',
+    (await p.textContent('#v-nrlabel')).trim() === 'Factuurnr.',
+    await p.textContent('#v-nrlabel'));
+
+  const betaalzin = (await p.textContent('#v-betaalzin')).replace(/\s+/g, ' ');
+  keur('de betaalzin noemt het nummer zelf en niet alleen "het factuurnummer"',
+    betaalzin.includes('SL-2026-0042'), betaalzin);
+  keur('en vraagt om het te vermelden',
+    /vermelding van factuurnummer/i.test(betaalzin), betaalzin);
+
+  /* En nog een keer bij de betaalgegevens: daar staat iemand het rekeningnummer
+     over te tikken, en dan is dát de plek waar de omschrijving hoort. */
+  keur('bij de betaalgegevens staat het er ook',
+    await p.isVisible('#v-kenmerkregel'));
+  keur('met hetzelfde nummer',
+    (await p.textContent('#v-betaalnr2')).trim() === 'SL-2026-0042',
+    await p.textContent('#v-betaalnr2'));
+
+  /* Een concept heeft geen nummer maar wel een kenmerk. Een doorlopende
+     nummering mag geen gaten hebben, dus een concept dat nooit een factuur
+     wordt mag er geen opsouperen. */
+  await p.goto(BASIS + '/factuur/?concept=1&kenmerk=CONCEPT-RIT-7&km=100' +
+    '&kmtarief=1.5&start=75', { waitUntil: 'networkidle' });
+  keur('een concept toont een kenmerk',
+    (await p.textContent('#v-nr')).trim() === 'CONCEPT-RIT-7',
+    await p.textContent('#v-nr'));
+  keur('en noemt dat ook zo', (await p.textContent('#v-nrlabel')).trim() === 'Kenmerk',
+    await p.textContent('#v-nrlabel'));
+  keur('een concept vraagt niet om te betalen',
+    !(await p.isVisible('#v-betaalzin')));
+  keur('en zet er ook geen betaalkenmerk bij',
+    !(await p.isVisible('#v-kenmerkregel')));
+  const balk = (await p.textContent('#conceptbalk')).replace(/\s+/g, ' ');
+  keur('de conceptbalk legt uit wanneer het nummer er wel komt',
+    /factuurnummer/i.test(balk) && /vermeld/i.test(balk), balk.slice(0, 200));
+
+  /* Zonder kenmerk in de adresregel valt hij terug op de datum: een vel zonder
+     enig kenmerk is een vel waarvan niemand weet welk het is. */
+  await p.goto(BASIS + '/factuur/?concept=1&ritdatum=2026-09-15&km=10' +
+    '&kmtarief=1.5&start=75', { waitUntil: 'networkidle' });
+  keur('zonder kenmerk komt er een uit de datum',
+    (await p.textContent('#v-nr')).trim() === 'CONCEPT-20260915',
+    await p.textContent('#v-nr'));
+
+  /* Een creditnota vraagt niets, dus hoort er ook geen betaalkenmerk op. */
+  await p.goto(BASIS + '/factuur/?credit=1&nr=SL-2026-0043&creditvan=SL-2026-0042' +
+    '&km=10&kmtarief=1.5&start=75', { waitUntil: 'networkidle' });
+  keur('een creditnota vraagt geen betaling onder vermelding van iets',
+    !(await p.isVisible('#v-kenmerkregel')));
+}
+
 console.log('\nde offerte en het concept door elkaar');
 {
   await p.goto(BASIS + '/factuur/?offerte=1&credit=1&concept=1&km=10&kmtarief=2&start=75' +

@@ -546,6 +546,92 @@ console.log('\n=== het menu ===');
    zien welke rij van jou is, en je niet de knop aanbieden die je bij de
    volgende oproep buiten je eigen portaal zet.
    ========================================================================= */
+/* =========================================================================
+   De afgesproken afstand naast de gereden afstand, op de ritkaart.
+
+   Dit is het scherm waar het besluit valt: hier tik je in wat er gereden is,
+   en hier hoor je te zien of dat binnen de afspraak blijft. Staat het pas op
+   de factuur, dan is het te laat.
+   ========================================================================= */
+console.log('\n=== de marge op de kilometers ===');
+{
+  const metRit = (extra) => opent({ ok: true, dag,
+    ik: { rol: 'Eigenaar', naam: 'Shane' },
+    ritten: [Object.assign({ id: 'recAAAAAAAAAAAAAA', naam: 'R', datum: dag,
+      status: 'Gepland', klant: 'K', ophaal: 'A', aflever: 'B' }, extra)],
+    aanvragen: [], opdrachten: [], klanten: [] });
+
+  const kmVeld = '#lijst .rit input[type="number"]';
+
+  /* Binnen de marge: de afspraak blijft staan. */
+  {
+    const { ctx, p } = await metRit({ km: 32, kmGeschat: 30 });
+    const tekst = (await p.textContent('#lijst .rit')).replace(/\s+/g, ' ');
+    keur('de kaart noemt de afgesproken afstand', /30 km afgesproken/.test(tekst),
+      tekst.slice(0, 300));
+    keur('en zegt dat 2 km erbij binnen de marge valt',
+      /binnen de marge/i.test(tekst), tekst.slice(0, 400));
+    keur('met de drempel erbij, niet alleen "binnen de marge"',
+      /5 km/.test(tekst), tekst.slice(0, 400));
+    await ctx.close();
+  }
+
+  /* Buiten de marge: de werkelijke kilometers mogen op de factuur. */
+  {
+    const { ctx, p } = await metRit({ km: 47, kmGeschat: 30 });
+    const tekst = (await p.textContent('#lijst .rit')).replace(/\s+/g, ' ');
+    keur('een afwijking buiten de marge wordt als zodanig benoemd',
+      /meer dan de marge/i.test(tekst), tekst.slice(0, 400));
+    keur('en zegt dat je de werkelijke kilometers mag factureren',
+      /47 km mag je factureren/.test(tekst), tekst.slice(0, 400));
+    await ctx.close();
+  }
+
+  /* Korter dan afgesproken werkt net zo goed. Een marge die alleen omhoog
+     werkt is geen marge maar een opslag. */
+  {
+    const { ctx, p } = await metRit({ km: 12, kmGeschat: 30 });
+    const tekst = (await p.textContent('#lijst .rit')).replace(/\s+/g, ' ');
+    keur('korter dan afgesproken telt ook',
+      /18 km minder/.test(tekst) && /meer dan de marge/i.test(tekst),
+      tekst.slice(0, 400));
+    await ctx.close();
+  }
+
+  /* Het oordeel loopt mee terwijl je typt: je beslist tijdens het intikken. */
+  {
+    const { ctx, p } = await metRit({ km: 32, kmGeschat: 30 });
+    await p.fill(kmVeld, '90');
+    await p.waitForTimeout(120);
+    let tekst = (await p.textContent('#lijst .rit')).replace(/\s+/g, ' ');
+    keur('het oordeel loopt mee terwijl je typt',
+      /60 km meer/.test(tekst), tekst.slice(0, 400));
+
+    /* En binnen de marge staat er een knop om de afspraak aan te houden, want
+       wat er in het veld staat is wat er gefactureerd wordt. */
+    await p.fill(kmVeld, '32');
+    await p.waitForTimeout(120);
+    await p.click('#lijst .rit button:has-text("Zet terug op 30 km")');
+    keur('de knop zet het veld terug op de afgesproken afstand',
+      (await p.inputValue(kmVeld)) === '30', await p.inputValue(kmVeld));
+    tekst = (await p.textContent('#lijst .rit')).replace(/\s+/g, ' ');
+    keur('en dan is er niets meer te kiezen', /precies gelijk/.test(tekst),
+      tekst.slice(0, 400));
+    await ctx.close();
+  }
+
+  /* Zonder afspraak valt er niets te vergelijken — dat is de stand bij een rit
+     die je zelf aanmaakt zonder dat er een aanvraag aan vooraf ging. Dan hoort
+     er ook geen vakje te staan dat over een marge begint. */
+  {
+    const { ctx, p } = await metRit({ km: 40, kmGeschat: 0 });
+    const tekst = (await p.textContent('#lijst .rit')).replace(/\s+/g, ' ');
+    keur('zonder afgesproken afstand staat er niets over een marge',
+      !/marge/i.test(tekst) && !/afgesproken/.test(tekst), tekst.slice(0, 300));
+    await ctx.close();
+  }
+}
+
 console.log('\n=== jezelf in het tabblad Chauffeurs ===');
 {
   const antwoord = { ok: true, dag,

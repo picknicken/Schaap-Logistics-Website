@@ -84,6 +84,29 @@
     /* Omrekenfactor van hemelsbrede afstand naar werkelijke rijafstand. */
     wegfactor: 1.25,
 
+    /* Hoeveel de werkelijk gereden afstand van de opgegeven route mag afwijken
+       voordat we de werkelijke kilometers factureren.
+
+       Waarom er een marge is en niet gewoon "wij rekenen wat er gereden is":
+       een prijs die je noemt moet een prijs blijven. Rijdt de navigatie twee
+       kilometer om vanwege werkzaamheden, dan hoort daar geen naberekening uit
+       te komen — dat kost meer uitleg dan het opbrengt en het is precies waar
+       een klant een hekel aan heeft.
+
+       Waarom er wel een grens aan zit: een stop erbij of een adres dat verderop
+       blijkt te liggen kan veertig kilometer schelen. Die rijd je wel en die
+       tank je ook, en het stoptarief van 25 euro dekt het omrijden niet — dat
+       is voor het laden en lossen.
+
+       Tien procent met een ondergrens van vijf kilometer, om dezelfde reden als
+       bij de tijdtoeslag: tien procent van een rit van twintig kilometer is
+       twee, en dan zou elke omleiding al meetellen.
+
+       Het werkt beide kanten op. Valt de route korter uit dan afgegeven en
+       scheelt dat meer dan de marge, dan betaalt de klant de kortere afstand.
+       Een marge die alleen omhoog werkt is geen marge maar een opslag. */
+    kmMarge: { deel: 0.10, bodem: 5 },
+
     /* Waar de aanvraag heen gaat.
        Leeg     — het e-mailprogramma van de bezoeker opent met de aanvraag erin.
                   Werkt zonder server, en dus prima op GitHub Pages.
@@ -243,8 +266,33 @@
     noot.style.fontWeight = '600';
   }
 
+  /* Wat de afgesproken afstand en de werkelijk gereden afstand samen betekenen
+     voor de factuur. Eén plek, want dit moet in het portaal hetzelfde uitpakken
+     als in de voorwaarden — anders staat er op papier iets anders dan er in
+     rekening wordt gebracht.
+
+     Zonder schatting valt er niets te vergelijken en is wat er gereden is wat
+     er gefactureerd wordt; dat is de stand bij een rit die je zelf aanmaakt. */
+  function kmOordeel(geschat, gereden) {
+    var g = Number(geschat) || 0;
+    var w = Number(gereden) || 0;
+    if (!(g > 0) || !(w > 0)) {
+      return { vergelijkbaar: false, geschat: g, gereden: w, verschil: 0,
+               drempel: 0, buiten: false, factureer: w || g };
+    }
+    var verschil = w - g;
+    var drempel = Math.max(g * CONFIG.kmMarge.deel, CONFIG.kmMarge.bodem);
+    var buiten = Math.abs(verschil) > drempel;
+    return {
+      vergelijkbaar: true, geschat: g, gereden: w, verschil: verschil,
+      drempel: Math.round(drempel * 10) / 10, buiten: buiten,
+      factureer: buiten ? w : g
+    };
+  }
+
   /* Alles wat de pagina-specifieke bestanden nodig hebben. */
   window.SL = {
+    kmOordeel: kmOordeel,
     CONFIG: CONFIG,
     euro: euro,
     postcodeUit: postcodeUit,

@@ -472,6 +472,56 @@ console.log('\nals Airtable of de omgeving wegvalt');
    niet aangenomen: het verschil tussen "mag alles" en "mag zijn eigen ritten"
    is het hele portaal.
    ========================================================================= */
+/* =========================================================================
+   De afgesproken afstand naast de gereden afstand.
+
+   Geschatte kilometers is het ijkpunt: de afstand waarop de prijs is
+   afgegeven. Wordt die bij elke correctie meegeschreven, dan schuift het
+   ijkpunt mee met de correctie en is er niets meer om tegen af te zetten —
+   dan kan de klant nooit meer nagaan waar hij ja tegen zei.
+   ========================================================================= */
+console.log('\nde afgesproken afstand blijft staan');
+{
+  zetKlaar();
+
+  /* Een rit die je zelf aanmaakt: het opgegeven aantal is meteen de afspraak. */
+  let r = await doe({ actie: 'nieuwerit', datum: '2026-09-03', km: 40,
+    ophaal: 'A', aflever: 'B', type: 'Spoedtransport' });
+  const gemaakt = (r.gesprek.find((c) => c.method === 'POST' &&
+    (c.body || {}).records) || {}).body.records[0].fields;
+  keur('een nieuwe rit legt de afgesproken afstand vast',
+    gemaakt['Geschatte kilometers'] === 40,
+    JSON.stringify(gemaakt['Geschatte kilometers']));
+  keur('en zet hem gelijk aan de kilometers',
+    gemaakt.Kilometers === 40, JSON.stringify(gemaakt.Kilometers));
+
+  /* En nu de correctie achteraf. Die hoort alleen Kilometers te raken. */
+  rit.fields['Geschatte kilometers'] = 40;
+  r = await doe({ actie: 'ritkm', id: rit.id, km: 57 });
+  const geschreven = patches()[0] || {};
+  keur('de gereden kilometers worden bijgewerkt',
+    geschreven.Kilometers === 57, JSON.stringify(geschreven.Kilometers));
+  keur('maar de afgesproken afstand wordt niet aangeraakt',
+    !('Geschatte kilometers' in geschreven), JSON.stringify(geschreven));
+  keur('en staat dus nog op wat er is afgesproken',
+    rit.fields['Geschatte kilometers'] === 40,
+    rit.fields['Geschatte kilometers']);
+
+  /* Het portaal moet hem terugkrijgen, anders valt er op het scherm niets te
+     vergelijken. */
+  keur('de rit komt met beide afstanden terug',
+    r.data.rit && r.data.rit.km === 57 && r.data.rit.kmGeschat === 40,
+    JSON.stringify(r.data.rit && { km: r.data.rit.km, kmGeschat: r.data.rit.kmGeschat }));
+
+  /* En de klant krijgt hem niet: die ziet wat er gefactureerd wordt, niet de
+     rekenslag daarachter. */
+  const klantKant = await doe({ actie: 'zendingen' }, { code: KLANT });
+  keur('de klant ziet de geschatte afstand niet',
+    !klantKant.tekst.includes('kmGeschat') &&
+    !klantKant.tekst.includes('Geschatte kilometers'),
+    klantKant.tekst.slice(0, 200));
+}
+
 console.log('\ninloggen met je eigen code in plaats van de hoofdsleutel');
 {
   zetKlaar();

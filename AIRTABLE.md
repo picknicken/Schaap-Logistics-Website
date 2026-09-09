@@ -792,6 +792,30 @@ met Twilio voor nodig — een betaalde dienst, ongeveer negen cent per bericht p
 een paar euro per maand voor een nummer. Zodra die koppeling er is, kan er een
 sms-onderdeel naast de mail.
 
+### Geschatte kilometers naast Kilometers
+
+`Kilometers` op `Ritten` is wat er werkelijk gereden is en wat de factuur
+rekent. `Geschatte kilometers` (`fld0F6T0OtleX8vlY`) ernaast is de afstand
+waarop de prijs is afgegeven: de schatting van de website, of wat er bij de
+opdracht stond.
+
+De tussenlaag vult hem **één keer**, bij het aanmaken van de rit, en raakt hem
+daarna nooit meer aan. *Gegevens van de rit opslaan* schrijft alleen
+`Kilometers`. Dat is het hele punt: zou de schatting meeschuiven met je
+correctie, dan is er niets meer om tegen af te zetten en kan niemand later nog
+nagaan waar de klant ja tegen zei.
+
+Wijkt `Kilometers` meer dan 10% van `Geschatte kilometers` af, met een
+ondergrens van 5 km, dan factureer je de werkelijk gereden kilometers; binnen
+die marge geldt de afgesproken afstand. Het portaal zet de twee onder elkaar op
+de ritkaart en zegt wat de regel betekent. De regel zelf staat in `kmMarge` in
+`assets/site.js`, in de voorwaarden en op de tarievenpagina.
+
+**Het is geen automatische berekening.** Airtable rekent gewoon met
+`Kilometers`; wat daarin staat is wat er op de factuur komt. De marge is een
+afspraak met de klant en een hulpje op je scherm, geen formule die je getal
+overschrijft.
+
 ### Het factuurnummer
 
 `Factuurnummer` op `Facturen` is een formule: het jaar uit de factuurdatum plus

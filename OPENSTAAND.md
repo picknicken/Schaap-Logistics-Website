@@ -398,6 +398,86 @@ portaal vanaf je beginscherm draait: daar is geen adresbalk en geen terugknop,
 en zou je jezelf op de marketingpagina opsluiten. Dan blijft het bij het
 inlogscherm.
 
+### Het factuurnummer, en waar de klant het moet vermelden
+
+Op de conceptfactuur stond geen nummer en op de echte stond het wel, maar de
+betaalzin noemde het niet: er stond "onder vermelding van het factuurnummer" en
+dan mocht de klant zelf terugbladeren.
+
+Nu staat het nummer op **drie plekken**: bovenaan bij de gegevens, in de
+betaalzin zelf (*"onder vermelding van factuurnummer SL-2026-0042"*), en nog een
+keer onder de betaalgegevens bij IBAN en tenaamstelling. Dat laatste is de plek
+waar iemand het rekeningnummer zit over te tikken; dán heeft hij de omschrijving
+nodig, niet drie regels hoger. Het nummer wordt één keer uit de adresregel
+gelezen en drie keer neergezet, zodat ze niet uit elkaar kunnen lopen.
+
+**Op de conceptfactuur staat nu een kenmerk.** Geen factuurnummer, en dat is
+geen slordigheid: een factuurnummer is doorlopend en mag geen gaten hebben. Zou
+een concept er alvast een krijgen, dan is dat nummer weg zodra het concept geen
+factuur wordt — en een gat in de nummering is precies waar de Belastingdienst
+naar kijkt. Het kenmerk is `CONCEPT-` plus de ritnaam (`CONCEPT-RIT-0042`), zodat
+je er aan de telefoon naar kunt verwijzen; zonder ritnaam wordt het de datum.
+
+De conceptbalk bovenaan legt nu ook uit wanneer het echte nummer er wel komt —
+zodra de rit op Uitgevoerd gaat maakt Airtable de factuur aan — en dat *dat*
+nummer de klant bij de betaling moet vermelden.
+
+### De kilometers als de rit anders loopt dan afgesproken
+
+Je vroeg of een extra stop niet ook kilometers zou moeten rekenen. Het antwoord
+op de vraag zoals hij gesteld is: nee, niet met een vast getal per stop. Een
+stop in dezelfde straat is nul kilometer omrijden en een stop twintig kilometer
+van de route is er veertig. Elk vast getal is bij de ene rit te veel en bij de
+andere te weinig, en dat is precies het soort raden waar een verkeerde factuur
+uit komt.
+
+Wat er wél moest gebeuren is jouw tweede idee, en dat is de goede: **bij een
+afwijkende afstand reken je per kilometer.** Dat dekt de extra stop, maar ook
+een adres dat verderop blijkt te liggen, een afsluiting en een omleiding — de
+hele categorie in één regel in plaats van een uitzondering per geval.
+
+**De regel.** De prijs gaat uit van de route over de opgegeven adressen. Wijkt
+de werkelijk gereden afstand daar meer dan **10% van af, met een ondergrens van
+5 kilometer**, dan factureer je de werkelijk gereden kilometers. Blijft het
+verschil binnen die marge, dan geldt de afgesproken afstand.
+
+Waarom een marge en niet gewoon "wij rekenen wat er gereden is": een prijs die je
+noemt moet een prijs blijven. Rijdt de navigatie twee kilometer om vanwege
+werkzaamheden, dan hoort daar geen naberekening uit te komen — dat kost meer
+uitleg dan het opbrengt. Waarom er wel een grens aan zit: veertig kilometer
+omrijden rijd je wel en tank je ook, en het stoptarief van € 25 dekt dat niet;
+dat is voor het laden en lossen.
+
+De ondergrens van 5 km is er om dezelfde reden als bij de tijdtoeslag: 10% van
+een rit van twintig kilometer is twee, en dan zou elke omleiding al meetellen.
+
+**Het werkt beide kanten op.** Valt de rit korter uit dan afgegeven en scheelt
+dat meer dan de marge, dan betaalt de klant de kortere afstand. Een marge die
+alleen omhoog werkt is geen marge maar een opslag, en dat is precies wat een
+klant je nadraagt.
+
+**Op je scherm.** Op de rit staat nu naast `Kilometers` ook
+`Geschatte kilometers`: de afstand waarop de prijs is afgegeven. Die wordt één
+keer gevuld als de rit ontstaat en daarna nooit meer aangeraakt — anders schuift
+het ijkpunt mee met je correctie en valt er niets meer tegen af te zetten.
+
+Onder het veld *Gereden km* staat wat de twee samen betekenen, en dat loopt mee
+terwijl je typt: *"30 km afgesproken, 32 gereden — 2 km meer. Dat valt binnen de
+marge van ± 5 km, dus houd je de afgesproken 30 km aan."* Met een knop om het
+veld in één tik op 30 te zetten, want wat er in het veld staat is wat er
+gefactureerd wordt. Buiten de marge staat er wat je mag rekenen en verwijst het
+naar de conceptfactuur voor het bedrag.
+
+Het portaal beslist het niet voor je. Het zegt wat de afspraak is; jij tikt het
+getal in. Een portaal dat je ingetikte 32 stiekem als 30 factureert is erger dan
+geen regel.
+
+**Bij de klant staat het er ook**, want anders kun je het niet rekenen: in de
+voorwaarden (artikel 3), als eigen regel in de tarieventabel, en in de tekst
+onder een offerte. Die drie en de code delen één bron — `kmMarge` in
+`assets/site.js` — en een faaltest bewaakt dat de code doet wat er op papier
+staat.
+
 ### De regels op de factuur staan weer in de goede volgorde
 
 De factuur begon met de kilometers en zette het starttarief daaronder. Dat leest
@@ -673,10 +753,10 @@ netjes van h1 naar h2 zonder gaten, en de foutpagina werkt weer — die verwees 
 de domeinverhuizing nog naar het oude adres en kwam daardoor zonder opmaak en met
 dode links binnen.
 
-**727 controles draaien groen**, verdeeld over negen faaltests: 200 in een
-echte browser (`faal-portalen` 142, `faal-site` 58), 434 tegen de portaal-Worker
-(`faal-portaal` 154, `faal-klantplicht` 195, `faal-toegang` 31, `faal-push` 54),
-79 tegen de aanvraag-Worker en 14 op de prijsberekening. Daaronder zitten
+**767 controles draaien groen**, verdeeld over negen faaltests: 223 in een
+echte browser (`faal-portalen` 152, `faal-site` 71), 441 tegen de portaal-Worker
+(`faal-portaal` 161, `faal-klantplicht` 195, `faal-toegang` 31, `faal-push` 54),
+79 tegen de aanvraag-Worker en 24 op de prijsberekening. Daaronder zitten
 controles dat de prijzen op de site kloppen met de calculator, dat een klant
 nooit een cent van jouw kosten te zien krijgt, en dat een creditnota naar de
 oorspronkelijke factuur verwijst.

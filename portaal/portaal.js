@@ -2008,6 +2008,12 @@
        die in Airtable zet, en dat moet je met een concept juist niet doen. */
     q.set('datum', vandaagIso());
     if (rit.datum) { q.set('ritdatum', rit.datum); }
+    /* Een kenmerk in plaats van een factuurnummer. Het echte nummer bestaat pas
+       als de factuur er is — die is doorlopend en mag geen gaten hebben, dus
+       daar mag een concept er geen van opsouperen. Met de ritnaam erin kun je
+       er aan de telefoon naar verwijzen; twee concepten van dezelfde dag zijn
+       anders niet uit elkaar te houden. */
+    if (rit.naam) { q.set('kenmerk', 'CONCEPT-' + rit.naam); }
     if (rit.klant) { q.set('klant', rit.klant); }
     q.set('van', rit.ophaal || '');
     q.set('naar', rit.aflever || '');
@@ -2083,6 +2089,72 @@
 
   /* Een genummerd invoerveld met een label erboven. Kwam op drie plekken voor
      en zag er telkens net anders uit; nu niet meer. */
+  /* De afgesproken afstand naast de gereden afstand.
+
+     Waarom dit hier staat en niet pas op de factuur: op de factuur is het te
+     laat. Dit is het moment waarop je het getal intikt, en dus het moment
+     waarop je moet weten of je de klant aan de afspraak houdt of de werkelijke
+     rit factureert. De regel zelf staat in de voorwaarden en in site.js, zodat
+     er maar één versie van is.
+
+     Zonder schatting valt er niets te vergelijken — dat is de stand bij een rit
+     die je zelf hebt aangemaakt — en dan komt er ook geen vakje. */
+  function kmMargeVak(rit, veld) {
+    if (!window.SL || !window.SL.kmOordeel) { return null; }
+    var geschat = Number(rit.kmGeschat) || 0;
+    if (!(geschat > 0)) { return null; }
+
+    var vak = maak('div', 'terzijde');
+    var terug = maak('button', 'knop knop--rand', 'Zet terug op ' + geschat + ' km');
+    terug.type = 'button';
+    terug.style.marginTop = '8px';
+    terug.addEventListener('click', function () {
+      veld.invoer.value = String(geschat);
+      teken();
+    });
+
+    function teken() {
+      var gereden = Number(veld.invoer.value) || 0;
+      vak.textContent = '';
+      terug.hidden = true;
+
+      if (!(gereden > 0)) {
+        vak.appendChild(document.createTextNode(
+          'Afgesproken afstand: ' + geschat + ' km. Vul in wat er werkelijk ' +
+          'gereden is.'));
+        vak.appendChild(terug);
+        terug.hidden = false;
+        return;
+      }
+
+      var o = window.SL.kmOordeel(geschat, gereden);
+      var meer = o.verschil > 0;
+      var af = Math.abs(o.verschil);
+
+      if (!o.buiten) {
+        vak.appendChild(document.createTextNode(
+          geschat + ' km afgesproken, ' + gereden + ' gereden — ' +
+          (af === 0 ? 'precies gelijk'
+                    : af + ' km ' + (meer ? 'meer' : 'minder')) +
+          '. Dat valt binnen de marge van \u00b1 ' + o.drempel + ' km, dus ' +
+          'houd je de afgesproken ' + geschat + ' km aan.'));
+        if (af !== 0) { vak.appendChild(terug); terug.hidden = false; }
+        return;
+      }
+
+      vak.appendChild(document.createTextNode(
+        geschat + ' km afgesproken, ' + gereden + ' gereden — ' + af + ' km ' +
+        (meer ? 'meer' : 'minder') + ', en dat is meer dan de marge van ' +
+        '\u00b1 ' + o.drempel + ' km. De werkelijk gereden ' + gereden + ' km ' +
+        (meer ? 'mag je factureren' : 'is wat je factureert') +
+        '. Bekijk de conceptfactuur voor het bedrag.'));
+    }
+
+    veld.invoer.addEventListener('input', teken);
+    teken();
+    return vak;
+  }
+
   function getalVeld(naam, waarde) {
     var veld = maak('label', 'veld');
     veld.style.margin = '0';
@@ -2445,6 +2517,12 @@
       cijferRij.appendChild(kmVeldRit);
       cijferRij.appendChild(stopVeldRit);
       lijf.appendChild(cijferRij);
+
+      /* Wat de gereden kilometers betekenen tegenover de afgesproken afstand.
+         Staat direct onder het veld waar je het intikt: daar neem je het
+         besluit, niet later bij de factuur. */
+      var kmOordeelVak = kmMargeVak(rit, kmVeldRit);
+      if (kmOordeelVak) { lijf.appendChild(kmOordeelVak); }
 
       var ritLink = afstandLink(rit.ophaal, rit.aflever);
       if (ritLink) { lijf.appendChild(ritLink); }

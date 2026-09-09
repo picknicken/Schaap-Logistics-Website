@@ -48,6 +48,11 @@ const R = {
   ophaal:     'Ophaaladres',
   aflever:    'Afleveradres',
   km:         'Kilometers',
+  /* De afstand waarop de prijs is afgegeven. Wordt één keer gevuld bij het
+     aanmaken van de rit en daarna nooit meer aangeraakt: hij is het ijkpunt
+     waartegen de werkelijk gereden kilometers worden afgezet. Overschrijf je
+     hem, dan is er niets meer om tegen af te zetten. */
+  kmGeschat:  'Geschatte kilometers',
   startTarief:'Starttarief',
   kmTarief:   'Km-tarief',
   stops:      'Extra stops',
@@ -1178,7 +1183,13 @@ async function planRit(env, body, origin) {
      die met de aanvraag is meegekomen. Zonder kilometers valt de factuur
      terug op het minimumtarief, en dat merk je pas als de factuur er ligt. */
   const km = kilometers(body.km !== undefined && body.km !== '' ? body.km : f[O.km]);
-  if (km !== null) { velden[R.km] = km; }
+  if (km !== null) {
+    velden[R.km] = km;
+    /* En hetzelfde getal als schatting. Dit is de afstand waarop de prijs is
+       afgegeven; wat er straks werkelijk op de teller staat wordt hiertegen
+       afgezet. Zie kmOordeel in assets/site.js. */
+    velden[R.kmGeschat] = km;
+  }
 
   /* Extra stops op dezelfde manier: elke stop is een vast bedrag op de
      factuur, dus die moet met de rit meereizen en niet in de aanvraag
@@ -1254,7 +1265,7 @@ async function nieuweRit(env, body, origin) {
   }
 
   const km = kilometers(body.km);
-  if (km !== null) { velden[R.km] = km; }
+  if (km !== null) { velden[R.km] = km; velden[R.kmGeschat] = km; }
   const stops = heelGetal(body.stops);
   if (stops !== null) { velden[R.stops] = stops; }
   const tijdvak = tijdvakUit(body.tijdvak);
@@ -3424,6 +3435,11 @@ function naarRit(record) {
     ophaal:     f[R.ophaal] || '',
     aflever:    f[R.aflever] || '',
     km:         f[R.km] || 0,
+    /* De afstand waarop de prijs is afgegeven, naast wat er werkelijk gereden
+       is. Alleen voor jouw scherm: het portaal zet de twee naast elkaar zodat
+       je bij het invullen ziet of je de klant aan de afspraak houdt. Gaat niet
+       mee naar de klant — naarKlantRit kent dit veld niet. */
+    kmGeschat:  f[R.kmGeschat] || 0,
     stops:      f[R.stops] || 0,
     tijdvak:    keuze(f[R.tijdvak]) || '',
     tijd:       f[R.tijd] || '',
