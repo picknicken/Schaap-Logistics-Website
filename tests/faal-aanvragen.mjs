@@ -193,27 +193,129 @@ console.log('\nlengte en type van de waarden');
     r.res.status >= 400 || !Array.isArray(velden()['Aantal colli']),
     JSON.stringify(velden()['Aantal colli']));
 
-  /* Weggelaten is het goede antwoord: het veld hoort dan gewoon leeg te
-     blijven, niet op nul te staan alsof de klant dat heeft ingevuld. */
-  r = await doe({ ...basis(), velden: { ...basis().velden, 'Geschatte afstand km': -5000 } });
-  keur('een negatieve afstand komt er niet in',
-    !('Geschatte afstand km' in velden()), velden()['Geschatte afstand km']);
+  /* De afstand en de prijs worden niet meer aangenomen maar berekend; zie
+     het blok "de afstand en de prijs komen van de server" verderop. Wat de
+     aanvrager erover meestuurt komt hier dus nergens terecht — ook niet als
+     het een geloofwaardig getal is. Zonder postcodes valt er niets te
+     rekenen, dus blijven beide velden leeg. */
+  for (const w of [-5000, 1e308, 'honderd', 109, 0]) {
+    r = await doe({ ...basis(), velden: { ...basis().velden,
+      'Geschatte afstand km': w, 'Prijsindicatie excl btw': w } });
+    keur('een meegestuurde afstand van ' + JSON.stringify(w) + ' wordt niet overgenomen',
+      !('Geschatte afstand km' in velden()) && !('Prijsindicatie excl btw' in velden()),
+      JSON.stringify(velden()['Geschatte afstand km']));
+  }
+}
 
-  r = await doe({ ...basis(), velden: { ...basis().velden, 'Prijsindicatie excl btw': -100000 } });
-  keur('een negatieve prijsindicatie ook niet',
-    !('Prijsindicatie excl btw' in velden()), velden()['Prijsindicatie excl btw']);
+console.log('\nde afstand en de prijs komen van de server');
+{
+  /* Rotterdam (3011) naar Eindhoven (5611), spoed, overdag, geen stops.
+     De site rekent dezelfde som; hieronder staat wat eruit hoort te komen,
+     met de hand nagerekend uit de tarieven. */
+  const route = { Ophaalpostcode: '3011', Afleverpostcode: '5611',
+                  Dienst: 'Spoedtransport', Tijdvak: 'Overdag' };
 
-  r = await doe({ ...basis(), velden: { ...basis().velden, 'Geschatte afstand km': 1e308 } });
-  keur('en een onmogelijk grote afstand ook niet',
-    !('Geschatte afstand km' in velden()), velden()['Geschatte afstand km']);
+  let r = await doe({ ...basis(), velden: { ...basis().velden, ...route } });
+  const v = velden();
+  const km = v['Geschatte afstand km'];
+  keur('een gewone aanvraag krijgt een afstand', typeof km === 'number' && km > 50 && km < 150, km);
+  keur('en een prijs die klopt met start + km x tarief',
+    v['Prijsindicatie excl btw'] === Math.round((100 + km * 1.5) * 100) / 100,
+    km + ' km -> ' + v['Prijsindicatie excl btw']);
 
-  r = await doe({ ...basis(), velden: { ...basis().velden, 'Geschatte afstand km': 'honderd' } });
-  keur('een afstand in letters ook niet',
-    !('Geschatte afstand km' in velden()), velden()['Geschatte afstand km']);
+  /* Het geval waar dit allemaal om begonnen is. */
+  r = await doe({ ...basis(), velden: { ...basis().velden, ...route,
+    'Geschatte afstand km': 1, 'Prijsindicatie excl btw': 1 } });
+  const g = velden();
+  keur('een meegestuurde afstand van 1 wordt genegeerd',
+    g['Geschatte afstand km'] === km, g['Geschatte afstand km']);
+  keur('en een meegestuurde prijs van 1 ook',
+    g['Prijsindicatie excl btw'] > 100, g['Prijsindicatie excl btw']);
 
-  r = await doe({ ...basis(), velden: { ...basis().velden, 'Geschatte afstand km': 109 } });
-  keur('maar een gewone afstand gaat er gewoon in',
-    velden()['Geschatte afstand km'] === 109, velden()['Geschatte afstand km']);
+  r = await doe({ ...basis(), velden: { ...basis().velden, ...route,
+    'Geschatte afstand km': 99999, 'Prijsindicatie excl btw': 99999 } });
+  keur('een veel te hoge meegestuurde prijs net zo goed',
+    velden()['Prijsindicatie excl btw'] === g['Prijsindicatie excl btw'],
+    velden()['Prijsindicatie excl btw']);
+
+  /* De drie soorten rit rekenen elk met hun eigen tarief. */
+  for (const [dienst, start, tarief] of [
+    ['Standaard transport', 75, 1.0],
+    ['Spoedtransport', 100, 1.5],
+    ['Directe spoed', 125, 2.0]
+  ]) {
+    await doe({ ...basis(), velden: { ...basis().velden, ...route, Dienst: dienst } });
+    const w = velden();
+    keur(dienst + ' rekent met zijn eigen tarief',
+      w['Prijsindicatie excl btw'] ===
+        Math.round((start + w['Geschatte afstand km'] * tarief) * 100) / 100,
+      w['Prijsindicatie excl btw']);
+  }
+
+  /* Toeslagen tellen mee, en de tijdvakken die niet bestaan niet. */
+  await doe({ ...basis(), velden: { ...basis().velden, ...route,
+    Tijdvak: 'Avondrit (18:00-23:00)' } });
+  const avond = velden()['Prijsindicatie excl btw'];
+  keur('een avondrit is duurder dan overdag', avond > g['Prijsindicatie excl btw'], avond);
+
+  await doe({ ...basis(), velden: { ...basis().velden, ...route, Tijdvak: 'Gratis uurtje' } });
+  keur('een verzonnen tijdvak levert geen korting op',
+    velden()['Prijsindicatie excl btw'] === g['Prijsindicatie excl btw'],
+    velden()['Prijsindicatie excl btw']);
+
+  await doe({ ...basis(), velden: { ...basis().velden, ...route, 'Extra stops': '2' } });
+  keur('twee extra stops kosten 50 euro meer',
+    velden()['Prijsindicatie excl btw'] === g['Prijsindicatie excl btw'] + 50,
+    velden()['Prijsindicatie excl btw']);
+
+  await doe({ ...basis(), velden: { ...basis().velden, ...route, 'Extra stops': '-9' } });
+  keur('een negatief aantal stops geeft geen korting',
+    velden()['Prijsindicatie excl btw'] === g['Prijsindicatie excl btw'],
+    velden()['Prijsindicatie excl btw']);
+
+  /* Het minimumtarief. Binnen dezelfde regio is de afstand 5 km, dus
+     standaard komt uit op 75 + 5 = 80 en blijft het minimum onaangeroerd. */
+  await doe({ ...basis(), velden: { ...basis().velden, Ophaalpostcode: '3011',
+    Afleverpostcode: '3011', Dienst: 'Standaard transport', Tijdvak: 'Overdag' } });
+  const dichtbij = velden();
+  keur('binnen dezelfde regio blijft er een rit van 5 km over',
+    dichtbij['Geschatte afstand km'] === 5, dichtbij['Geschatte afstand km']);
+  keur('en die kost nooit minder dan het minimumtarief',
+    dichtbij['Prijsindicatie excl btw'] >= 75, dichtbij['Prijsindicatie excl btw']);
+}
+
+console.log('\nwanneer de server niets kan uitrekenen');
+{
+  const leeg = (naam, extra) => {
+    const v = velden();
+    keur(naam,
+      !('Geschatte afstand km' in v) && !('Prijsindicatie excl btw' in v),
+      JSON.stringify({ km: v['Geschatte afstand km'], prijs: v['Prijsindicatie excl btw'] }));
+  };
+
+  /* Buitenland: de postcodetabel is Nederlands, dus hier hoort niets uit te
+     komen. Wel moet de aanvraag gewoon binnenkomen. */
+  let r = await doe({ ...basis(), velden: { ...basis().velden,
+    Dienst: 'Internationaal transport', Ophaalpostcode: '3011', Afleverpostcode: '' } });
+  keur('een internationale aanvraag komt gewoon binnen', r.res.status === 200, r.res.status);
+  leeg('maar krijgt geen verzonnen afstand of prijs');
+
+  /* Een adres zonder postcode. Ook dan moet de aanvraag binnenkomen: hem
+     weigeren zou een echte klant kosten. */
+  r = await doe({ ...basis(), velden: { ...basis().velden,
+    Ophaallocatie: 'Coolsingel, Rotterdam', Ophaalpostcode: '', Afleverpostcode: '5611' } });
+  keur('een aanvraag zonder ophaalpostcode komt gewoon binnen', r.res.status === 200, r.res.status);
+  leeg('maar krijgt geen prijs');
+
+  for (const pc of ['0000', '99', '12345', 'abcd', '30 11', '3011x', "3011' OR '1"]) {
+    await doe({ ...basis(), velden: { ...basis().velden,
+      Ophaalpostcode: pc, Afleverpostcode: '5611' } });
+    leeg('postcode "' + pc + '" levert geen afstand op');
+  }
+
+  await doe({ ...basis(), velden: { ...basis().velden,
+    Dienst: 'Vliegtuig', Ophaalpostcode: '3011', Afleverpostcode: '5611' } });
+  leeg('een dienst die niet bestaat levert geen prijs op');
 }
 
 console.log('\nde foto’s');

@@ -20,6 +20,7 @@ nagebootste Airtable:
 cd tests
 node faal-aanvragen.mjs      # het openbare aanvraagadres
 node faal-portaal.mjs        # het portaal: rollen, grenzen, lekken
+node faal-zelfde-som.mjs     # rekent de prijs op de server na tegen de browser
 ```
 
 Twee met een browser. Zet eerst de site op een adres neer — een gewone
@@ -45,6 +46,12 @@ foutcode terug als er iets misgaat. Zo kunnen ze later in een GitHub Action.
 iedereen open staat. Herkomst, methode, rommel in plaats van JSON, de
 voorwaarden, wat er wel en niet naar Airtable doorgaat, lengte en type van elke
 waarde, de foto's, de rem, de honeypot, en wat er gebeurt als Airtable dwarsligt.
+
+**`faal-zelfde-som.mjs`** — de prijs staat op twee plekken: `assets/site.js`
+toont hem, `worker/aanvragen.js` bewaart hem. Deze proef rekent ruim
+zestienhonderd combinaties van dienst, tijdvak, stops en postcodes aan beide
+kanten na. Wijkt er één cent af, dan valt hij om. Draai hem altijd als je een
+tarief wijzigt.
 
 **`faal-portaal.mjs`** — drie soorten bezoekers en de vraag wat elk van de drie
 te zien of te doen krijgt dat niet voor hem is. Formule-injectie in de codes,
