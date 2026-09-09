@@ -204,18 +204,29 @@ input{font:inherit}
    plaats van een raster verdelen ze zich over de breedte zolang het kan, en
    schuiven ze zodra het niet meer kan — in plaats van dat de laatste half van
    het scherm valt. Op een breed scherm verandert er niets. */
+/* De schuifbalk en de menuknop horen bij elkaar en plakken samen bovenaan.
+   De knop staat absoluut gepositioneerd, dus hij heeft dit omhulsel nodig om
+   zich tegen af te zetten — anders zweeft hij tegen de pagina. */
+.tabbalk{
+  position:sticky;top:0;z-index:19;background:var(--navy);
+}
+/* De dagbalk plakt ook bovenaan en staat later in de pagina, dus die zou het
+   opengeklapte menu overdekken. Zolang het menu open is gaat de balk erboven. */
+.tabbalk[data-open]{z-index:30}
 .tabs{
   display:flex;overflow-x:auto;overscroll-behavior-x:contain;
   -webkit-overflow-scrolling:touch;scrollbar-width:none;
   background:var(--navy);border-top:1px solid rgba(255,255,255,.08);
-  position:sticky;top:0;z-index:19;
+  /* Ruimte rechts voor de menuknop, anders schuift het laatste tabblad
+     eronderdoor en kun je er niet op drukken. */
+  padding-right:44px;
 }
 .tabs::-webkit-scrollbar{display:none}
 /* Een randje schaduw rechts zodra er meer is dan past; anders lijkt een
    afgesneden tabblad een fout in plaats van een hint. */
 .tabs[data-meer]{
-  -webkit-mask-image:linear-gradient(to right,#000 calc(100% - 26px),transparent);
-  mask-image:linear-gradient(to right,#000 calc(100% - 26px),transparent);
+  -webkit-mask-image:linear-gradient(to right,#000 calc(100% - 70px),transparent);
+  mask-image:linear-gradient(to right,#000 calc(100% - 70px),transparent);
 }
 .tab{
   flex:1 0 auto;white-space:nowrap;
@@ -688,6 +699,31 @@ input{font:inherit}
   background:var(--paper);border:1.5px solid #d9705f;color:#8c2415;
 }
 
+/* Het hamburgermenu naast de tabbalk. Hij zweeft rechtsboven op de balk zelf,
+   zodat hij geen eigen regel kost op een scherm dat toch al smal is. */
+.menuknop{
+  position:absolute;top:0;right:0;z-index:21;
+  width:44px;height:41px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:4px;
+  background:var(--navy);border:0;cursor:pointer;
+}
+.menuknop span{display:block;width:17px;height:2px;background:#8fa2be;border-radius:2px}
+.menuknop[aria-expanded="true"] span{background:#fff}
+
+.tabmenu{
+  position:absolute;top:41px;right:6px;z-index:22;min-width:172px;
+  background:var(--paper);border:1px solid var(--line);border-radius:12px;
+  box-shadow:0 12px 32px rgba(11,21,38,.22);padding:6px;
+}
+.tabmenu button{
+  display:flex;width:100%;align-items:center;justify-content:space-between;
+  gap:10px;padding:11px 13px;font:inherit;font-size:.92rem;font-weight:600;
+  color:var(--heading);background:none;border:0;border-radius:8px;
+  text-align:left;cursor:pointer;
+}
+.tabmenu button[aria-current="true"]{background:var(--paper-2);color:var(--navy)}
+.tabmenu button[aria-current="true"]::after{content:'\2713';color:var(--amber)}
+
 /* De notitie bij een klant. Leeg is hij een grijs regeltje dat niet in de weg
    zit; staat er iets, dan hoort hij op te vallen — dat is het hele punt. */
 .notitie{margin:0 0 12px}
@@ -974,6 +1010,18 @@ input{font:inherit}
     </div>
   </div>
 
+  <!-- De schuifbalk blijft, want op een breed scherm past alles en is een menu
+       een extra tik. Maar wat er rechts buiten beeld valt zie je niet, en dan
+       weet je niet dat het bestaat — vandaar de knop ernaast met alles onder
+       elkaar. -->
+  <div class="tabbalk">
+  <button class="menuknop" id="tabmenu-knop" type="button"
+          aria-expanded="false" aria-controls="tabmenu" aria-label="Alle tabbladen">
+    <span></span><span></span><span></span>
+  </button>
+
+  <div class="tabmenu" id="tabmenu" hidden></div>
+
   <div class="tabs" role="tablist">
     <button class="tab" id="tab-ritten" role="tab" aria-selected="true" type="button">
       Ritten <span class="tab__badge" id="badge-ritten" hidden>0</span>
@@ -996,6 +1044,7 @@ input{font:inherit}
     <button class="tab" id="tab-chauffeurs" role="tab" aria-selected="false" type="button">
       Chauffeurs
     </button>
+  </div>
   </div>
 
   <div id="paneel-ritten">

@@ -398,6 +398,33 @@ portaal vanaf je beginscherm draait: daar is geen adresbalk en geen terugknop,
 en zou je jezelf op de marketingpagina opsluiten. Dan blijft het bij het
 inlogscherm.
 
+### De regels op de factuur staan weer in de goede volgorde
+
+De factuur begon met de kilometers en zette het starttarief daaronder. Dat leest
+alsof je halverwege de som instapt, en het was ook niet de volgorde waarin de
+calculator op de site het voorrekent. Nu staat het starttarief bovenaan, dan de
+kilometers, dan de toeslagen — op de factuur, de conceptfactuur en de offerte,
+want dat is één en dezelfde pagina.
+
+De bedragen veranderen niet; alleen de volgorde van de regels. De faaltest
+controleert nu naast de optelsom ook de volgorde.
+
+### Het menu bij de tabbladen
+
+Zeven tabbladen passen niet op een telefoonscherm. De balk schuift, maar wat
+erbuiten valt zie je niet — en wat je niet ziet bestaat niet. Daar liep je zelf
+tegenaan: *Chauffeurs* stond er wel, maar je vond het niet.
+
+Naast de balk staat nu een menuknop met alles onder elkaar, met dezelfde
+tellers erbij, zodat je in één blik ziet waar werk ligt. De schuifbalk blijft:
+voor de drie tabbladen waar je de hele dag tussen springt is een menu een tik
+extra.
+
+De knop verschijnt alleen als er werkelijk iets buiten de balk valt. Op een
+breed scherm passen alle zeven en verdwijnt hij; bij een chauffeur, die er twee
+overhoudt, staat hij er ook niet. Een knop die alleen herhaalt wat je al ziet is
+een knop te veel.
+
 ### Tabblad Chauffeurs
 
 Wie er voor je rijdt. Je kunt er iemand aanmaken, zijn gegevens bijhouden en
@@ -503,13 +530,21 @@ Op je telefoon zie je het verschil ook: een wijzigverzoek op een spoedrit of een
 directe spoed komt binnen met **SPOEDRIT** ervoor en blijft staan tot je hem
 aanraakt. Bij een standaardrit of internationaal is het een gewone melding.
 
-**De klant verandert nooit zelf iets aan de rit, en jouw knop ook niet.** Een
-stop erbij kost vijfentwintig euro en een ander adres verandert de kilometers.
-Kon de klant dat zelf zetten, dan bepaalt hij je factuur. En de knop
-*Ingewilligd* vinkt het verzoek alleen af: uit "een doos mee naar Breda" zelf een
-aantal kilometers en een stoptoeslag raden geeft een verkeerde factuur. Pas de
-rit daarna aan met de velden die er al voor zijn, dan klopt de prijs — en dat is
-meteen het moment om de klant te laten weten wat het kost.
+**De klant verandert nooit zelf iets aan de rit.** Een stop erbij kost
+vijfentwintig euro en een ander adres verandert de kilometers. Kon de klant dat
+zelf zetten, dan bepaalt hij je factuur. Er komt dus een verzoek klaar te staan
+en jij drukt op de knop.
+
+**Bij extra stops doet *Ingewilligd* het werk wel.** De klant vult het aantal
+apart in, met een getal, en de knop telt dat op bij de stops op de rit — de knop
+zegt dan ook *Inwilligen (+2 stops)*, zodat je ziet wat je goedkeurt. Dat scheelt
+het handmatig bijtellen waar je naar vroeg.
+
+**Bij de andere soorten blijft het afvinken.** Daar staat een zin, en uit "een
+doos mee naar Breda" zelf een aantal kilometers raden geeft een verkeerde
+factuur. Ook bij een stopverzoek gaan de kilometers en de adressen niet vanzelf
+mee. Pas dat daarna aan met de velden die er al voor zijn, dan klopt de prijs —
+en dat is meteen het moment om de klant te laten weten wat het kost.
 
 **De twee mails staan nog aan, met opzet.** `Seintje bij een nieuwe aanvraag`
 en `Seintje bij een annulering door de klant` in Airtable blijven voorlopig
@@ -582,7 +617,10 @@ netjes van h1 naar h2 zonder gaten, en de foutpagina werkt weer — die verwees 
 de domeinverhuizing nog naar het oude adres en kwam daardoor zonder opmaak en met
 dode links binnen.
 
-**239 portaaltests, 140 schermtests, 178 portaal-Workertests, 43 klanttests en
-alle overige Worker-tests** draaien groen, waaronder controles dat de prijzen op de site kloppen met de calculator, dat een klant nooit een cent van
-jouw kosten te zien krijgt, en dat een creditnota naar de oorspronkelijke factuur
-verwijst.
+**694 controles draaien groen**, verdeeld over negen faaltests: 189 in een
+echte browser (`faal-portalen` 131, `faal-site` 58), 412 tegen de portaal-Worker
+(`faal-portaal` 137, `faal-klantplicht` 195, `faal-toegang` 26, `faal-push` 54),
+79 tegen de aanvraag-Worker en 14 op de prijsberekening. Daaronder zitten
+controles dat de prijzen op de site kloppen met de calculator, dat een klant
+nooit een cent van jouw kosten te zien krijgt, en dat een creditnota naar de
+oorspronkelijke factuur verwijst.

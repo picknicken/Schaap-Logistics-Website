@@ -551,6 +551,13 @@ tbody td.af{color:#1d7a4c}
      De regelnummers zijn niet vast maar lopen op met tien, zodat er een regel
      bij kan zonder dat de nummering gaten krijgt. */
   var ritregels = [];
+  /* Starttarief eerst, dan de kilometers. Zo leest de factuur van boven naar
+     beneden zoals de prijs is opgebouwd — vast bedrag, dan de afstand, dan de
+     toeslagen — en in dezelfde volgorde als de calculator op de site het
+     voorrekent. Andersom begint de factuur midden in de som. */
+  if (start > 0) {
+    ritregels.push({ oms: 'Starttarief', aantal: '1 rit', prijs: start, bedrag: start });
+  }
   if (km > 0) {
     ritregels.push({
       oms: 'Transport ' + van + ' → ' + naar,
@@ -558,9 +565,6 @@ tbody td.af{color:#1d7a4c}
       prijs: kmtarief,
       bedrag: km * kmtarief
     });
-  }
-  if (start > 0) {
-    ritregels.push({ oms: 'Starttarief', aantal: '1 rit', prijs: start, bedrag: start });
   }
 
   /* Het minimumtarief van EUR 75 per opdracht. Anders dan de andere bedragen

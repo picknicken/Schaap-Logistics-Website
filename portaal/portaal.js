@@ -1276,10 +1276,122 @@
   function meetTabbalk() {
     var balk = document.querySelector('.tabs');
     if (!balk) { return; }
-    if (balk.scrollWidth - balk.clientWidth > 4) { balk.setAttribute('data-meer', ''); }
-    else { balk.removeAttribute('data-meer'); }
+    /* Eerst meten zonder de ruimte die de menuknop zelf inneemt, anders meet je
+       je eigen knop mee en past het nooit. */
+    balk.style.paddingRight = '0px';
+    var past = balk.scrollWidth - balk.clientWidth <= 4;
+
+    /* Het menu bestaat omdat er tabbladen buiten de balk vallen. Vallen ze er
+       niet buiten — een breed scherm, of een chauffeur met twee tabbladen —
+       dan is het een knop die niets toevoegt en gaat hij weg. */
+    var knop = el('tabmenu-knop');
+    if (knop) {
+      knop.hidden = past;
+      if (past) { sluitTabmenu(); }
+    }
+
+    balk.style.paddingRight = past ? '0px' : '';
+    if (past) { balk.removeAttribute('data-meer'); }
+    else { balk.setAttribute('data-meer', ''); }
   }
   window.addEventListener('resize', meetTabbalk);
+
+  /* ------------------------------------------------------- hamburgermenu
+
+     De schuifbalk laat maar zien wat er past. Wat erbuiten valt bestaat voor
+     wie er niet toevallig langs veegt niet. Dit menu zet alles onder elkaar,
+     met dezelfde tellers erbij, zodat je in een oogopslag ziet wat er ligt.
+
+     De lijst wordt bij elke opening opnieuw opgebouwd: welke tabbladen je
+     mag zien hangt af van wie er inlogt, en de tellers lopen tijdens het
+     werken op. Een lijst die je een keer bouwt loopt achter. */
+
+  function tabLabel(t) {
+    var knop = el('tab-' + t);
+    if (!knop) { return t; }
+    /* Alleen de tekst, niet de teller — die zetten we er zelf apart bij. */
+    var tekst = '';
+    Array.prototype.forEach.call(knop.childNodes, function (n) {
+      if (n.nodeType === 3) { tekst += n.textContent; }
+    });
+    return tekst.trim() || t;
+  }
+
+  function zichtbareTabs() {
+    return TABBLADEN.filter(function (t) {
+      var knop = el('tab-' + t);
+      return knop && !knop.hidden;
+    });
+  }
+
+  function vulTabmenu() {
+    var menu = el('tabmenu');
+    if (!menu) { return; }
+    menu.textContent = '';
+    zichtbareTabs().forEach(function (t) {
+      var knop = document.createElement('button');
+      knop.type = 'button';
+      knop.textContent = tabLabel(t);
+      if (t === tabblad) { knop.setAttribute('aria-current', 'true'); }
+      var teller = el('badge-' + t);
+      if (teller && !teller.hidden && teller.textContent) {
+        var b = document.createElement('span');
+        b.className = 'tab__badge';
+        b.textContent = teller.textContent;
+        knop.appendChild(b);
+      }
+      knop.addEventListener('click', function () {
+        sluitTabmenu();
+        kiesTab(t);
+      });
+      menu.appendChild(knop);
+    });
+  }
+
+  function tabmenuOpen() {
+    var k = el('tabmenu-knop');
+    return !!k && k.getAttribute('aria-expanded') === 'true';
+  }
+
+  function sluitTabmenu() {
+    var knop = el('tabmenu-knop');
+    var menu = el('tabmenu');
+    var balk = document.querySelector('.tabbalk');
+    if (knop) { knop.setAttribute('aria-expanded', 'false'); }
+    if (menu) { menu.hidden = true; }
+    if (balk) { balk.removeAttribute('data-open'); }
+  }
+
+  function openTabmenu() {
+    var knop = el('tabmenu-knop');
+    var menu = el('tabmenu');
+    var balk = document.querySelector('.tabbalk');
+    vulTabmenu();
+    if (knop) { knop.setAttribute('aria-expanded', 'true'); }
+    if (menu) { menu.hidden = false; }
+    if (balk) { balk.setAttribute('data-open', ''); }
+  }
+
+  (function knoopTabmenu() {
+    var knop = el('tabmenu-knop');
+    if (!knop) { return; }
+    knop.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (tabmenuOpen()) { sluitTabmenu(); } else { openTabmenu(); }
+    });
+    /* Ergens anders drukken hoort het menu te sluiten. Zonder dit blijft hij
+       openstaan over de rit waar je net op wilde drukken. */
+    document.addEventListener('click', function (e) {
+      if (!tabmenuOpen()) { return; }
+      var menu = el('tabmenu');
+      if (menu && menu.contains(e.target)) { return; }
+      if (knop.contains(e.target)) { return; }
+      sluitTabmenu();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && tabmenuOpen()) { sluitTabmenu(); }
+    });
+  })();
 
   /* De kilometers die je deze dag factureert: van ophaaladres naar
      afleveradres, en niets daarbuiten. Een geannuleerde rit is niet gereden. */
@@ -3812,7 +3924,14 @@
        hangen in plaats van eronder. */
 
     var rij = maak('div', 'knoppen knoppen--twee');
-    var ja = maak('button', 'knop', 'Ingewilligd');
+    /* Zegt de knop wat hij doet. Bij een stopverzoek voert Ingewilligd het ook
+       werkelijk door; bij de andere soorten vinkt hij alleen af, en dan hoort
+       er niet te staan dat er iets verandert. */
+    var stops = Number(rit.wijzigStops) || 0;
+    var voertDoor = rit.wijzigSoort === 'Extra stop' && stops > 0;
+    var ja = maak('button', 'knop', voertDoor
+      ? 'Inwilligen (+' + stops + ' stop' + (stops === 1 ? '' : 's') + ')'
+      : 'Ingewilligd');
     ja.type = 'button';
     var nee = maak('button', 'knop knop--rand', 'Afgewezen');
     nee.type = 'button';
@@ -3837,9 +3956,12 @@
     rij.appendChild(ja);
     rij.appendChild(nee);
     t.appendChild(rij);
-    t.appendChild(maak('p', 'wijzig__uitleg', 'Dit vinkt het verzoek af. De rit ' +
-      'zelf pas je hierboven aan \u2014 stops, kilometers of adres \u2014 zodat ' +
-      'de prijs klopt.'));
+    t.appendChild(maak('p', 'wijzig__uitleg', voertDoor
+      ? 'Inwilligen zet die ' + stops + ' stop' + (stops === 1 ? '' : 's') +
+        ' er meteen bij, en daarmee de stoptoeslag. Het adres zet je zelf in de ' +
+        'opmerkingen, en kijk of de kilometers nog kloppen.'
+      : 'Dit vinkt het verzoek af. De rit zelf pas je hierboven aan \u2014 stops, ' +
+        'kilometers of adres \u2014 zodat de prijs klopt.'));
     return vak;
   }
 

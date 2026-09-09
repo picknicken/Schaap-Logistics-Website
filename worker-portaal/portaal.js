@@ -96,6 +96,7 @@ const R = {
   wijzigSoort:'Wijzigverzoek soort',
   wijzigStat: 'Wijzigverzoek status',
   wijzigOp:   'Wijzigverzoek op',
+  wijzigStops:'Wijzigverzoek stops',
   pushWijzig: 'Pushmelding wijzigverzoek op',
   /* De bedragen zoals Airtable ze uitrekent, plus het handmatige bedrag dat
      bij internationaal transport op offerte wordt ingevuld. Deze drie gaan
@@ -1437,16 +1438,16 @@ async function verwijderFactuur(env, body, origin) {
 
 /* Een wijzigverzoek van een klant afhandelen: inwilligen of afwijzen.
 
-   Inwilligen verandert de rit hier niet vanzelf. Dat klinkt onaf, maar het is
-   het niet: wat er moet veranderen weet alleen jij. "Een extra stop in Breda"
-   betekent een adres erbij, een kilometer of wat extra, en een stop meer op de
-   teller — en of die stop op de heenweg of de terugweg ligt scheelt geld. Dat
-   uit een zin vissen en er getallen van maken is precies het soort raden waar
-   een verkeerde factuur uit komt.
+   Bij een extra stop voert inwilligen het aantal ook werkelijk door. Dat kan
+   omdat de klant het aantal apart invult: een getal is een getal. Bij de
+   andere soorten blijft het bij afvinken. "Een extra stop in Breda" betekent
+   ook een adres erbij en een kilometer of wat extra, en of die stop op de
+   heenweg of de terugweg ligt scheelt geld — dat uit een zin vissen is
+   precies het soort raden waar een verkeerde factuur uit komt. De kilometers
+   en de adressen pas je dus zelf aan, met de knoppen die daar al voor zijn.
 
-   Wat het wel doet: het verzoek afsluiten, zodat het uit je meldingen
-   verdwijnt en de klant ziet dat je hebt gekeken. De rit pas je daarna aan met
-   de knoppen die daar al voor zijn. */
+   Wat het altijd doet: het verzoek afsluiten, zodat het uit je meldingen
+   verdwijnt en de klant ziet dat je hebt gekeken. */
 async function wijzigBesluit(env, body, origin) {
   const id = recordId(body.id);
   if (!id) { return antwoord(400, { fout: 'Ongeldig rit-id' }, origin, true); }
@@ -1459,9 +1460,23 @@ async function wijzigBesluit(env, body, origin) {
     return antwoord(409, { fout: 'Bij deze rit ligt geen verzoek.' }, origin, true);
   }
 
-  const rit = naarRit(await patch(env, env.AIRTABLE_RITTEN, id, {
-    [R.wijzigStat]: body.besluit
-  }));
+  const velden = { [R.wijzigStat]: body.besluit };
+
+  /* Inwilligen van een stopverzoek voert het ook werkelijk door. Dat kan alleen
+     hier, bij een getal: bij de andere soorten — een ander adres, een andere
+     datum — staat er een zin, en die vertaalt zich niet naar een veld. Daar
+     blijft het bij afvinken en pas je de rit zelf aan.
+
+     Optellen en niet overschrijven: stonden er al twee stops op de rit en
+     vraagt hij er twee bij, dan worden het er vier. */
+  const f = bestaand.fields || {};
+  const erbij = Number(f[R.wijzigStops]) || 0;
+  if (body.besluit === 'Ingewilligd' && keuze(f[R.wijzigSoort]) === 'Extra stop' &&
+      erbij > 0) {
+    velden[R.stops] = Math.min((Number(f[R.stops]) || 0) + erbij, 20);
+  }
+
+  const rit = naarRit(await patch(env, env.AIRTABLE_RITTEN, id, velden));
   return antwoord(200, { ok: true, rit }, origin, true);
 }
 
@@ -3000,10 +3015,20 @@ async function klantWijzigt(env, klant, body) {
     };
   }
 
+  /* Bij een extra stop vragen we het aantal apart. Een getal kun je doorvoeren;
+     uit "twee stops, eerst Breda dan Tilburg" een aantal vissen is raden, en
+     raden geeft een verkeerde factuur. */
+  let stops = null;
+  if (soort === 'Extra stop') {
+    const n = parseInt(String(body.stops || '').trim(), 10);
+    stops = (isNaN(n) || n < 1) ? 1 : Math.min(n, 10);
+  }
+
   await patch(env, env.AIRTABLE_RITTEN, id, {
     [R.wijzig]:      tekst,
     [R.wijzigSoort]: soort,
     [R.wijzigStat]:  'Open',
+    [R.wijzigStops]: stops,
     [R.wijzigOp]:    new Date().toISOString(),
     /* De stempel leegmaken, zodat een tweede verzoek op dezelfde rit — na een
        eerste dat je hebt afgehandeld — opnieuw een seintje geeft. */
@@ -3116,6 +3141,7 @@ function naarKlantRit(record, magFotos, magZelf) {
     wijzigverzoek: f[R.wijzig] || '',
     wijzigSoort: keuze(f[R.wijzigSoort]) || '',
     wijzigStand: keuze(f[R.wijzigStat]) || '',
+    wijzigStops: Number(f[R.wijzigStops]) || 0,
     wijzigOp:   f[R.wijzigOp] || '',
     datum:      f[R.datum] || '',
     type:       keuze(f[R.type]),
@@ -3385,6 +3411,7 @@ function naarRit(record) {
     wijzigverzoek: f[R.wijzig] || '',
     wijzigSoort: keuze(f[R.wijzigSoort]) || '',
     wijzigStand: keuze(f[R.wijzigStat]) || '',
+    wijzigStops: Number(f[R.wijzigStops]) || 0,
     wijzigOp:   f[R.wijzigOp] || '',
     datum:      f[R.datum] || '',
     type:       keuze(f[R.type]),

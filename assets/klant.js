@@ -692,6 +692,27 @@
       });
     vraag.appendChild(kies);
 
+    /* Bij een extra stop vragen we het aantal apart. Een getal kan doorgevoerd
+       worden; uit een zin een aantal afleiden is raden. Het veld verschijnt
+       alleen bij die keuze, zodat het formulier niet volloopt met vakjes die
+       er niet toe doen. */
+    var aantalVak = maak('div', 'veld');
+    aantalVak.appendChild(maak('span', '', 'Hoeveel stops erbij?'));
+    var aantal = document.createElement('input');
+    aantal.type = 'number';
+    aantal.min = '1';
+    aantal.max = '10';
+    aantal.value = '1';
+    aantal.setAttribute('aria-label', 'Aantal extra stops');
+    aantalVak.appendChild(aantal);
+    vraag.appendChild(aantalVak);
+
+    function toonAantal() {
+      aantalVak.hidden = kies.value !== 'Extra stop';
+    }
+    kies.addEventListener('change', toonAantal);
+    toonAantal();
+
     var tekst = document.createElement('textarea');
     tekst.rows = 3;
     tekst.maxLength = 1000;
@@ -728,7 +749,7 @@
       terug.disabled = true;
       door.textContent = 'Bezig\u2026';
       verstuur({ actie: 'klantwijzig', rit: r.sleutel,
-                 soort: kies.value, tekst: tekst.value })
+                 soort: kies.value, tekst: tekst.value, stops: aantal.value })
         .then(function (data) {
           meldApp('');
           toon(data, r.sleutel);

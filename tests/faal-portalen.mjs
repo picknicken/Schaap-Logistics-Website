@@ -367,6 +367,142 @@ console.log('\n=== de knoppen op een ritkaart ===');
   }
 }
 
+/* =========================================================================
+   Het hamburgermenu naast de schuifbalk.
+
+   De balk laat op een telefoon maar drie van de zeven tabbladen zien. Wat
+   erbuiten valt bestaat voor wie er niet langs veegt niet, en daar ging het
+   mis: Shane wist niet dat Chauffeurs er was. Het menu moet dus alles tonen
+   dat je mag zien, en het moet ook werkelijk bovenop liggen — de dagbalk
+   eronder plakt ook bovenaan en zou het anders overdekken.
+   ========================================================================= */
+console.log('\n=== het hamburgermenu ===');
+{
+  const alsEigenaar = () => opent({ ok: true, dag,
+    ik: { rol: 'Eigenaar', naam: 'Shane' },
+    ritten: [{ id: 'recAAAAAAAAAAAAAA', naam: 'R', datum: dag, status: 'Gepland',
+      km: 55, klant: 'K' }],
+    aanvragen: [{ id: 'recQQQQQQQQQQQQQQ', naam: 'A', datum: dag, status: 'Nieuw' },
+                { id: 'recRRRRRRRRRRRRRR', naam: 'B', datum: dag, status: 'Nieuw' }],
+    opdrachten: [], klanten: [] });
+
+  {
+    const { ctx, p } = await alsEigenaar();
+    keur('de menuknop staat er voor de eigenaar',
+      await p.isVisible('#tabmenu-knop'));
+    keur('en het menu is dicht tot je erop drukt',
+      !(await p.isVisible('#tabmenu')));
+
+    await p.click('#tabmenu-knop');
+    keur('drukken opent het menu', await p.isVisible('#tabmenu'));
+    keur('en de knop zegt dat het openstaat',
+      await p.getAttribute('#tabmenu-knop', 'aria-expanded') === 'true');
+
+    const regels = await p.$$eval('#tabmenu button',
+      (l) => l.map((k) => (k.textContent || '').trim()));
+    /* Alle zeven, ook de drie die buiten de balk vallen. */
+    ['Ritten', 'Aanvragen', 'Prijs', 'Planning', 'Meldingen', 'Klanten',
+     'Chauffeurs'].forEach((naam) => {
+      keur('het menu noemt ' + naam,
+        regels.some((t) => t.indexOf(naam) === 0), regels.join(' | '));
+    });
+    keur('de teller van Aanvragen staat er ook in',
+      regels.some((t) => /^Aanvragen/.test(t) && /2/.test(t)), regels.join(' | '));
+
+    const nu = await p.$$eval('#tabmenu button[aria-current="true"]',
+      (l) => l.map((k) => (k.textContent || '').trim()));
+    keur('en het tabblad waar je nu bent is aangevinkt',
+      nu.length === 1 && /^Ritten/.test(nu[0]), nu.join(' | '));
+
+    /* Het menu moet ook echt aanraakbaar zijn. Klopt de stapeling niet, dan
+       staat het er wel maar zit de dagbalk eroverheen en gebeurt er niets. */
+    const bovenop = await p.evaluate(() => {
+      const menu = document.getElementById('tabmenu');
+      const knop = menu && menu.querySelector('button');
+      if (!knop) { return 'geen knop'; }
+      const r = knop.getBoundingClientRect();
+      const raak = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return raak === knop || knop.contains(raak) ? true : (raak && raak.className) || 'niets';
+    });
+    keur('het open menu ligt bovenop en niet onder de dagbalk',
+      bovenop === true, bovenop);
+    await ctx.close();
+  }
+
+  /* Kiezen brengt je naar dat tabblad en ruimt het menu op. Blijft het staan,
+     dan sta je op het nieuwe tabblad tegen een dichtgeklapt gordijn te kijken. */
+  {
+    const { ctx, p } = await alsEigenaar();
+    await p.click('#tabmenu-knop');
+    await p.click('#tabmenu button:has-text("Chauffeurs")');
+    keur('kiezen sluit het menu', !(await p.isVisible('#tabmenu')));
+    keur('en zet het gekozen tabblad aan',
+      await p.getAttribute('#tab-chauffeurs', 'aria-selected') === 'true');
+    keur('het paneel erbij staat open',
+      await p.isVisible('#paneel-chauffeurs'));
+    keur('en het oude paneel is weg',
+      !(await p.isVisible('#paneel-ritten')));
+    await ctx.close();
+  }
+
+  /* Ergens anders drukken hoort het menu te sluiten. */
+  {
+    const { ctx, p } = await alsEigenaar();
+    await p.click('#tabmenu-knop');
+    await p.click('body', { position: { x: 30, y: 700 } });
+    keur('ergens anders drukken sluit het menu',
+      !(await p.isVisible('#tabmenu')));
+    await p.click('#tabmenu-knop');
+    await p.keyboard.press('Escape');
+    keur('Escape ook', !(await p.isVisible('#tabmenu')));
+    await ctx.close();
+  }
+
+  /* Een chauffeur houdt Ritten en Prijs over. Die twee passen ruim op een
+     telefoon, dus valt er niets buiten de balk en heeft een menu geen nut.
+     Een knop die alleen herhaalt wat je al ziet is een knop te veel. */
+  {
+    const { ctx, p } = await opent({ ok: true, dag,
+      ik: { rol: 'Chauffeur', naam: 'Piet' },
+      ritten: [{ id: 'recAAAAAAAAAAAAAA', naam: 'mijn', datum: dag,
+        status: 'Gepland', km: 20, chauffeur: 'Piet' }],
+      aanvragen: [], opdrachten: [], klanten: [] });
+    keur('een chauffeur krijgt geen menuknop',
+      !(await p.isVisible('#tabmenu-knop')));
+    keur('en zijn tabbladen staan er gewoon',
+      (await p.isVisible('#tab-ritten')) && (await p.isVisible('#tab-prijs')));
+    /* En het laatste tabblad moet volledig aanraakbaar zijn: zonder knop hoort
+       de gereserveerde ruimte rechts ook weg te zijn. */
+    const rechts = await p.evaluate(() => {
+      const balk = document.querySelector('.tabs');
+      const zichtbaar = Array.from(balk.querySelectorAll('.tab'))
+        .filter((t) => !t.hidden);
+      const laatst = zichtbaar[zichtbaar.length - 1];
+      return Math.round(balk.getBoundingClientRect().right -
+                        laatst.getBoundingClientRect().right);
+    });
+    keur('en er blijft geen lege strook rechts staan', rechts <= 2, rechts);
+    await ctx.close();
+  }
+
+  /* Op een breed scherm passen alle zeven wel. Dan is de schuifbalk het menu
+     en hoort de knop ook daar te verdwijnen. */
+  {
+    const { ctx, p } = await opent({ ok: true, dag,
+      ik: { rol: 'Eigenaar', naam: 'Shane' },
+      ritten: [], aanvragen: [], opdrachten: [], klanten: [] });
+    await p.setViewportSize({ width: 1200, height: 900 });
+    await p.waitForTimeout(120);
+    keur('op een breed scherm verdwijnt de menuknop',
+      !(await p.isVisible('#tabmenu-knop')));
+    await p.setViewportSize({ width: 390, height: 900 });
+    await p.waitForTimeout(120);
+    keur('en hij komt terug zodra het scherm weer smal is',
+      await p.isVisible('#tabmenu-knop'));
+    await ctx.close();
+  }
+}
+
 console.log('\n=== het klantportaal met vijandige gegevens ===');
 {
   const { ctx, p, stuk, geraakt, popup } = await opent({

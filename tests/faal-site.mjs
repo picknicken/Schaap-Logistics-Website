@@ -109,6 +109,23 @@ console.log('\nonzinbedragen');
     t + Number(String(r).replace(/[^\d,-]/g, '').replace('.', '').replace(',', '.')), 0);
   keur('de regels tellen op tot het subtotaal',
     Math.abs(som - sub) < 0.005, som + ' tegen ' + sub);
+
+  /* En ze horen in de volgorde te staan waarin de prijs is opgebouwd: eerst
+     het vaste starttarief, dan de kilometers, dan pas de toeslagen. Een
+     factuur die met de kilometers begint leest alsof je halverwege de som
+     instapt — daar vroeg Shane naar. */
+  const omschrijvingen = await p.$$eval('#regels tr',
+    (rijen) => rijen.map((r) => (r.children[1] || r.children[0]).textContent.trim()));
+  const nStart = omschrijvingen.findIndex((t) => /Starttarief/.test(t));
+  const nKm = omschrijvingen.findIndex((t) => /Transport/.test(t));
+  const nStop = omschrijvingen.findIndex((t) => /Extra stop/.test(t));
+  const nTijd = omschrijvingen.findIndex((t) => /Toeslag/.test(t));
+  keur('het starttarief staat als eerste regel', nStart === 0,
+    omschrijvingen.join(' | '));
+  keur('de kilometers staan daar direct onder', nKm === nStart + 1,
+    omschrijvingen.join(' | '));
+  keur('en de toeslagen komen daarna', nStop > nKm && nTijd > nStop,
+    omschrijvingen.join(' | '));
 }
 
 console.log('\nde offerte en het concept door elkaar');
