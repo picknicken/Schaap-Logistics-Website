@@ -1,3 +1,8 @@
 # De afhankelijkheid van het chauffeursportaal wordt bij het uitrollen
 # opgehaald (npm install in de GitHub Action) en hoort niet in git.
 node_modules/
+
+# Uitvoer van een testronde. Die schrijf je met een omleiding naar een bestand
+# en dan staat hij zomaar in de hoofdmap; twee zijn er zo een keer meegekomen
+# in een commit.
+*.log
