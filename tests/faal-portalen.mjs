@@ -309,8 +309,12 @@ console.log('\n=== de knoppen op een ritkaart ===');
     const k = await knoppenVan(p);
     keur('de eigenaar kan een geplande rit op Onderweg zetten',
       k.some((t) => t === 'Onderweg'), k.join(' | '));
-    keur('en krijgt geen knop Ik rijd hem — hij heeft zijn planknoppen',
-      !k.some((t) => /Ik rijd hem/.test(t)), k.join(' | '));
+    /* En hij kan hem ook zelf claimen, zodat zijn naam erop komt in plaats van
+       niemand. Beide knoppen dus: claimen hoeft niet om te kunnen vertrekken,
+       maar het mag wel — een chauffeur moet weten wie er rijdt, en jijzelf
+       later ook. */
+    keur('en kan hem ook zelf claimen, met zijn naam erop',
+      k.some((t) => /Ik rijd hem/.test(t)), k.join(' | '));
     await ctx.close();
   }
 
