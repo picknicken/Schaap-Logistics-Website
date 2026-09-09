@@ -55,7 +55,6 @@ assets/
   logo-schaap-express.png          hetzelfde, donker — bovenaan de factuur
   logo-schaap-express-kop-wit.png  zonder de regel TRANSPORT, voor de menubalk;
                                    die regel is op 32 pixels hoog niet leesbaar
-  logo-schaap-express-kop.png      hetzelfde, donker
   favicon.png                      het tabbladpictogram
   favicon-bron.html                de bron daarvan, foto maken op 256x256
   deelkaart.jpg           1200x630, het plaatje dat WhatsApp en LinkedIn tonen
@@ -128,7 +127,7 @@ formules), `AUTOMATISEREN.md` (de automatiseringen en wat ze kosten),
 valt) en `OPENSTAAND.md`.
 
 - [ ] **Zet de site weer op indexeerbaar.** Zolang het een concept is met
-      voorbeeldgegevens staat er op alle zeven pagina's
+      voorbeeldgegevens staat er op alle twaalf pagina's
       `<meta name="robots" content="noindex,nofollow">`, zodat Google geen
       verzonnen telefoonnummer oppikt. Dat terugdraaien is de laatste handeling
       vóór livegang — vergeet je het, dan is je site onvindbaar:
