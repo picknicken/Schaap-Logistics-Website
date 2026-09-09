@@ -599,6 +599,42 @@
     return vak;
   }
 
+  /* Wat er boven het formulier staat, en dat verschilt per soort rit.
+
+     Bij een standaardrit klopt "wij kijken ernaar en laten het weten": die
+     staat dagen vooruit gepland. Bij directe spoed is diezelfde zin een loze
+     belofte — daar staan wij op het punt te vertrekken, en tegen de tijd dat
+     iemand dit heeft getypt zijn wij de straat uit. Dan hoort er te staan dat
+     bellen sneller is. En bij internationaal is een ander afleveradres geen
+     prijswijziging maar een nieuwe offerte, want die rit is er een op maat.
+
+     De knop blijft in alle gevallen staan. Iemand die liever typt dan belt
+     moet dat kunnen; wat hier verandert is wat wij beloven. */
+  function wijzigUitleg(soort) {
+    var wat = String(soort || '');
+    if (/directe/i.test(wat)) {
+      return ['Wij staan op het punt te vertrekken of zijn al onderweg. ' +
+              'Bel ons even — dat gaat sneller dan dit formulier.',
+              'Wat u hier doorgeeft lezen wij ook, en wij laten het weten. ' +
+              'Verandert er iets aan de prijs, dan hoort u dat vooraf.'];
+    }
+    if (/internationaal/i.test(wat)) {
+      return ['Wat moet er anders? Wij kijken ernaar en laten het weten.',
+              'Let op: een extra stop of een ander afleveradres betekent bij ' +
+              'een internationale rit een nieuwe prijsopgave, niet een kleine ' +
+              'bijstelling. Die krijgt u eerst van ons.'];
+    }
+    if (/spoed/i.test(wat)) {
+      return ['Wat moet er anders? Wij kijken ernaar en laten het weten. ' +
+              'Verandert er iets aan de prijs — bijvoorbeeld bij een extra ' +
+              'stop of een verder afleveradres — dan hoort u dat vooraf.',
+              'Dit is een rit voor vandaag. Heeft het haast, bel ons dan even.'];
+    }
+    return ['Wat moet er anders? Wij kijken ernaar en laten het weten. ' +
+            'Verandert er iets aan de prijs — bijvoorbeeld bij een extra stop ' +
+            'of een verder afleveradres — dan hoort u dat vooraf.'];
+  }
+
   /* Een wijziging vragen. Nadrukkelijk vragen en niet zelf zetten: een stop
      erbij of een ander afleveradres verandert de prijs, en die spreken we
      samen af. Daarom staat dat er ook met zoveel woorden bij. */
@@ -609,9 +645,9 @@
 
     var vraag = maak('div', 'afzeggen__vraag');
     vraag.hidden = true;
-    vraag.appendChild(maak('p', '', 'Wat moet er anders? Wij kijken ernaar en ' +
-      'laten het weten. Verandert er iets aan de prijs — bijvoorbeeld bij een ' +
-      'extra stop of een verder afleveradres — dan hoort u dat vooraf.'));
+    wijzigUitleg(r.type).forEach(function (regel) {
+      vraag.appendChild(maak('p', '', regel));
+    });
 
     var kies = document.createElement('select');
     kies.setAttribute('aria-label', 'Waar gaat het over');

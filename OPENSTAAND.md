@@ -351,6 +351,21 @@ Dat komt meteen op je telefoon en staat in je meldingen, met twee knoppen op de
 ritkaart: *Ingewilligd* of *Afgewezen*. De klant ziet in zijn portaal wat je
 ermee deed, dus dat scheelt het telefoontje "heeft u het gezien".
 
+**Het staat er anders bij per soort rit.** Bij een standaardrit die dagen
+vooruit staat klopt "wij kijken ernaar en laten het weten". Bij directe spoed is
+diezelfde zin een loze belofte — daar sta je op het punt te vertrekken — dus
+daar staat er dat bellen sneller gaat. Bij een spoedrit staat erbij dat het om
+vandaag gaat. En bij internationaal staat erbij dat een extra stop of een ander
+adres een nieuwe prijsopgave betekent en niet een kleine bijstelling, want zo'n
+rit is er een op maat.
+
+De knop blijft in alle gevallen staan: iemand die liever typt dan belt moet dat
+kunnen. Wat er verandert is wat je belooft.
+
+Op je telefoon zie je het verschil ook: een wijzigverzoek op een spoedrit of een
+directe spoed komt binnen met **SPOEDRIT** ervoor en blijft staan tot je hem
+aanraakt. Bij een standaardrit of internationaal is het een gewone melding.
+
 **De klant verandert nooit zelf iets aan de rit, en jouw knop ook niet.** Een
 stop erbij kost vijfentwintig euro en een ander adres verandert de kilometers.
 Kon de klant dat zelf zetten, dan bepaalt hij je factuur. En de knop

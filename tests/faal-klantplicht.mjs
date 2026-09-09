@@ -37,7 +37,7 @@ const env = {
 };
 
 /* --- de nagebootste base --- */
-let ritten, facturen, apparaten, verstuurd, gemaakt;
+let ritten, facturen, apparaten, verstuurd, gemaakt, lading;
 const VANDAAG = new Date().toISOString().slice(0, 10);
 const GISTEREN = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
 
@@ -82,7 +82,7 @@ globalThis.fetch = async (url, opties = {}) => {
   const lees = () => { try { return JSON.parse(opties.body); } catch { return {}; } };
 
   if (u.startsWith('https://fcm.googleapis.com/')) {
-    verstuurd.push({ url: u });
+    verstuurd.push({ url: u, urgency: (opties.headers || {}).Urgency });
     return new Response('', { status: 201 });
   }
   if (u.includes('content.airtable.com')) { return new Response('{}', { status: 200 }); }
@@ -543,6 +543,49 @@ console.log('\nde melding erover');
   await worker.scheduled({ cron: '* * * * *' }, env, ctx);
   await Promise.all(wachtjes);
   keur('dus het tweede verzoek geeft ook een seintje', verstuurd.length === 1, verstuurd.length);
+}
+
+console.log('\nper ritsoort');
+
+/* Een wijzigverzoek mag bij alle vier de soorten, want de grens is de status
+   en niet het soort: staat de rit nog op Gepland, dan kan er nog iets. Maar
+   hoe dringend het is verschilt wél. Bij een standaardrit van volgende week
+   kun je er rustig naar kijken; bij directe spoed sta je misschien al met de
+   sleutel in je hand, en dan hoort de melding te blijven staan in plaats van
+   weg te zakken. */
+for (const [ritsoort, dringend] of [
+  ['Standaard transport', false],
+  ['Spoedtransport', true],
+  ['Directe spoed', true],
+  ['Internationaal transport', false]
+]) {
+  zetKlaar();
+  ritten = { recGeplandGeen001: { id: 'recGeplandGeen001', fields: {
+    Rit: 'RIT-4', Ritdatum: VANDAAG, Status: 'Gepland', Kilometers: 30,
+    'Type rit': ritsoort, Klant: [{ id: 'recKlant000000001' }] } } };
+
+  const { rit } = await sleutelVan('recGeplandGeen001');
+  keur(ritsoort + ': de klant mag een wijziging vragen', rit.magWijzigen === true);
+  keur(ritsoort + ': hij ziet welk soort rit het is', rit.type === ritsoort, rit.type);
+
+  const res = await klantDoe({ actie: 'klantwijzig', rit: rit.sleutel,
+    soort: 'Extra stop', tekst: 'Een doos mee naar Breda.' });
+  keur(ritsoort + ': het verzoek komt aan', res.status === 200, res.status);
+  keur(ritsoort + ': en de rit blijft onaangeroerd',
+    ritten.recGeplandGeen001.fields.Kilometers === 30 &&
+    ritten.recGeplandGeen001.fields['Extra stops'] === undefined &&
+    ritten.recGeplandGeen001.fields['Type rit'] === ritsoort);
+
+  verstuurd = [];
+  lading = [];
+  wachtjes.length = 0;
+  await worker.scheduled({ cron: '* * * * *' }, env, ctx);
+  await Promise.all(wachtjes);
+  keur(ritsoort + ': er gaat een seintje uit', verstuurd.length === 1, verstuurd.length);
+  keur(ritsoort + ': met urgentie ' + (dringend ? 'high' : 'normal'),
+    verstuurd.length === 1 &&
+    verstuurd[0].urgency === (dringend ? 'high' : 'normal'),
+    (verstuurd[0] || {}).urgency);
 }
 
 console.log(fouten ? '\n' + fouten + ' fout(en)\n' : '\nalles goed\n');

@@ -1783,14 +1783,20 @@ async function wijzigverzoekenMelden(env) {
       { [R.pushWijzig]: new Date().toISOString() });
 
     const soort = keuze(f[R.wijzigSoort]) || 'Wijziging';
+    const ritsoort = keuze(f[R.type]) || '';
+    /* Hoe dringend dit is hangt niet af van wat de klant vraagt maar van wat
+       voor rit het is. Bij een standaardrit van volgende week kun je er rustig
+       naar kijken. Bij een spoedrit sta je vandaag op het punt te laden, en bij
+       directe spoed misschien al met de sleutel in je hand — dan hoort de
+       melding te blijven staan tot je hem hebt aangeraakt in plaats van tussen
+       de rest weg te zakken. */
+    const dringend = /spoed|direct/i.test(ritsoort);
     await stuurPush(env, ['Eigenaar'], {
-      titel: soort + ' gevraagd',
+      titel: (dringend ? 'SPOEDRIT: ' : '') + soort + ' gevraagd',
       tekst: `${eerste(f[R.klant]) || f[R.rit] || 'Rit'} op ${f[R.datum] || ''} — ` +
              String(f[R.wijzig] || '').replace(/\s+/g, ' ').slice(0, 90),
       tag: 'wijzig-' + record.id,
-      /* Geen spoed: het gaat over een rit die nog moet rijden. Wel meteen,
-         want hoe eerder je het ziet hoe makkelijker het in te plannen is. */
-      spoed: false
+      spoed: dringend
     });
   }
 }
