@@ -131,6 +131,40 @@
     });
   }
 
+  /* Een ophaalmoment dat al voorbij is.
+
+     Dit gebeurt vaker dan je denkt: iemand vult 's avonds een aanvraag in,
+     kiest vandaag als datum en laat de tijd op 14:00 staan omdat dat het
+     standaardvoorstel was. Dan staat er een rit gepland die twee uur geleden
+     had moeten vertrekken, en dat kost jou een telefoontje om te vragen wat er
+     bedoeld werd.
+
+     Bewust ruim: een kwartier speling, want iemand die om 19:00 een spoedrit
+     aanvraagt voor 19:00 bedoelt gewoon 'nu'. En alleen als er een datum én een
+     tijd staat — half ingevuld is nog niet fout, dat vangt het formulier zelf. */
+  var SPELING_MIN = 15;
+
+  function keurMoment() {
+    var v = document.getElementById('r-tijd');
+    if (!v) { return; }
+    v.setCustomValidity('');
+
+    var datum = veld('r-datum');
+    var tijd = veld('r-tijd');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(datum) || !/^\d{1,2}:\d{2}$/.test(tijd)) { return; }
+
+    var moment = new Date(datum + 'T' + (tijd.length === 4 ? '0' + tijd : tijd) + ':00');
+    if (isNaN(moment.getTime())) { return; }
+
+    if (moment.getTime() < Date.now() - SPELING_MIN * 60000) {
+      var vandaag = new Date().toISOString().slice(0, 10);
+      v.setCustomValidity(datum === vandaag
+        ? 'Dat tijdstip is vandaag al geweest. Kies een later tijdstip, of ' +
+          'zet de datum op morgen.'
+        : 'Die datum ligt in het verleden. Kies een datum vanaf vandaag.');
+    }
+  }
+
   /* ===================== keuzes overnemen van de calculator ===================== */
 
   /* De knop onder de calculator op de homepage linkt hierheen met de gemaakte
@@ -474,6 +508,7 @@
   ritForm.addEventListener('submit', function (e) {
     e.preventDefault();
     keurAdressen();
+    keurMoment();
     if (!ritForm.checkValidity()) { ritForm.reportValidity(); return; }
 
     var data = bouwAanvraag();
@@ -494,6 +529,13 @@
 
   ritForm.addEventListener('input', ververSamenvatting);
   ritForm.addEventListener('change', ververSamenvatting);
+
+  /* Meteen bij het typen kijken of het ophaalmoment nog kan, zodat je het ziet
+     terwijl je het invult en niet pas bij het versturen. */
+  ['r-datum', 'r-tijd'].forEach(function (id) {
+    var v = document.getElementById(id);
+    if (v) { v.addEventListener('change', keurMoment); }
+  });
 
   /* Ook nakijken zodra je het adresveld verlaat. Bij het versturen gebeurt het
      ook, maar dan hoor je het pas als je al klaar dacht te zijn. Niet tijdens

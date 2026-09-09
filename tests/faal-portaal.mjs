@@ -28,7 +28,7 @@ function zetKlaar() {
   rit = { id: 'recAAAAAAAAAAAAAA', fields: {
     Rit: 'RIT-1', Ritdatum: '2026-09-03', Status: 'Gepland',
     Ophaaladres: 'A', Afleveradres: 'B', Kilometers: 20, Chauffeur: 'Piet Rijder',
-    Brandstofkosten: 12.5, 'Tol en parkeren': 4, 'Overige ritkosten': 1,
+    'Brandstof berekend': 12.5, Tol: 4, Parkeren: 2, 'Overige ritkosten': 1,
     'Totale ritkosten': 17.5, Winst: 82.5, Korting: 10, 'Reden korting': 'Te laat',
     'Extra kosten': 6, 'Automatisch totaal excl. BTW': 100,
     Klantnaam: ['Klant BV'], 'Klant telefoon': ['+31612345678'],
@@ -274,14 +274,16 @@ console.log('\nwat een chauffeur niet mag');
 console.log('\nwat een chauffeur nooit terugkrijgt');
 {
   const GELD = ['bedrag', 'korting', 'kortingRe', 'doorbereken', 'brandstof', 'tol',
-                'overig', 'kosten', 'winst', 'totaalIncl', 'btw'];
+                'parkeren', 'overig', 'kosten', 'winst', 'totaalIncl', 'btw',
+                /* De tariefafspraak met een klant is ook geld. */
+                'start', 'kmNorm', 'kmSpoed'];
   const acties = [
     { actie: 'overzicht', dag: '2026-09-03' },
     { actie: 'ritten', van: '2026-09-01', tot: '2026-09-05' },
     { actie: 'status', id: 'recAAAAAAAAAAAAAA', status: 'Onderweg' },
     { actie: 'notitie', id: 'recAAAAAAAAAAAAAA', tekst: 'iets' },
     { actie: 'ritkm', id: 'recAAAAAAAAAAAAAA', km: 30 },
-    { actie: 'ritkosten', id: 'recAAAAAAAAAAAAAA', brandstof: 10 },
+    { actie: 'ritkosten', id: 'recAAAAAAAAAAAAAA', tol: 10, parkeren: 3 },
     { actie: 'ritcontact', id: 'recAAAAAAAAAAAAAA', contact: 'Henk', telefoon: '0612' },
     { actie: 'zoekritten', tekst: 'RIT' }
   ];

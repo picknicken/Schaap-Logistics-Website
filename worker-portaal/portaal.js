@@ -48,11 +48,17 @@ const R = {
   ophaal:     'Ophaaladres',
   aflever:    'Afleveradres',
   km:         'Kilometers',
+  startTarief:'Starttarief',
+  kmTarief:   'Km-tarief',
   stops:      'Extra stops',
   tijdvak:    'Tijdvak',
   tijd:       'Ophaaltijd',
-  brandstof:  'Brandstofkosten',
-  tol:        'Tol en parkeren',
+  /* Brandstof typ je niet: die volgt uit de kilometers, zie het veld
+     'Brandstof berekend' in Airtable. Tol en parkeren staan sinds kort apart
+     zodat je achteraf ziet waar het geld heen ging. */
+  brandstof:  'Brandstof berekend',
+  tol:        'Tol',
+  parkeren:   'Parkeren',
   overig:     'Overige ritkosten',
   kosten:     'Totale ritkosten',
   winst:      'Winst',
@@ -233,6 +239,13 @@ const K = {
   uitgenodigd:'Uitnodiging verstuurd op',
   soort:     'Soort klant',
   ritten:    'Aantal ritten',
+  /* De tariefafspraak met deze klant. Stond er al maar deed niets; sinds kort
+     zet nieuweRit ze op de rit, en de formule in Airtable gebruikt een tarief
+     op de rit vóór het standaardtarief van de dienst. */
+  start:     'Starttarief',
+  kmNorm:    'Normaal tarief per km',
+  kmSpoed:   'Spoedtarief per km',
+  contract:  'Contract',
   /* Voor jou en nooit voor de klant. naarKlant geeft ze terug aan het
      eigenaarsportaal; het klantportaal krijgt alleen naam en nummer, en dat
      staat hardgecodeerd in klantVerzoek. */
@@ -272,6 +285,9 @@ const MAX_HANDTEK_KB = 800;
    vangt af wat daaromheen glipt, want het gratis Airtable-plan geeft je één
    gigabyte aan bijlagen voor de hele base. */
 const MAX_FOTO_KB    = 1500;
+/* Een contract is een pdf van een paar bladzijden. Groter dan dit is meestal
+   een scan op veel te hoge resolutie, en die past toch niet binnen MAX_BODY_MB. */
+const MAX_CONTRACT_MB = 3;
 
 /* Hoeveel dagen je in één keer mag opvragen. Stond op 31, en dat was te krap
    voor twee dingen die het portaal werkelijk vraagt: de meldingen kijken
@@ -505,7 +521,11 @@ export default {
        is het misschien een klantcode en gaat het hieronder verder. */
     let wie = null;
     if (gelijk(code, env.PORTAAL_CODE)) {
-      wie = { rol: 'Eigenaar', naam: 'Eigenaar', id: null, hoofdsleutel: true };
+      /* Jouw eigen naam, uit wrangler.toml. Die heb je nodig zodra er meer
+         dan één iemand rijdt: staat er 'Eigenaar' op een rit, dan weet een
+         chauffeur niet wie dat is, en jij later ook niet. */
+      wie = { rol: 'Eigenaar', naam: String(env.EIGENAAR_NAAM || 'Eigenaar').trim(),
+              id: null, hoofdsleutel: true };
     } else if (code) {
       try {
         wie = await zoekMedewerker(env, code);
@@ -586,7 +606,10 @@ const RIT_ACTIES = new Set(['status', 'handtekening', 'notitie', 'ritkm', 'ritko
 /* Wat een chauffeur nooit terugkrijgt, ook niet als een actie het per ongeluk
    meestuurt. Dit zijn de velden waar geld in staat. */
 const GELDVELDEN = ['bedrag', 'korting', 'kortingRe', 'doorbereken',
-                    'brandstof', 'tol', 'overig', 'kosten', 'winst',
+                    /* De tariefafspraak met een klant is een bedrag en gaat
+                       niemand anders aan. */
+                    'start', 'kmNorm', 'kmSpoed',
+                    'brandstof', 'tol', 'parkeren', 'overig', 'kosten', 'winst',
                     /* En wat er bij een klant aan geld hangt. */
                     'openstaand', 'omzet', 'winstRit', 'marge'];
 
@@ -647,6 +670,8 @@ async function schakel(env, body, origin, wie) {
     case 'chauffeurcode':   return await haalChauffeurcode(env, body, origin);
     case 'klantnotitie': return await zetKlantnotitie(env, body, origin);
     case 'klantzelf':    return await zetZelfbediening(env, body, origin);
+    case 'klanttarief':  return await zetKlanttarief(env, body, origin);
+    case 'klantcontract':return await zetKlantcontract(env, body, origin);
     case 'toegangweg':   return await trekToegangIn(env, body, origin);
     case 'facturen':     return await haalFacturen(env, body, origin);
     case 'portaallink':  return await haalPortaallink(env, body, origin);
@@ -1217,7 +1242,10 @@ async function nieuweRit(env, body, origin) {
   };
 
   const klantId = recordId(body.klantId);
-  if (klantId) { velden[R.klantlink] = [klantId]; }
+  if (klantId) {
+    velden[R.klantlink] = [klantId];
+    Object.assign(velden, await tariefVanKlant(env, klantId, soort));
+  }
 
   const km = kilometers(body.km);
   if (km !== null) { velden[R.km] = km; }
@@ -1269,6 +1297,37 @@ async function zetRitdatum(env, body, origin) {
   }
   const rit = naarRit(await patch(env, env.AIRTABLE_RITTEN, id, { [R.datum]: nieuw }));
   return antwoord(200, { ok: true, rit }, origin, true);
+}
+
+/* De tariefafspraak van een klant op de rit zetten.
+
+   De formule in Airtable kijkt eerst naar het tarief op de rit en pas daarna
+   naar het standaardtarief van de dienst. Zetten we die bedragen hier neer, dan
+   rekent de rest van het bouwwerk er vanzelf mee — de factuur, de winst, de
+   conceptfactuur — zonder dat er ergens een tweede prijsregel bij komt.
+
+   Op de rit en niet als opzoekveld, en dat is met opzet: verander je later de
+   afspraak met een klant, dan horen oude ritten te blijven staan voor wat ze
+   waren. Een factuur van vorig jaar mag niet meebewegen.
+
+   Een spoedrit krijgt het spoedtarief, de rest het normale. Staat er niets
+   afgesproken, dan blijft het veld leeg en geldt gewoon het standaardtarief. */
+async function tariefVanKlant(env, klantId, ritsoort) {
+  try {
+    const rec = await airtable(env, `${env.AIRTABLE_KLANTEN}/${klantId}`);
+    const f = rec.fields || {};
+    const uit = {};
+    if (f[K.start] > 0) { uit[R.startTarief] = f[K.start]; }
+    const spoed = /spoed|direct/i.test(String(ritsoort || ''));
+    const km = spoed ? f[K.kmSpoed] : f[K.kmNorm];
+    if (km > 0) { uit[R.kmTarief] = km; }
+    return uit;
+  } catch (fout) {
+    /* Geen tarief kunnen ophalen mag geen rit tegenhouden: dan geldt het
+       standaardtarief, en dat is de veilige stand. */
+    console.log(`Tarief van klant ${klantId} niet gelezen: ${fout.message}`);
+    return {};
+  }
 }
 
 /* Een klant aan een opdracht hangen. Ook aan de ritten die er al onder
@@ -1488,7 +1547,11 @@ async function zetRitKosten(env, body, origin) {
   if (!id) { return antwoord(400, { fout: 'Ongeldig rit-id' }, origin, true); }
 
   const velden = {};
-  const posten = [['brandstof', R.brandstof], ['tol', R.tol], ['overig', R.overig]];
+  /* Brandstof staat er bewust niet meer bij: dat is sinds kort een formule in
+     Airtable (kilometers maal het literprijstarief). Zou je hem hier toch
+     schrijven, dan weigert Airtable de hele update en ben je alle drie de
+     bedragen kwijt. */
+  const posten = [['tol', R.tol], ['parkeren', R.parkeren], ['overig', R.overig]];
   for (const [naam, veld] of posten) {
     const bedrag = euroBedrag(body[naam]);
     if (bedrag !== null) { velden[veld] = bedrag; }
@@ -1695,6 +1758,63 @@ async function zetKlantnotitie(env, body, origin) {
   const klant = naarKlant(
     await patch(env, env.AIRTABLE_KLANTEN, id, { [K.notitie]: tekst.trim() }));
   return antwoord(200, { ok: true, klant }, origin, true);
+}
+
+/* De tariefafspraak met een klant. Leeg betekent: gewoon het standaardtarief.
+
+   Deze bedragen gelden pas vanaf de volgende rit die je voor hem inplant. Oude
+   ritten dragen het tarief dat er toen gold, en dat hoort zo: een factuur van
+   vorige maand mag niet meebewegen omdat je vandaag iets anders afspreekt. */
+async function zetKlanttarief(env, body, origin) {
+  const id = recordId(body.klantId);
+  if (!id) { return antwoord(400, { fout: 'Ongeldig klant-id' }, origin, true); }
+
+  const velden = {};
+  for (const [naam, veld] of [['start', K.start], ['kmNorm', K.kmNorm],
+                              ['kmSpoed', K.kmSpoed]]) {
+    if (body[naam] === undefined) { continue; }
+    /* Leeg invullen wist de afspraak; dat is hoe je hem terugdraait. */
+    if (body[naam] === '' || body[naam] === null) { velden[veld] = null; continue; }
+    const bedrag = euroBedrag(body[naam]);
+    if (bedrag === null) {
+      return antwoord(400, { fout: 'Dat is geen bruikbaar bedrag' }, origin, true);
+    }
+    velden[veld] = bedrag;
+  }
+  if (!Object.keys(velden).length) {
+    return antwoord(400, { fout: 'Er viel niets bij te werken' }, origin, true);
+  }
+
+  const klant = naarKlant(await patch(env, env.AIRTABLE_KLANTEN, id, velden));
+  return antwoord(200, { ok: true, klant }, origin, true);
+}
+
+/* Het contract of de tariefafspraak van een bedrijf erbij zetten. Dezelfde weg
+   als een handtekening of een afleverfoto: het bestand gaat rechtstreeks naar
+   Airtable en niet door dit antwoord heen. */
+async function zetKlantcontract(env, body, origin) {
+  const id = recordId(body.klantId);
+  if (!id) { return antwoord(400, { fout: 'Ongeldig klant-id' }, origin, true); }
+
+  const match = /^data:(application\/pdf|image\/png|image\/jpeg);base64,(.+)$/
+    .exec(String(body.data || ''));
+  if (!match) {
+    return antwoord(400, {
+      fout: 'Stuur een pdf of een foto van het contract.'
+    }, origin, true);
+  }
+  const [, type, base64] = match;
+  if (base64.length * 0.75 > MAX_CONTRACT_MB * 1024 * 1024) {
+    return antwoord(413, {
+      fout: 'Dat bestand is te groot. Hoogstens ' + MAX_CONTRACT_MB + ' MB.'
+    }, origin, true);
+  }
+
+  const naam = schoneBestandsnaam(body.naam || 'contract') ||
+               ('contract.' + (type === 'application/pdf' ? 'pdf' : 'jpg'));
+  await uploadBijlage(env, id, K.contract, type, base64, naam);
+  const rec = await airtable(env, `${env.AIRTABLE_KLANTEN}/${id}`);
+  return antwoord(200, { ok: true, klant: naarKlant(rec) }, origin, true);
 }
 
 /* De zelfbediening van één klant dicht of open. Dicht betekent: hij ziet zijn
@@ -3279,6 +3399,7 @@ function naarRit(record) {
        een eigen lijst met velden en die staan daar niet op. */
     brandstof:  f[R.brandstof] || 0,
     tol:        f[R.tol] || 0,
+    parkeren:   f[R.parkeren] || 0,
     overig:     f[R.overig] || 0,
     kosten:     f[R.kosten] || 0,
     winst:      f[R.winst] || 0,
@@ -3382,6 +3503,12 @@ function naarKlant(record) {
        nummer terug, dus deze twee komen daar niet langs. */
     notitie:  f[K.notitie] || '',
     geenZelf: !!f[K.geenZelf],
+    /* De tariefafspraak. Alleen voor jou — zonderBedragen haalt het er voor
+       iedereen anders weer uit, net als bij de omzetcijfers. */
+    start:    f[K.start] || 0,
+    kmNorm:   f[K.kmNorm] || 0,
+    kmSpoed:  f[K.kmSpoed] || 0,
+    contract: bijlageUrl(f[K.contract]),
     /* Of deze klant werkelijk naar binnen kan. De code zelf blijft hier weg —
        die hoeft de telefoon niet te weten — maar of hij er is wel, anders kun
        je niet zien of intrekken al gebeurd is. */
@@ -3447,6 +3574,18 @@ async function uploadBijlage(env, recordId, veld, type, base64, bestandsnaam) {
     throw new Error(`${res.status} ${(await res.text()).slice(0, 200)}`);
   }
   return res.json();
+}
+
+/* Een bestandsnaam die veilig in een URL en in Airtable past. Alles wat geen
+   letter, cijfer, punt of streepje is gaat eruit, en een naam die met een punt
+   begint hoort niet te bestaan. */
+function schoneBestandsnaam(w) {
+  const naam = String(w || '')
+    .replace(/[^A-Za-z0-9._-]+/g, '-')
+    .replace(/\.{2,}/g, '.')
+    .replace(/^[.-]+/, '')
+    .slice(0, 60);
+  return naam || '';
 }
 
 function cors(origin, toegestaan) {

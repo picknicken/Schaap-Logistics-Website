@@ -2461,12 +2461,16 @@
       String(rit.chauffeur).trim().toLowerCase() ===
       String(wieIkBen.naam || '').trim().toLowerCase();
 
-    /* 'Ik rijd hem' is er voor een chauffeur die zelf een rit oppakt. Voor jou
-       als eigenaar is het een tussenstap die niets oplost: jij bent bij een
-       eenmanszaak toch degene die rijdt, en je wilt gewoon op Onderweg kunnen
-       drukken. */
+    /* Oppakken mag iedereen die rijdt, jij ook: dan staat jouw naam op de rit
+       in plaats van 'niemand', en dat is wat een chauffeur en jijzelf later
+       willen zien. De naam komt van de tussenlaag — voor jou uit EIGENAAR_NAAM
+       in wrangler.toml, voor een chauffeur uit zijn eigen regel.
+
+       Voor jou staat de knop Onderweg er wél naast: jij hoeft niet eerst te
+       claimen om te kunnen vertrekken. Voor een chauffeur wel — anders rijdt
+       hij een rit die op niemands naam staat. */
     var benChauffeur = !!wieIkBen && wieIkBen.rol !== 'Eigenaar';
-    if (vrij && benChauffeur) {
+    if (vrij) {
       var pak = maak('button', 'knop knop--groen', 'Ik rijd hem');
       pak.type = 'button';
       pak.addEventListener('click', function () {
@@ -2482,8 +2486,15 @@
 
     /* Loslaten mag zolang je niet vertrokken bent. Alleen bij je eigen rit, en
        alleen als je chauffeur bent: de eigenaar heeft de planknoppen. */
-    if (vanMij && rit.status === 'Gepland' && wieIkBen && wieIkBen.rol !== 'Eigenaar') {
-      var los = maak('button', 'knop knop--rand', 'Toch niet rijden');
+    /* Vrijgeven: de rit terug in de pot, zodat een ander hem kan oppakken.
+       Voor een chauffeur alleen zijn eigen rit; voor jou elke rit die nog
+       gepland staat — jij bent degene die herverdeelt. */
+    var magVrijgeven = rit.status === 'Gepland' &&
+      String(rit.chauffeur || '').trim() &&
+      (vanMij || (wieIkBen && wieIkBen.rol === 'Eigenaar'));
+    if (magVrijgeven) {
+      var los = maak('button', 'knop knop--rand',
+        vanMij ? 'Toch niet rijden' : 'Vrijgeven (' + rit.chauffeur + ' eraf)');
       los.type = 'button';
       los.addEventListener('click', function () {
         bezig(los, 'Bezig…', function (klaar) {
@@ -3085,6 +3096,100 @@
      opdracht onder Planning, en dat betekende dat je een klant zonder
      openstaande opdracht nergens kon uitnodigen. Hier hoort het thuis: je zoekt
      iemand op en regelt het meteen. */
+  /* De tariefafspraak met deze klant, plus het contract eronder.
+
+     Leeg laten betekent: gewoon het standaardtarief van de dienst. Vul je iets
+     in, dan geldt dat vanaf de volgende rit die je voor hem inplant — oude
+     ritten dragen het tarief dat er toen gold, en dat hoort zo: een factuur van
+     vorige maand mag niet meebewegen omdat je vandaag iets anders afspreekt. */
+  function tariefBlok(k) {
+    var blok = maak('details', 'vouw');
+    var afgesproken = (k.start > 0) || (k.kmNorm > 0) || (k.kmSpoed > 0);
+    var kop = maak('summary', 'vouw__kop');
+    kop.appendChild(maak('span', '', 'Tarief en contract'));
+    kop.appendChild(maak('b', '', afgesproken ? 'eigen afspraak' : 'standaardtarief'));
+    blok.appendChild(kop);
+
+    var lijf = maak('div', 'vouw__lijf');
+    lijf.appendChild(maak('div', 'terzijde',
+      'Laat leeg voor het gewone tarief. Wat je hier invult geldt vanaf de ' +
+      'volgende rit die je voor deze klant inplant; ritten die er al staan ' +
+      'blijven op hun eigen tarief.'));
+
+    var rij1 = maak('div', 'velrij');
+    var start = euroVeld('Starttarief', k.start);
+    var kmN = euroVeld('Per km normaal', k.kmNorm);
+    rij1.appendChild(start);
+    rij1.appendChild(kmN);
+    lijf.appendChild(rij1);
+
+    var rij2 = maak('div', 'velrij');
+    var kmS = euroVeld('Per km spoed', k.kmSpoed);
+    rij2.appendChild(kmS);
+    lijf.appendChild(rij2);
+
+    var opslaan = maak('button', 'knop knop--rand', 'Tarief opslaan');
+    opslaan.type = 'button';
+    opslaan.addEventListener('click', function () {
+      bezig(opslaan, 'Opslaan…', function (klaar) {
+        meldApp('');
+        verstuur('klanttarief', {
+          klantId: k.id,
+          start: start.invoer.value,
+          kmNorm: kmN.invoer.value,
+          kmSpoed: kmS.invoer.value
+        })
+          .then(function (data) { vervangKlant(data.klant); })
+          .catch(function (fout) { meldApp(fout.message); klaar(false); });
+      });
+    });
+    lijf.appendChild(opslaan);
+
+    /* Het contract erbij. Handig bij een discussie over de prijs: dan heb je de
+       afspraak zelf bij de hand en niet alleen de bedragen. */
+    if (k.contract) {
+      var link = maak('a', 'knop knop--rand', 'Contract bekijken');
+      link.href = veiligAdres(k.contract);
+      link.target = '_blank';
+      link.rel = 'noopener';
+      lijf.appendChild(link);
+    }
+
+    var kies = document.createElement('input');
+    kies.type = 'file';
+    kies.accept = 'application/pdf,image/png,image/jpeg';
+    kies.hidden = true;
+    var upload = maak('button', 'knop knop--rand',
+      k.contract ? 'Ander contract uploaden' : 'Contract uploaden');
+    upload.type = 'button';
+    upload.addEventListener('click', function () { kies.click(); });
+    kies.addEventListener('change', function () {
+      var bestand = kies.files && kies.files[0];
+      if (!bestand) { return; }
+      bezig(upload, 'Uploaden…', function (klaar) {
+        meldApp('');
+        var lezer = new FileReader();
+        lezer.onerror = function () {
+          meldApp('Dat bestand kon niet gelezen worden.');
+          klaar(false);
+        };
+        lezer.onload = function () {
+          verstuur('klantcontract', {
+            klantId: k.id, naam: bestand.name, data: lezer.result
+          })
+            .then(function (data) { vervangKlant(data.klant); })
+            .catch(function (fout) { meldApp(fout.message); klaar(false); });
+        };
+        lezer.readAsDataURL(bestand);
+      });
+    });
+    lijf.appendChild(upload);
+    lijf.appendChild(kies);
+
+    blok.appendChild(lijf);
+    return blok;
+  }
+
   function tekenPortaalblok(k) {
     var vak = maak('div', 'portaalblok');
 
@@ -3377,6 +3482,7 @@
     }
     if (knoppen.childNodes.length) { kaart.appendChild(knoppen); }
 
+    kaart.appendChild(tariefBlok(k));
     kaart.appendChild(tekenPortaalblok(k));
 
     /* Facturen komen er pas bij als je erom vraagt. Ze standaard meesturen zou
@@ -3850,28 +3956,37 @@
        boven en niet eronder. */
     lijf.appendChild(maak('div', 'terzijde',
       'Dit is wat de rit jóú kost, voor je eigen boekhouding en om je winst te ' +
-      'zien. Het komt niet op de factuur. Brandstof zit al in het ' +
-      'kilometertarief — zet je hem hier én op de factuur, dan betaalt de klant ' +
-      'twee keer voor dezelfde liters. Wat de klant je terugbetaalt zet je ' +
+      'zien. Het komt niet op de factuur. Brandstof rekent hij zelf uit de ' +
+      'kilometers — die zit al in het kilometertarief dat je de klant rekent, ' +
+      'dus hier staat wat het jóu kost. Wat de klant je terugbetaalt zet je ' +
       'hierboven onder Doorberekenen.'));
 
+    /* Brandstof typ je niet meer: die volgt uit de kilometers, met een vast
+       bedrag per kilometer. Dat is nauwkeuriger dan achteraf een tankbeurt
+       toerekenen aan één rit, en het scheelt je het werk. */
+    var brandstofVak = maak('div', 'winst');
+    brandstofVak.appendChild(maak('span', '', 'Brandstof (' + (rit.km || 0) + ' km)'));
+    brandstofVak.appendChild(maak('b', '', euroCent.format(rit.brandstof || 0)));
+
     var rij1 = maak('div', 'velrij');
-    var brandstof = euroVeld('Brandstof (jouw kosten)', rit.brandstof);
-    var tol = euroVeld('Tol en parkeren (jouw kosten)', rit.tol);
-    rij1.appendChild(brandstof);
+    var tol = euroVeld('Tol', rit.tol);
+    var parkeren = euroVeld('Parkeren', rit.parkeren);
     rij1.appendChild(tol);
+    rij1.appendChild(parkeren);
     lijf.appendChild(rij1);
 
     var rij2 = maak('div', 'velrij');
     var overig = euroVeld('Overig', rit.overig);
     rij2.appendChild(overig);
+    rij2.appendChild(brandstofVak);
+    lijf.appendChild(rij2);
+
     if (rit.winst) {
       var winstVak = maak('div', 'winst');
       winstVak.appendChild(maak('span', '', 'Winst'));
       winstVak.appendChild(maak('b', '', euroCent.format(rit.winst)));
-      rij2.appendChild(winstVak);
+      lijf.appendChild(winstVak);
     }
-    lijf.appendChild(rij2);
 
     var knop = maak('button', 'knop knop--rand', 'Kosten opslaan');
     knop.type = 'button';
@@ -3879,14 +3994,14 @@
       bezig(knop, 'Opslaan…', function (klaar) {
         schrijf('ritkosten', {
           id: rit.id,
-          brandstof: brandstof.invoer.value,
           tol: tol.invoer.value,
+          parkeren: parkeren.invoer.value,
           overig: overig.invoer.value
         }, function () {
           return Object.assign({}, rit, {
             wacht: true,
-            brandstof: getal(brandstof.invoer.value),
             tol: getal(tol.invoer.value),
+            parkeren: getal(parkeren.invoer.value),
             overig: getal(overig.invoer.value)
           });
         }).then(function (data) {

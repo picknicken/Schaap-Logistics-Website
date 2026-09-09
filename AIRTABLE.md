@@ -347,6 +347,46 @@ schadelijk is het niet, maar het staat slordig.
 Hetzelfde geldt in het klantportaal: daar komt de factuur binnen via
 `zonderBeheer`, en die functie is de enige plek waar dat gebeurt.
 
+### Jouw eigen kosten per rit
+
+Sinds kort anders ingedeeld, en het is goed om te weten waarom.
+
+**Brandstof typ je niet meer.** `Brandstof berekend` is een formule: de
+kilometers maal **€ 0,23**. Dat is nauwkeuriger dan achteraf een tankbeurt
+toerekenen aan één rit, en het scheelt je het werk. Klopt die € 0,23 niet meer,
+pas dan die ene formule aan — nergens anders.
+
+Het oude veld `Brandstofkosten` doet niets meer. Laat het staan zolang er nog
+oude ritten in zitten die je wilt kunnen nakijken; is dat niet zo, dan mag het
+weg.
+
+**Tol en parkeren staan nu apart.** `Tol` en `Parkeren` in plaats van één veld,
+zodat je achteraf ziet waar het geld heen ging. `Totale ritkosten` telt de
+berekende brandstof, tol, parkeren en overige kosten bij elkaar op.
+
+Dit alles is **jouw** kant. Wat de klant je terugbetaalt — tol die je voorschiet,
+een veerpont — hoort in `Extra kosten`, en dat komt wél als losse regel op de
+factuur.
+
+### Tariefafspraken per klant
+
+Op `Klanten` staan `Starttarief`, `Normaal tarief per km` en `Spoedtarief per
+km`. Die stonden er al maar deden niets; nu zet het portaal ze op elke nieuwe
+rit die je voor die klant inplant, en de prijsformule gebruikt een tarief op de
+rit vóór het standaardtarief van de dienst.
+
+Je stelt ze in in het portaal, tabblad **Klanten**, onder *Tarief en contract*.
+Leeg laten betekent: gewoon het standaardtarief.
+
+**Ze gelden vanaf de volgende rit.** Ritten die er al staan dragen het tarief
+dat er toen gold, en dat hoort zo: een factuur van vorige maand mag niet
+meebewegen omdat je vandaag iets anders afspreekt. Daarom staan die bedragen op
+de rit en niet als opzoekveld.
+
+`Contract` is een bijlage bij de klant: het getekende contract of de
+tariefafspraak. Uploaden kan vanuit het portaal — handig bij een discussie over
+de prijs, dan heb je de afspraak zelf bij de hand en niet alleen de bedragen.
+
 ### De tabel Chauffeurs
 
 Naast `Chauffeur`, `Toegangscode`, `Rol`, `Actief` en `Laatst ingelogd` staan er

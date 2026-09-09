@@ -343,6 +343,22 @@ meteen binnen, met SPOED in de titel als het spoed is.
 niet: die ritten maak je zelf aan, en je telefoon laten piepen om je te vertellen
 wat je net zelf hebt getikt is ruis.
 
+### Wie rijdt er: claimen en vrijgeven
+
+Een rit zonder chauffeur is voor iedereen zichtbaar met **Ik rijd hem** — voor
+jou net zo goed als voor een chauffeur. Druk jij erop, dan staat *Shane* op die
+rit; drukt een chauffeur, dan zijn eigen naam. Die naam komt uit
+`EIGENAAR_NAAM` in `wrangler.toml`; wil je hem anders, pas hem daar aan.
+
+Jij hoeft niet eerst te claimen om te kunnen vertrekken: bij jou staat
+*Onderweg* er gewoon naast. Een chauffeur wel — anders rijdt hij een rit die op
+niemands naam staat.
+
+**Vrijgeven** haalt de chauffeur er weer af, zodat een ander hem kan oppakken.
+Een chauffeur mag dat alleen met zijn eigen rit en alleen zolang hij niet
+vertrokken is; jij mag elke geplande rit vrijgeven, ook die van een ander — jij
+bent degene die herverdeelt.
+
 ### Een chauffeur die zelf ritten oppakt
 
 Een chauffeur ziet in zijn portaal nu ook de ritten van die dag die **nog geen

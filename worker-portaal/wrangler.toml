@@ -36,6 +36,9 @@ AIRTABLE_TOEGANGSLOG = "tblieegCnsk3Pjd4i"
 # Allebei maak je ze met scripts/pushsleutels.html, in je eigen browser.
 VAPID_PUBLIEK = "BIn5p0Z2yy20cJX-NgKUOfcx5mRbIO2qpGUuAAEGha_aMYUyD58IOaq7Pz8NuFzdpIFzKpXahcdaJzBiflDELdY"
 VAPID_CONTACT = "mailto:info@schaaplogistics.nl"
+# Jouw naam, zoals hij op een rit komt te staan als je hem zelf oppakt.
+# Zonder dit staat er "Eigenaar" op, en dat zegt een chauffeur niets.
+EIGENAAR_NAAM = "Shane"
 # Meerdere adressen mogen, gescheiden door een komma. Het oude
 # github.io-adres blijft er voorlopig bij staan: dat leidt naar het
 # nieuwe door, maar tijdens het verhuizen van de DNS kan een bezoeker

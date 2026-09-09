@@ -32,7 +32,7 @@ const env = {
   AIRTABLE_KLANTEN: 'tblK', AIRTABLE_FACTUREN: 'tblF', AIRTABLE_CHAUFFEURS: 'tblC',
   AIRTABLE_DAGSTATEN: 'tblD', AIRTABLE_PUSH: 'tblP',
   TOEGESTANE_ORIGIN: 'https://schaaplogistics.nl',
-  PORTAAL_CODE: 'geheim-hoofdsleutel-1234',
+  PORTAAL_CODE: 'geheim-hoofdsleutel-1234', EIGENAAR_NAAM: 'Shane',
   VAPID_CONTACT: 'mailto:info@schaaplogistics.nl'
 };
 
@@ -1043,6 +1043,145 @@ console.log('\n=== chauffeurs beheren ===\n');
   }
 
   globalThis.fetch = echt;
+}
+
+console.log('\n=== de tariefafspraak met een klant ===\n');
+{
+  const echt = globalThis.fetch;
+  let klantVelden = {};
+  globalThis.fetch = async (url, opties = {}) => {
+    const u = String(url);
+    const m = opties.method || 'GET';
+    if (u.includes('/tblK')) {
+      const rec = { id: 'recKlant000000001', fields: Object.assign(
+        { Klantnaam: 'Janssen BV' }, klantVelden) };
+      if (m === 'PATCH') {
+        Object.assign(klantVelden, JSON.parse(opties.body).fields);
+        return new Response(JSON.stringify({ id: rec.id,
+          fields: Object.assign({}, rec.fields, klantVelden) }), { status: 200 });
+      }
+      if (/\/tblK\/rec/.test(u.split('?')[0])) {
+        return new Response(JSON.stringify(rec), { status: 200 });
+      }
+      return new Response(JSON.stringify({ records: [rec] }), { status: 200 });
+    }
+    return echt(url, opties);
+  };
+
+  zetKlaar();
+  klantVelden = {};
+  let res = await doe({ actie: 'klanttarief', klantId: 'recKlant000000001',
+    start: '90', kmNorm: '1,25', kmSpoed: '1,80' });
+  keur('een tarief afspreken lukt', res.status === 200, res.status);
+  keur('het starttarief staat erin', klantVelden.Starttarief === 90, klantVelden.Starttarief);
+  keur('de komma wordt als decimaalteken gelezen',
+    klantVelden['Normaal tarief per km'] === 1.25,
+    klantVelden['Normaal tarief per km']);
+  keur('en het spoedtarief ook', klantVelden['Spoedtarief per km'] === 1.8);
+
+  res = await doe({ actie: 'klanttarief', klantId: 'recKlant000000001', start: 'veel' });
+  keur('onzin wordt geweigerd', res.status === 400, res.status);
+
+  await doe({ actie: 'klanttarief', klantId: 'recKlant000000001', start: '' });
+  keur('leeg invullen wist de afspraak', klantVelden.Starttarief === null,
+    JSON.stringify(klantVelden.Starttarief));
+
+  /* En dan het punt waar het om gaat: gaat die afspraak mee op een nieuwe rit. */
+  console.log('\nen die afspraak komt op de rit');
+  klantVelden = { Starttarief: 90, 'Normaal tarief per km': 1.25,
+                  'Spoedtarief per km': 1.80 };
+  zetKlaar();
+  let gemaakteRit = null;
+  const nogEchter = globalThis.fetch;
+  globalThis.fetch = async (url, opties = {}) => {
+    const u = String(url);
+    if (u.includes('/tblR') && (opties.method || 'GET') === 'POST') {
+      gemaakteRit = (JSON.parse(opties.body).records || [])[0].fields;
+      return new Response(JSON.stringify({ records: [
+        { id: 'recNieuweRit00001', fields: gemaakteRit }] }), { status: 200 });
+    }
+    return nogEchter(url, opties);
+  };
+
+  await doe({ actie: 'nieuwerit', datum: VANDAAG, type: 'Standaard transport',
+    klantId: 'recKlant000000001', ophaal: 'A', aflever: 'B', km: '40' });
+  keur('een standaardrit krijgt het normale tarief',
+    gemaakteRit && gemaakteRit['Km-tarief'] === 1.25,
+    gemaakteRit && gemaakteRit['Km-tarief']);
+  keur('en het afgesproken starttarief',
+    gemaakteRit && gemaakteRit.Starttarief === 90,
+    gemaakteRit && gemaakteRit.Starttarief);
+
+  gemaakteRit = null;
+  await doe({ actie: 'nieuwerit', datum: VANDAAG, type: 'Spoedtransport',
+    klantId: 'recKlant000000001', ophaal: 'A', aflever: 'B', km: '40' });
+  keur('een spoedrit krijgt het spoedtarief',
+    gemaakteRit && gemaakteRit['Km-tarief'] === 1.8,
+    gemaakteRit && gemaakteRit['Km-tarief']);
+
+  /* Zonder afspraak hoort er niets op de rit te komen: dan geldt het
+     standaardtarief uit de formule, en een 0 zou dat overschrijven. */
+  klantVelden = {};
+  gemaakteRit = null;
+  await doe({ actie: 'nieuwerit', datum: VANDAAG, type: 'Spoedtransport',
+    klantId: 'recKlant000000001', ophaal: 'A', aflever: 'B', km: '40' });
+  keur('zonder afspraak blijft het tarief leeg',
+    gemaakteRit && gemaakteRit['Km-tarief'] === undefined &&
+    gemaakteRit.Starttarief === undefined,
+    JSON.stringify(gemaakteRit || {}).slice(0, 160));
+
+  globalThis.fetch = echt;
+}
+
+console.log('\n=== jouw kosten: brandstof, tol en parkeren ===\n');
+{
+  zetKlaar();
+  let gezet = null;
+  const echt = globalThis.fetch;
+  globalThis.fetch = async (url, opties = {}) => {
+    const u = String(url);
+    if (u.includes('/tblR') && (opties.method || 'GET') === 'PATCH') {
+      gezet = JSON.parse(opties.body).fields;
+    }
+    return echt(url, opties);
+  };
+
+  const res = await doe({ actie: 'ritkosten', id: 'recGeplandGeen001',
+    tol: '12,50', parkeren: '4', overig: '0', brandstof: '99' });
+  keur('tol en parkeren worden apart bewaard',
+    res.status === 200 && gezet && gezet.Tol === 12.5 && gezet.Parkeren === 4,
+    JSON.stringify(gezet));
+  /* Brandstof is een formule in Airtable geworden. Zou de tussenlaag hem toch
+     schrijven, dan weigert Airtable de hele update en ben je alle drie de
+     bedragen kwijt. */
+  keur('brandstof wordt NIET geschreven — dat is een formule',
+    gezet && gezet['Brandstof berekend'] === undefined &&
+    gezet.Brandstofkosten === undefined, JSON.stringify(gezet));
+  globalThis.fetch = echt;
+}
+
+console.log('\n=== oppakken met een naam ===\n');
+{
+  zetKlaar();
+  ritten.recGeplandGeen001.fields.Ritdatum = VANDAAG;
+  const res = await doe({ actie: 'ritoppakken', id: 'recGeplandGeen001' });
+  keur('jij kunt een rit zelf oppakken', res.status === 200, res.status);
+  keur('en er staat jouw naam op, niet het woord Eigenaar',
+    ritten.recGeplandGeen001.fields.Chauffeur === 'Shane',
+    ritten.recGeplandGeen001.fields.Chauffeur);
+
+  const los = await doe({ actie: 'ritloslaten', id: 'recGeplandGeen001' });
+  keur('en je kunt hem weer vrijgeven', los.status === 200, los.status);
+  keur('dan staat hij weer op niemand',
+    !ritten.recGeplandGeen001.fields.Chauffeur,
+    ritten.recGeplandGeen001.fields.Chauffeur);
+
+  /* Een rit van een chauffeur mag jij ook vrijgeven: jij herverdeelt. */
+  zetKlaar();
+  ritten.recGeplandGeen001.fields.Chauffeur = 'Piet';
+  const vrij = await doe({ actie: 'ritloslaten', id: 'recGeplandGeen001' });
+  keur('en ook een rit die op een chauffeur staat', vrij.status === 200, vrij.status);
+  keur('Piet staat er dan af', !ritten.recGeplandGeen001.fields.Chauffeur);
 }
 
 console.log(fouten ? '\n' + fouten + ' fout(en)\n' : '\nalles goed\n');
