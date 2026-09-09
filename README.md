@@ -117,6 +117,13 @@ Deze lijst gaat alleen over de website. Het volledige overzicht van wat er nog
 open staat — ook aan de kant van Airtable, de mail en de zakelijke keuzes die nog
 gemaakt moeten worden — staat in `OPENSTAAND.md`.
 
+De losse stukken naast dit bestand: `AIRTABLE.md` (de tabellen, velden en
+formules), `AUTOMATISEREN.md` (de automatiseringen en wat ze kosten),
+`KORTINGEN.md` (wat een rit oplevert en wat je kunt weggeven),
+`KLANTEN-BELLEN.md` (wie spoedvervoer inkoopt en wat je aan de telefoon zegt),
+`TIJDLIJN.md` (wat wanneer moet gebeuren), `BACKLOG.md` (wat er nog te bouwen
+valt) en `OPENSTAAND.md`.
+
 - [ ] **Zet de site weer op indexeerbaar.** Zolang het een concept is met
       voorbeeldgegevens staat er op alle zeven pagina's
       `<meta name="robots" content="noindex,nofollow">`, zodat Google geen

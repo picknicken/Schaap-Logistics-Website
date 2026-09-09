@@ -51,20 +51,13 @@ dat, dan is het een keuze per rit in plaats van per toestel.
 
 ---
 
-## 3. Alles opvraagbaar en kopieerbaar
+## ~~3. Alles opvraagbaar en kopieerbaar~~
 
-**Wat je bedoelt.** Adres, telefoonnummer, referentie, bedrag — kunnen aantikken
-en kopiëren, in plaats van overtypen of naar een ander scherm gaan.
-
-**Half gebouwd.** In het tabblad Klanten staat achter telefoon, e-mail en adres
-een kopieerknop, en het adres komt er in één keer uit zodat je het in een ander
-navigatieprogramma kunt plakken.
-
-**Wat er nog bij moet.** Hetzelfde op de ritkaart: het ophaal- en afleveradres,
-de referentie en het telefoonnummer van de klant, in één blok met alles wat je
-onderweg nodig hebt.
-
-**Klein**, en waarschijnlijk het meest dagelijkse gemak van deze hele lijst.
+**Gebouwd op 9 september 2026.** Achter het ritnummer, het ophaaladres, het
+afleveradres en de telefoonnummers op de ritkaart staat een knop *Kopieer* —
+naast de knoppen die er in het tabblad Klanten al stonden. Daar is bij gekomen:
+**Contact ter plaatse**, wie er bij de poort staat en op welk nummer je hem
+bereikt, met een belknop bovenaan de kaart zodra het is ingevuld.
 
 ---
 
@@ -98,17 +91,24 @@ Ideeën die je niet noemde maar die in dezelfde hoek zitten:
 
 - **Wachttijd met een knop.** Start bij aankomst, stop bij vertrek, en hij rondt
   zelf af op het kwartier zoals je tarief het rekent. Nu typ je minuten.
-- **Foto bij aflevering**, naast de handtekening. Het sterkste bewijs dat er is.
+- ~~**Foto bij aflevering**, naast de handtekening.~~ Gebouwd — knop *Foto maken*
+  op de ritkaart, hoogstens tien per rit.
 - ~~**Kilometerstand aan het begin en eind van de dag.**~~ Gebouwd — zie het
   blok Kilometerstand onder de vier getallen in de Ritten-tab.
 - **Tankbeurt vastleggen** bij de pomp, in plaats van bonnetjes bewaren.
-- **Offline doorwerken.** In een kelder of parkeergarage werkt het portaal nu
-  niet. Statussen en handtekeningen lokaal bewaren en versturen zodra er weer
-  bereik is.
-- **Meldingen op je telefoon** bij een spoedaanvraag, in plaats van mail. Kan nu
-  het portaal als app geïnstalleerd is.
+- ~~**Offline doorwerken.**~~ Gebouwd — het portaal gaat open zonder bereik, toont
+  de laatste dag met de tijd erbij, en zet wat je invult in een wachtrij die
+  leegloopt zodra er weer verbinding is.
+- ~~**Meldingen op je telefoon** bij een spoedaanvraag, in plaats van mail.~~
+  Gebouwd, maar hij staat nog uit: er moeten eerst VAPID-sleutels in Cloudflare.
+  Zie `OPENSTAAND.md`.
 - **Dagafsluiting**: ritten, kilometers, omzet, wat er nog niet gefactureerd is
   en wie er te laat betaalt.
+
+Sinds 9 september staan er ook drie dingen in die hier niet stonden: een
+**prijsopgave** aan de telefoon (tabblad *Prijs*), een **offerte** die je
+uitprint of achterlaat, en in het klantportaal een **verwachte aankomst**, zodat
+de klant niet hoeft te bellen om te vragen hoe laat het er ongeveer is.
 
 ---
 
@@ -334,8 +334,8 @@ gebeurt en niet in de code.
 
 ## Wat ik als eerste zou doen
 
-1. **Het kopieerbaar maken doortrekken naar de ritkaart.** In het tabblad
-   Klanten staat het al; onderweg heb je het net zo hard nodig.
+1. ~~**Het kopieerbaar maken doortrekken naar de ritkaart.**~~ Staat er, met
+   *Contact ter plaatse* erbij.
 2. **Inspreken doortrekken naar een rit.** Bouwt voort op wat er nu al staat.
 3. **Navigeren die met de rit meegaat.**
 4. ~~**Winst per klant.**~~ Staat er, op de tabel `Klanten`.
