@@ -336,13 +336,28 @@ Er staan met opzet geen bedragen van losse ritten of klantnamen in die je niet
 zelf hebt ingevoerd. Een melding op een vergrendeld scherm is leesbaar voor wie
 er toevallig langsloopt.
 
+Een klant die via de site een rit aanvraagt zit al in de eerste regel: dat komt
+meteen binnen, met SPOED in de titel als het spoed is.
+
 **Wat er niet in zit, en waarom.** Een melding bij *nieuwe rit aangemaakt* is er
 niet: die ritten maak je zelf aan, en je telefoon laten piepen om je te vertellen
-wat je net zelf hebt getikt is ruis. Een melding bij *rit gewijzigd door de klant*
-is er ook niet, om een andere reden: een klant kán niets wijzigen. In het
-klantportaal kan hij precies twee dingen — kijken en annuleren. Wil je dat hij een
-extra stop of een ander afleveradres kan doorgeven, dan is dat eerst bouwen; de
-melding volgt dan vanzelf.
+wat je net zelf hebt getikt is ruis.
+
+### Wijzigverzoeken: de klant vraagt, jij beslist
+
+Een klant kan in zijn portaal om een wijziging vragen voor een zending die nog
+gepland staat — een extra stop, een ander afleveradres, een andere datum of tijd.
+Dat komt meteen op je telefoon en staat in je meldingen, met twee knoppen op de
+ritkaart: *Ingewilligd* of *Afgewezen*. De klant ziet in zijn portaal wat je
+ermee deed, dus dat scheelt het telefoontje "heeft u het gezien".
+
+**De klant verandert nooit zelf iets aan de rit, en jouw knop ook niet.** Een
+stop erbij kost vijfentwintig euro en een ander adres verandert de kilometers.
+Kon de klant dat zelf zetten, dan bepaalt hij je factuur. En de knop
+*Ingewilligd* vinkt het verzoek alleen af: uit "een doos mee naar Breda" zelf een
+aantal kilometers en een stoptoeslag raden geeft een verkeerde factuur. Pas de
+rit daarna aan met de velden die er al voor zijn, dan klopt de prijs — en dat is
+meteen het moment om de klant te laten weten wat het kost.
 
 **De twee mails staan nog aan, met opzet.** `Seintje bij een nieuwe aanvraag`
 en `Seintje bij een annulering door de klant` in Airtable blijven voorlopig

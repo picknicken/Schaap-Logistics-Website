@@ -96,11 +96,33 @@ globalThis.fetch = async (url, opties = {}) => {
   if (u.includes('/tblR')) {
     const id = (u.split('?')[0].match(/\/(rec[A-Za-z0-9]{14})$/) || [])[1];
     if (id && m === 'PATCH') {
-      Object.assign(ritten[id].fields, lees().fields);
+      /* Airtable wist een veld als je er null in zet. */
+      const velden = lees().fields;
+      for (const [k, v] of Object.entries(velden)) {
+        if (v === null) { delete ritten[id].fields[k]; }
+        else { ritten[id].fields[k] = v; }
+      }
       return new Response(JSON.stringify(ritten[id]), { status: 200 });
     }
     if (id) { return new Response(JSON.stringify(ritten[id] || { id, fields: {} }), { status: 200 }); }
-    return new Response(JSON.stringify({ records: Object.values(ritten) }), { status: 200 });
+
+    /* De pushronde en het ochtendbericht vragen elk om iets anders. Zonder de
+       filter na te doen krijgt elke zoekopdracht alle ritten terug, en dan
+       ziet elke rit eruit als een annulering én als een wijzigverzoek. Een
+       proef die daarop groen staat bewijst niets. */
+    const q = decodeURIComponent(u.replace(/\+/g, ' '));
+    let uit = Object.values(ritten);
+    if (q.includes('{Geannuleerd door klant}')) {
+      uit = uit.filter((r) => !!r.fields['Geannuleerd door klant'] &&
+                              !r.fields['Pushmelding annulering op']);
+    } else if (q.includes("{Wijzigverzoek status} = 'Open'")) {
+      uit = uit.filter((r) => r.fields['Wijzigverzoek status'] === 'Open' &&
+                              !r.fields['Pushmelding wijzigverzoek op']);
+    } else if (q.includes("{Status} != 'Geannuleerd'")) {
+      uit = uit.filter((r) => r.fields.Status !== 'Geannuleerd' &&
+                              r.fields.Status !== 'Uitgevoerd');
+    }
+    return new Response(JSON.stringify({ records: uit }), { status: 200 });
   }
 
   if (u.includes('/tblF')) {
@@ -291,6 +313,236 @@ console.log('\nhet ochtendbericht');
   keur('maar de facturen worden wel gewoon op Te laat gezet',
     facturen.recFtest.fields.Status === 'Te laat',
     facturen.recFtest.fields.Status);
+}
+
+/* =========================================================================
+   Het wijzigverzoek van een klant.
+
+   Een klant kan hiermee vragen om een extra stop of een ander afleveradres.
+   Vragen — niet zetten. Beide veranderen de prijs, en als de klant die zelf
+   kan bijstellen bepaalt hij je factuur. Deze proef bewaakt precies dat: dat
+   er een verzoek klaarkomt en dat er niets aan de rit verandert.
+   ========================================================================= */
+console.log('\n=== het wijzigverzoek ===\n');
+
+const KLANTCODE = 'klantcode-abcdefgh';
+let klanten, ritSleutels;
+
+/* Het klantportaal werkt met een betekenisloze sleutel per rit, niet met het
+   record-id. Die sleutel komt uit het overzicht, dus die halen we net zo op
+   als een klant dat doet. */
+const klantDoe = (lading) => worker.fetch(new Request('https://p.dev/', {
+  method: 'POST',
+  headers: { Origin: 'https://schaaplogistics.nl', 'Content-Type': 'application/json',
+             'X-Portaal-Code': KLANTCODE, 'CF-Connecting-IP': '10.0.1.' + (1 + Math.floor(Math.random() * 200)) },
+  body: JSON.stringify(lading)
+}), env);
+
+const oudeFetch = globalThis.fetch;
+globalThis.fetch = async (url, opties = {}) => {
+  const u = String(url);
+  const m = opties.method || 'GET';
+  if (u.includes('/tblK')) {
+    /* De ritten van een klant komen niet uit een filter maar uit het
+       koppelveld op zijn eigen record. Dat moet deze nabootsing dus ook doen,
+       anders krijgt de klant een lege lijst en slaagt de proef nergens door. */
+    const klantRec = {
+      id: 'recKlant000000001',
+      fields: { Klantnaam: 'Janssen BV', Portaalcode: KLANTCODE,
+                'Soort klant': 'Vaste klant', Klantnummer: 7,
+                Ritten: Object.keys(ritten).map((id) => ({ id })) }
+    };
+    if (/\/tblK\/rec[A-Za-z0-9]{14}$/.test(u.split('?')[0])) {
+      return new Response(JSON.stringify(klantRec), { status: 200 });
+    }
+    const leesbaar = decodeURIComponent(u.replace(/\+/g, ' '));
+    const gezocht = (leesbaar.match(/\{Portaalcode\} = '([^']*)'/) || [])[1];
+    return new Response(JSON.stringify({
+      records: gezocht === KLANTCODE ? [klantRec] : [] }), { status: 200 });
+  }
+  return oudeFetch(url, opties);
+};
+
+async function sleutelVan(ritId) {
+  const res = await klantDoe({ actie: 'klantoverzicht' });
+  const data = await res.json();
+  const idx = Object.keys(ritten).indexOf(ritId);
+  return { data, rit: (data.ritten || [])[idx] };
+}
+
+{
+  zetKlaar();
+  /* Alleen ritten van deze klant, en eentje die nog gepland staat. */
+  ritten = { recGeplandGeen001: { id: 'recGeplandGeen001', fields: {
+    Rit: 'RIT-4', Ritdatum: VANDAAG, Status: 'Gepland', Kilometers: 30,
+    Klant: [{ id: 'recKlant000000001' }] } } };
+
+  const { data, rit } = await sleutelVan('recGeplandGeen001');
+  keur('de klant ziet zijn zending', !!rit, JSON.stringify(data).slice(0, 200));
+  keur('en mag er een wijziging voor vragen', rit && rit.magWijzigen === true);
+  keur('er ligt nog geen verzoek', rit && rit.wijzigStand === '');
+
+  const res = await klantDoe({ actie: 'klantwijzig', rit: rit.sleutel,
+    soort: 'Extra stop', tekst: 'Er moet een doos mee naar Breda, Hoofdstraat 12.' });
+  keur('het verzoek wordt aangenomen', res.status === 200, res.status);
+
+  const f = ritten.recGeplandGeen001.fields;
+  keur('het staat als Open in de administratie', f['Wijzigverzoek status'] === 'Open',
+    f['Wijzigverzoek status']);
+  keur('met de tekst van de klant erbij',
+    /Breda/.test(f.Wijzigverzoek || ''), f.Wijzigverzoek);
+  keur('en het soort dat hij koos', f['Wijzigverzoek soort'] === 'Extra stop',
+    f['Wijzigverzoek soort']);
+
+  /* Dit is waar het om gaat. */
+  keur('de rit zelf is NIET veranderd: geen stop erbij',
+    f['Extra stops'] === undefined, f['Extra stops']);
+  keur('geen ander afleveradres', f.Afleverlocatie === undefined, f.Afleverlocatie);
+  keur('geen andere kilometers', f.Kilometers === 30, f.Kilometers);
+  keur('en de status staat nog gewoon op Gepland', f.Status === 'Gepland', f.Status);
+}
+
+console.log('\nwat een klant niet mag');
+{
+  const { rit } = await sleutelVan('recGeplandGeen001');
+  const res = await klantDoe({ actie: 'klantwijzig', rit: rit.sleutel,
+    soort: 'Extra stop', tekst: 'En nog een doos naar Tilburg.' });
+  keur('een tweede verzoek terwijl er al een openstaat wordt geweigerd',
+    res.status === 409, res.status);
+  keur('en het eerste verzoek staat er nog ongeschonden',
+    /Breda/.test(ritten.recGeplandGeen001.fields.Wijzigverzoek || ''));
+  keur('de knop is dan ook weg', rit.magWijzigen === false, rit.magWijzigen);
+}
+{
+  zetKlaar();
+  ritten = { recGeplandGeen001: { id: 'recGeplandGeen001', fields: {
+    Rit: 'RIT-4', Ritdatum: VANDAAG, Status: 'Onderweg', Kilometers: 30,
+    Klant: [{ id: 'recKlant000000001' }] } } };
+  const { rit } = await sleutelVan('recGeplandGeen001');
+  const res = await klantDoe({ actie: 'klantwijzig', rit: rit.sleutel,
+    soort: 'Extra stop', tekst: 'Toch nog even langs Breda.' });
+  keur('een rit die al onderweg is kan hij niet meer wijzigen', res.status === 409, res.status);
+  const tekst = await res.text();
+  keur('en hij krijgt te horen dat hij moet bellen', /bel/i.test(tekst), tekst.slice(0, 120));
+}
+{
+  zetKlaar();
+  ritten = { recGeplandGeen001: { id: 'recGeplandGeen001', fields: {
+    Rit: 'RIT-4', Ritdatum: VANDAAG, Status: 'Gepland', Kilometers: 30,
+    Klant: [{ id: 'recKlant000000001' }] } } };
+  const { rit } = await sleutelVan('recGeplandGeen001');
+
+  const leeg = await klantDoe({ actie: 'klantwijzig', rit: rit.sleutel,
+    soort: 'Extra stop', tekst: '  ' });
+  keur('een leeg verzoek wordt geweigerd', leeg.status === 400, leeg.status);
+
+  /* Het soort gaat een keuzelijst in Airtable in. Staat er iets anders in dan
+     wat erin mag, dan weigert Airtable de hele update en is het verzoek weg. */
+  await klantDoe({ actie: 'klantwijzig', rit: rit.sleutel,
+    soort: 'Gratis rijden graag', tekst: 'Iets bijzonders.' });
+  keur('een verzonnen soort wordt teruggebracht tot Iets anders',
+    ritten.recGeplandGeen001.fields['Wijzigverzoek soort'] === 'Iets anders',
+    ritten.recGeplandGeen001.fields['Wijzigverzoek soort']);
+
+  /* En een rit van iemand anders. */
+  const vreemd = await klantDoe({ actie: 'klantwijzig', rit: 'a'.repeat(16),
+    soort: 'Extra stop', tekst: 'De rit van de buurman.' });
+  keur('een zending die niet van hem is bestaat niet voor hem',
+    vreemd.status === 404, vreemd.status);
+}
+
+console.log('\nde lange tekst afkappen');
+{
+  zetKlaar();
+  ritten = { recGeplandGeen001: { id: 'recGeplandGeen001', fields: {
+    Rit: 'RIT-4', Ritdatum: VANDAAG, Status: 'Gepland', Kilometers: 30,
+    Klant: [{ id: 'recKlant000000001' }] } } };
+  const { rit } = await sleutelVan('recGeplandGeen001');
+  await klantDoe({ actie: 'klantwijzig', rit: rit.sleutel, soort: 'Iets anders',
+    tekst: 'A'.repeat(5000) });
+  const t = ritten.recGeplandGeen001.fields.Wijzigverzoek || '';
+  keur('een tekst van vijfduizend tekens wordt afgekapt', t.length === 1000, t.length);
+}
+
+console.log('\njouw kant: inwilligen of afwijzen');
+{
+  zetKlaar();
+  ritten.recGeplandGeen001.fields['Wijzigverzoek'] = 'Doos mee naar Breda.';
+  ritten.recGeplandGeen001.fields['Wijzigverzoek soort'] = 'Extra stop';
+  ritten.recGeplandGeen001.fields['Wijzigverzoek status'] = 'Open';
+
+  const raar = await doe({ actie: 'wijzigbesluit', id: 'recGeplandGeen001',
+    besluit: 'Misschien' });
+  keur('een besluit dat niet bestaat wordt geweigerd', raar.status === 400, raar.status);
+
+  const res = await doe({ actie: 'wijzigbesluit', id: 'recGeplandGeen001',
+    besluit: 'Ingewilligd' });
+  keur('inwilligen lukt', res.status === 200, res.status);
+  keur('het verzoek staat op Ingewilligd',
+    ritten.recGeplandGeen001.fields['Wijzigverzoek status'] === 'Ingewilligd');
+  keur('en de tekst van de klant blijft staan als bewijs',
+    /Breda/.test(ritten.recGeplandGeen001.fields.Wijzigverzoek || ''));
+  /* Inwilligen verandert de rit niet: dat doe je zelf, met de knoppen die er
+     al voor zijn. Uit een zin een aantal kilometers raden geeft een verkeerde
+     factuur. */
+  keur('maar de rit is er niet stilletjes door veranderd',
+    ritten.recGeplandGeen001.fields.Kilometers === 30 &&
+    ritten.recGeplandGeen001.fields['Extra stops'] === undefined);
+
+  const nogeens = await doe({ actie: 'wijzigbesluit', id: 'recGeplandGeen001',
+    besluit: 'Afgewezen' });
+  keur('een tweede besluit mag: je mag je bedenken', nogeens.status === 200, nogeens.status);
+}
+{
+  zetKlaar();
+  const res = await doe({ actie: 'wijzigbesluit', id: 'recMetKlant000001',
+    besluit: 'Ingewilligd' });
+  keur('een rit zonder verzoek geeft een nette melding', res.status === 409, res.status);
+}
+
+console.log('\nde melding erover');
+{
+  zetKlaar();
+  ritten.recGeplandGeen001.fields['Wijzigverzoek'] = 'Doos mee naar Breda.';
+  ritten.recGeplandGeen001.fields['Wijzigverzoek soort'] = 'Extra stop';
+  ritten.recGeplandGeen001.fields['Wijzigverzoek status'] = 'Open';
+  verstuurd = [];
+  wachtjes.length = 0;
+  await worker.scheduled({ cron: '* * * * *' }, env, ctx);
+  await Promise.all(wachtjes);
+  keur('een open verzoek geeft meteen een seintje', verstuurd.length === 1, verstuurd.length);
+  keur('en wordt afgestempeld',
+    !!ritten.recGeplandGeen001.fields['Pushmelding wijzigverzoek op']);
+
+  verstuurd = [];
+  wachtjes.length = 0;
+  await worker.scheduled({ cron: '* * * * *' }, env, ctx);
+  await Promise.all(wachtjes);
+  keur('de minuut erna komt hij niet nog eens', verstuurd.length === 0, verstuurd.length);
+}
+{
+  /* Handel je het af en vraagt de klant iets nieuws, dan hoort de stempel weg
+     te zijn zodat je wél een seintje krijgt. */
+  zetKlaar();
+  ritten = { recGeplandGeen001: { id: 'recGeplandGeen001', fields: {
+    Rit: 'RIT-4', Ritdatum: VANDAAG, Status: 'Gepland', Kilometers: 30,
+    Klant: [{ id: 'recKlant000000001' }],
+    Wijzigverzoek: 'Eerdere vraag.', 'Wijzigverzoek soort': 'Iets anders',
+    'Wijzigverzoek status': 'Afgewezen',
+    'Pushmelding wijzigverzoek op': '2026-09-01T10:00:00.000Z' } } };
+  const { rit } = await sleutelVan('recGeplandGeen001');
+  keur('na een afgehandeld verzoek mag hij weer vragen', rit.magWijzigen === true);
+  await klantDoe({ actie: 'klantwijzig', rit: rit.sleutel, soort: 'Extra stop',
+    tekst: 'Nu toch een stop erbij.' });
+  keur('de oude stempel is gewist',
+    !ritten.recGeplandGeen001.fields['Pushmelding wijzigverzoek op'],
+    ritten.recGeplandGeen001.fields['Pushmelding wijzigverzoek op']);
+
+  verstuurd = [];
+  wachtjes.length = 0;
+  await worker.scheduled({ cron: '* * * * *' }, env, ctx);
+  await Promise.all(wachtjes);
+  keur('dus het tweede verzoek geeft ook een seintje', verstuurd.length === 1, verstuurd.length);
 }
 
 console.log(fouten ? '\n' + fouten + ' fout(en)\n' : '\nalles goed\n');

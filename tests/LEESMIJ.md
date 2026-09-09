@@ -101,9 +101,19 @@ waard dan een factuur die een dag later komt. En omdat een rem die werk laat
 liggen alleen maar een ander gat maakt: koppel je later alsnog een klant aan een
 afgeronde rit, dan hoort die factuur er alsnog te komen — precies één keer.
 
-Hier staan ook de twee meldingen uit de ochtendklus in: het bericht over
-facturen die te lang openstaan (dat maar één keer per factuur mag komen) en het
-ochtendbericht (dat stil hoort te blijven als er niets te melden is).
+Hier staan ook de meldingen in: het bericht over facturen die te lang openstaan
+(dat maar één keer per factuur mag komen), het ochtendbericht (dat stil hoort te
+blijven als er niets te melden is), en het wijzigverzoek.
+
+Dat laatste is het enige waarmee een klant iets aan een lopende rit kan
+veranderen — en juist daarom verandert het niets. Een extra stop kost
+vijfentwintig euro en een ander afleveradres verandert de kilometers; kon de
+klant dat zelf zetten, dan bepaalt hij je factuur. De proef controleert dus niet
+alleen dat het verzoek aankomt, maar vooral dat de rit erna nog exact hetzelfde
+is: dezelfde kilometers, geen stop erbij, hetzelfde adres, dezelfde status.
+Verder de grenzen die een portaal voor buitenstaanders nodig heeft — alleen je
+eigen zending, alleen zolang hij gepland staat, één verzoek tegelijk, en een
+verzonnen soort dat wordt teruggebracht in plaats van doorgegeven aan Airtable.
 
 **`faal-site.mjs`** — de factuurpagina krijgt alles uit de adresregel, dus
 iedereen die een link kan maken bepaalt wat erop staat. Script, onzinbedragen,

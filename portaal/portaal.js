@@ -1285,6 +1285,22 @@
     });
 
     alle.forEach(function (r) {
+      /* Een open wijzigverzoek van een klant. Staat boven het afzeggen omdat
+         het nog te regelen is: hier kun je nog iets mee, bij een afzegging
+         niet meer. */
+      if (r.wijzigStand === 'Open') {
+        uit.push({
+          sleutel: 'wijzig:' + r.id + ':' + (r.wijzigOp || ''),
+          klasse: 'meld--let',
+          titel: String(r.wijzigSoort || 'Wijziging') + ' gevraagd',
+          regel: (r.klant || r.naam || 'Rit') + ' op ' + datumKort(r.datum) +
+                 ' \u2014 ' + String(r.wijzigverzoek || ''),
+          wanneer: r.wijzigOp || '',
+          tab: 'ritten',
+          dag: r.datum
+        });
+      }
+
       if (r.afgezegdDoorKlant) {
         uit.push({
           sleutel: 'afgezegd:' + r.id + ':' + (r.afgezegdOp || ''),
@@ -1882,6 +1898,9 @@
       afzeg.appendChild(afzegT);
       lijf.appendChild(afzeg);
     }
+
+    /* --- de klant vraagt een wijziging --- */
+    if (rit.wijzigStand) { lijf.appendChild(wijzigBlok(rit)); }
 
     /* --- afleverbewijs --- */
     if (rit.status === 'Uitgevoerd') {
@@ -3127,6 +3146,69 @@
 
      Ingeklapt, want negen van de tien ritten hebben het niet nodig. Staat er
      iets in, dan staat het bovenin de kaart en zit er een belknop bij. */
+  /* Een wijzigverzoek van de klant, met de twee knoppen erbij.
+
+     Let op wat inwilligen wél en niet doet: het sluit het verzoek af, meer
+     niet. De rit zelf pas je daarna met de hand aan — een stop erbij, andere
+     kilometers, een ander adres. Dat is met opzet zo: uit "een doos mee naar
+     Breda" een aantal kilometers en een stoptoeslag afleiden is raden, en
+     daar komt een verkeerde factuur uit. De knop is dus een afvinkknop, geen
+     rekenknop, en dat staat er ook bij. */
+  function wijzigBlok(rit) {
+    /* Deze drie komen van de tussenlaag en zijn normaal tekst. Ze worden hier
+       toch door String() gehaald: is er ooit een getal of een object van
+       gemaakt, dan hoort de ritkaart gewoon te blijven staan in plaats van dat
+       het hele portaal op een leeg scherm eindigt. */
+    var stand = String(rit.wijzigStand || '');
+    var soort = String(rit.wijzigSoort || '');
+    var open = stand === 'Open';
+    var vak = maak('div', 'bewijs' + (open ? ' bewijs--mist' : ''));
+    var t = maak('div');
+    t.appendChild(maak('b', '', open
+      ? (soort || 'Wijziging') + ' gevraagd'
+      : 'Wijzigverzoek ' + stand.toLowerCase()));
+    t.appendChild(document.createTextNode(
+      (rit.wijzigOp ? 'Doorgegeven op ' + datumKort(rit.wijzigOp) + ' om ' +
+        klok(rit.wijzigOp) + '. ' : '') + String(rit.wijzigverzoek || '')));
+    vak.appendChild(t);
+
+    if (!open) { return vak; }
+    /* Alles wat hierna komt gaat ín het tekstblok en niet naast het icoon:
+       .bewijs is een flexrij, dus een los kind komt er zijdelings naast te
+       hangen in plaats van eronder. */
+
+    var rij = maak('div', 'knoppen knoppen--twee');
+    var ja = maak('button', 'knop', 'Ingewilligd');
+    ja.type = 'button';
+    var nee = maak('button', 'knop knop--rand', 'Afgewezen');
+    nee.type = 'button';
+
+    [[ja, 'Ingewilligd'], [nee, 'Afgewezen']].forEach(function (paar) {
+      paar[0].addEventListener('click', function () {
+        ja.disabled = true;
+        nee.disabled = true;
+        paar[0].textContent = 'Bezig\u2026';
+        meldApp('');
+        verstuur('wijzigbesluit', { id: rit.id, besluit: paar[1] })
+          .then(function (data) { ververs(data.rit); })
+          .catch(function (fout) {
+            meldApp(fout.message);
+            ja.disabled = false;
+            nee.disabled = false;
+            paar[0].textContent = paar[1];
+          });
+      });
+    });
+
+    rij.appendChild(ja);
+    rij.appendChild(nee);
+    t.appendChild(rij);
+    t.appendChild(maak('p', 'wijzig__uitleg', 'Dit vinkt het verzoek af. De rit ' +
+      'zelf pas je hierboven aan \u2014 stops, kilometers of adres \u2014 zodat ' +
+      'de prijs klopt.'));
+    return vak;
+  }
+
   function contactBlok(rit) {
     var blok = maak('details', 'vouw');
     blok.open = false;

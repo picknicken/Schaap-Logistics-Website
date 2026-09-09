@@ -347,6 +347,42 @@ schadelijk is het niet, maar het staat slordig.
 Hetzelfde geldt in het klantportaal: daar komt de factuur binnen via
 `zonderBeheer`, en die functie is de enige plek waar dat gebeurt.
 
+### Wijzigverzoeken van klanten
+
+Een klant kan in zijn portaal om een wijziging vragen voor een zending die nog
+gepland staat: een extra stop, een ander afleveradres, een andere datum of tijd,
+of iets anders. Vijf velden op `Ritten` houden dat bij:
+
+| Veld | Wat het doet |
+| --- | --- |
+| `Wijzigverzoek` | De tekst van de klant, ongewijzigd. Hoogstens 1000 tekens |
+| `Wijzigverzoek soort` | Extra stop / Ander afleveradres / Andere datum of tijd / Iets anders |
+| `Wijzigverzoek status` | Open zolang jij er niets mee deed; daarna Ingewilligd of Afgewezen |
+| `Wijzigverzoek op` | Wanneer hij het doorgaf |
+| `Pushmelding wijzigverzoek op` | Stempel van de tussenlaag. Niet met de hand invullen |
+
+**Een verzoek verandert de rit niet.** Dat is de hele opzet. Een extra stop kost
+vijfentwintig euro en een ander afleveradres verandert de kilometers; kon de
+klant dat zelf zetten, dan bepaalt hij je factuur. Er komt dus alleen een
+verzoek klaar te staan, en je krijgt er meteen een melding van.
+
+**Inwilligen verandert de rit ook niet.** De knop *Ingewilligd* in je portaal
+vinkt het verzoek af, meer niet. Wat er moet veranderen weet alleen jij: uit "een
+doos mee naar Breda" een aantal kilometers en een stoptoeslag afleiden is raden,
+en daar komt een verkeerde factuur uit. Pas de rit daarna zelf aan met de velden
+die er al voor zijn — dan klopt de prijs.
+
+Grenzen die de tussenlaag afdwingt: alleen je eigen zending, alleen zolang die
+op *Gepland* staat, en één open verzoek tegelijk. Een tweede verzoek terwijl er
+al een openstaat wordt geweigerd, anders overschrijft het het eerste.
+
+Handel je een verzoek af, dan mag de klant een nieuw verzoek indienen — en dan
+krijg je ook weer een melding, want de stempel wordt bij een nieuw verzoek
+gewist.
+
+`tests/faal-klantplicht.mjs` bewaakt dit, inclusief dat de rit werkelijk
+onaangeroerd blijft.
+
 ### Geen factuur zonder klant
 
 Naam, adres, btw-nummer en debiteurnummer op een factuur zijn alle vier

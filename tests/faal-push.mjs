@@ -185,8 +185,18 @@ globalThis.fetch = async (url, opties = {}) => {
       Object.assign(rit.fields, JSON.parse(opties.body).fields);
       return new Response(JSON.stringify(rit), { status: 200 });
     }
-    const nog = !!rit.fields['Geannuleerd door klant'] &&
-                !rit.fields['Pushmelding annulering op'];
+    /* De ronde stelt meer dan één vraag aan deze tabel. Zonder het filter na
+       te doen krijgt elke vraag dezelfde rit terug, en dan telt hij mee als
+       annulering én als wijzigverzoek. */
+    const q = decodeURIComponent(u.replace(/\+/g, ' '));
+    let nog = false;
+    if (q.includes('{Geannuleerd door klant}')) {
+      nog = !!rit.fields['Geannuleerd door klant'] &&
+            !rit.fields['Pushmelding annulering op'];
+    } else if (q.includes("{Wijzigverzoek status} = 'Open'")) {
+      nog = rit.fields['Wijzigverzoek status'] === 'Open' &&
+            !rit.fields['Pushmelding wijzigverzoek op'];
+    }
     return new Response(JSON.stringify({ records: nog ? [rit] : [] }), { status: 200 });
   }
   return new Response(JSON.stringify({ records: [] }), { status: 200 });

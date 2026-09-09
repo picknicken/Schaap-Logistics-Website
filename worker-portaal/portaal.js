@@ -83,6 +83,14 @@ const R = {
   annulOp:    'Geannuleerd op',
   annulReden: 'Reden annulering',
   pushAnnul:  'Pushmelding annulering op',
+  /* Wat de klant zelf doorgeeft over een rit die nog moet rijden. Het
+     verandert de rit niet: het is een verzoek, en jij beslist. Zie
+     klantWijzigt en wijzigverzoekenMelden. */
+  wijzig:     'Wijzigverzoek',
+  wijzigSoort:'Wijzigverzoek soort',
+  wijzigStat: 'Wijzigverzoek status',
+  wijzigOp:   'Wijzigverzoek op',
+  pushWijzig: 'Pushmelding wijzigverzoek op',
   /* De bedragen zoals Airtable ze uitrekent, plus het handmatige bedrag dat
      bij internationaal transport op offerte wordt ingevuld. Deze drie gaan
      mee naar de conceptfactuur. */
@@ -538,6 +546,7 @@ async function schakel(env, body, origin, wie) {
     case 'ritkm':        return await zetRitKm(env, body, origin);
     case 'ritkosten':    return await zetRitKosten(env, body, origin);
     case 'koppelklant':  return await koppelKlant(env, body, origin);
+    case 'wijzigbesluit':return await wijzigBesluit(env, body, origin);
     case 'nieuweklant':  return await nieuweKlant(env, body, origin);
     case 'uitnodiging':  return await stuurUitnodiging(env, body, origin);
     case 'klantsoort':   return await zetKlantsoort(env, body, origin);
@@ -1126,6 +1135,36 @@ async function koppelKlant(env, body, origin) {
   return antwoord(200, { ok: true, opdracht }, origin, true);
 }
 
+/* Een wijzigverzoek van een klant afhandelen: inwilligen of afwijzen.
+
+   Inwilligen verandert de rit hier niet vanzelf. Dat klinkt onaf, maar het is
+   het niet: wat er moet veranderen weet alleen jij. "Een extra stop in Breda"
+   betekent een adres erbij, een kilometer of wat extra, en een stop meer op de
+   teller — en of die stop op de heenweg of de terugweg ligt scheelt geld. Dat
+   uit een zin vissen en er getallen van maken is precies het soort raden waar
+   een verkeerde factuur uit komt.
+
+   Wat het wel doet: het verzoek afsluiten, zodat het uit je meldingen
+   verdwijnt en de klant ziet dat je hebt gekeken. De rit pas je daarna aan met
+   de knoppen die daar al voor zijn. */
+async function wijzigBesluit(env, body, origin) {
+  const id = recordId(body.id);
+  if (!id) { return antwoord(400, { fout: 'Ongeldig rit-id' }, origin, true); }
+  if (body.besluit !== 'Ingewilligd' && body.besluit !== 'Afgewezen') {
+    return antwoord(400, { fout: 'Kies inwilligen of afwijzen' }, origin, true);
+  }
+
+  const bestaand = await airtable(env, `${env.AIRTABLE_RITTEN}/${id}`);
+  if (!keuze((bestaand.fields || {})[R.wijzigStat])) {
+    return antwoord(409, { fout: 'Bij deze rit ligt geen verzoek.' }, origin, true);
+  }
+
+  const rit = naarRit(await patch(env, env.AIRTABLE_RITTEN, id, {
+    [R.wijzigStat]: body.besluit
+  }));
+  return antwoord(200, { ok: true, rit }, origin, true);
+}
+
 /* Een rit die al is afgetekend maar toen geen klant had, kreeg geen factuur.
    Hang je hem er later alsnog aan, dan hoort die factuur er alsnog te komen —
    anders had de rem van zorgVoorFactuur alleen maar één gat voor een ander
@@ -1668,7 +1707,8 @@ async function stuurPush(env, namen, bericht) {
 async function pushRonde(env) {
   if (!pushKan(env)) { return; }
   try {
-    await Promise.all([nieuweAanvragenMelden(env), afzeggingenMelden(env)]);
+    await Promise.all([nieuweAanvragenMelden(env), afzeggingenMelden(env),
+                       wijzigverzoekenMelden(env)]);
   } catch (fout) {
     console.log('Pushronde mislukt: ' + fout.message);
   }
@@ -1723,6 +1763,34 @@ async function afzeggingenMelden(env) {
              (f[R.annulReden] ? ' — ' + String(f[R.annulReden]).slice(0, 80) : ''),
       tag: 'afzegging-' + record.id,
       spoed: true
+    });
+  }
+}
+
+/* Een klant die een wijziging vraagt voor een rit die nog moet rijden. Dit is
+   het enige wat een klant naast annuleren kan doen, en het raakt je planning
+   én je prijs — dus het gaat meteen naar je telefoon en niet pas 's ochtends. */
+async function wijzigverzoekenMelden(env) {
+  const zoek = new URLSearchParams();
+  zoek.set('filterByFormula',
+    `AND({${R.wijzigStat}} = 'Open', {${R.pushWijzig}} = BLANK())`);
+  zoek.set('pageSize', '10');
+  const data = await airtable(env, `${env.AIRTABLE_RITTEN}?${zoek}`);
+
+  for (const record of (data.records || [])) {
+    const f = record.fields || {};
+    await patch(env, env.AIRTABLE_RITTEN, record.id,
+      { [R.pushWijzig]: new Date().toISOString() });
+
+    const soort = keuze(f[R.wijzigSoort]) || 'Wijziging';
+    await stuurPush(env, ['Eigenaar'], {
+      titel: soort + ' gevraagd',
+      tekst: `${eerste(f[R.klant]) || f[R.rit] || 'Rit'} op ${f[R.datum] || ''} — ` +
+             String(f[R.wijzig] || '').replace(/\s+/g, ' ').slice(0, 90),
+      tag: 'wijzig-' + record.id,
+      /* Geen spoed: het gaat over een rit die nog moet rijden. Wel meteen,
+         want hoe eerder je het ziet hoe makkelijker het in te plannen is. */
+      spoed: false
     });
   }
 }
@@ -2243,7 +2311,13 @@ function verzinCode() {
   return uit;
 }
 
-const KLANT_ACTIES = ['klantoverzicht', 'klantannuleer'];
+const KLANT_ACTIES = ['klantoverzicht', 'klantannuleer', 'klantwijzig'];
+
+/* Waar een klant een wijziging voor kan vragen. Een vaste lijst en geen vrije
+   tekst, want dit veld gaat een keuzelijst in Airtable in: staat er iets
+   anders in, dan weigert Airtable de hele update en is het verzoek weg. */
+const WIJZIGSOORTEN = ['Extra stop', 'Ander afleveradres',
+                       'Andere datum of tijd', 'Iets anders'];
 
 async function klantPoort(env, code, body, origin) {
   const schoon = schoneCode(code);
@@ -2260,6 +2334,11 @@ async function klantPoort(env, code, body, origin) {
 
   if (body.actie === 'klantannuleer') {
     const uit = await klantAnnuleert(env, klant, body);
+    if (uit.fout) { return antwoord(uit.code || 400, { fout: uit.fout }, origin, true); }
+  }
+
+  if (body.actie === 'klantwijzig') {
+    const uit = await klantWijzigt(env, klant, body);
     if (uit.fout) { return antwoord(uit.code || 400, { fout: uit.fout }, origin, true); }
   }
 
@@ -2318,6 +2397,63 @@ async function klantAnnuleert(env, klant, body) {
   const reden = String(body.reden || '').trim().slice(0, 500);
   if (reden) { velden[R.annulReden] = reden; }
   await patch(env, env.AIRTABLE_RITTEN, id, velden);
+  return {};
+}
+
+/* Een klant geeft een wijziging door voor een rit die nog moet rijden.
+
+   Wat hier met opzet NIET gebeurt: de rit veranderen. Een extra stop kost
+   vijfentwintig euro en een ander afleveradres verandert de kilometers en dus
+   de prijs. Zou de klant dat zelf kunnen zetten, dan bepaalt hij je factuur.
+   Dit zet dus alleen een verzoek klaar; jij wilt het in of wijst het af, en
+   pas dan verandert er iets aan de rit.
+
+   Dezelfde grenzen als bij het annuleren: alleen je eigen rit, en alleen
+   zolang hij op Gepland staat. Zijn we onderweg, dan bel je. */
+async function klantWijzigt(env, klant, body) {
+  const sleutel = String(body.rit || '');
+  if (!/^[a-f0-9]{16}$/.test(sleutel)) { return { code: 400, fout: 'Onbekende zending' }; }
+
+  const soort = WIJZIGSOORTEN.includes(body.soort) ? body.soort : 'Iets anders';
+  const tekst = String(body.tekst || '').trim().slice(0, 1000);
+  if (tekst.length < 3) {
+    return { code: 400, fout: 'Schrijf even wat er anders moet.' };
+  }
+
+  const ids = await klantRitIds(env, klant.id);
+  const id = ids.find((r) => ritSleutel(r) === sleutel);
+  if (!id) { return { code: 404, fout: 'Onbekende zending' }; }
+
+  const rit = await airtable(env, `${env.AIRTABLE_RITTEN}/${id}`);
+  const f = rit.fields || {};
+  const status = keuze(f[R.status]) || 'Gepland';
+  if (status === 'Geannuleerd') { return { code: 409, fout: 'Deze zending is geannuleerd.' }; }
+  if (status !== 'Gepland') {
+    return {
+      code: 409,
+      fout: 'Wij zijn al onderweg met deze zending. Bel ons even, dan regelen ' +
+            'wij het samen.'
+    };
+  }
+  /* Eén open verzoek tegelijk. Anders overschrijft het tweede het eerste en
+     ben je kwijt wat er als eerste gevraagd was. */
+  if (keuze(f[R.wijzigStat]) === 'Open') {
+    return {
+      code: 409,
+      fout: 'Er ligt al een verzoek voor deze zending. Wij kijken ernaar en ' +
+            'laten het weten.'
+    };
+  }
+
+  await patch(env, env.AIRTABLE_RITTEN, id, {
+    [R.wijzig]:      tekst,
+    [R.wijzigSoort]: soort,
+    [R.wijzigStat]:  'Open',
+    [R.wijzigOp]:    new Date().toISOString(),
+    /* De stempel leegmaken, zodat een tweede verzoek op dezelfde rit — na een
+       eerste dat je hebt afgehandeld — opnieuw een seintje geeft. */
+    [R.pushWijzig]:  null
+  });
   return {};
 }
 
@@ -2409,6 +2545,15 @@ function naarKlantRit(record, magFotos) {
     sleutel:    ritSleutel(record.id),
     magAnnuleren: status === 'Gepland',
     geannuleerdOp: f[R.annulOp] || '',
+    /* Zijn eigen wijzigverzoek en wat wij ermee gedaan hebben. Dit is zijn
+       eigen tekst, dus die mag hij terugzien — en de stand erbij, zodat hij
+       niet hoeft te bellen om te vragen of we het gezien hebben. Vragen mag
+       alleen zolang de rit nog gepland staat en er niet al een verzoek ligt. */
+    magWijzigen: status === 'Gepland' && keuze(f[R.wijzigStat]) !== 'Open',
+    wijzigverzoek: f[R.wijzig] || '',
+    wijzigSoort: keuze(f[R.wijzigSoort]) || '',
+    wijzigStand: keuze(f[R.wijzigStat]) || '',
+    wijzigOp:   f[R.wijzigOp] || '',
     datum:      f[R.datum] || '',
     type:       keuze(f[R.type]),
     status:     status,
@@ -2659,6 +2804,13 @@ function naarRit(record) {
   return {
     id:         record.id,
     naam:       f[R.rit] || '',
+    /* Wat de klant zelf heeft doorgegeven, en waar het staat. Alleen voor jou
+       en niet voor de chauffeur: naarRitVoorChauffeur laat dit weg, want het
+       gaat over de prijsafspraak en niet over het rijden. */
+    wijzigverzoek: f[R.wijzig] || '',
+    wijzigSoort: keuze(f[R.wijzigSoort]) || '',
+    wijzigStand: keuze(f[R.wijzigStat]) || '',
+    wijzigOp:   f[R.wijzigOp] || '',
     datum:      f[R.datum] || '',
     type:       keuze(f[R.type]),
     status:     keuze(f[R.status]) || 'Gepland',

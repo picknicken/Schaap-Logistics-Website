@@ -281,6 +281,11 @@
       lijf.appendChild(b);
     }
 
+    /* Een lopend of afgehandeld verzoek staat boven de knoppen: eerst zien wat
+       er al ligt, dan pas de vraag of u nog iets wilt. */
+    if (r.wijzigStand) { lijf.appendChild(wijzigStand(r)); }
+    if (r.magWijzigen) { lijf.appendChild(wijzigBlok(r)); }
+
     if (r.magAnnuleren) {
       lijf.appendChild(annuleerBlok(r));
     } else if (r.status === 'Geannuleerd') {
@@ -555,6 +560,116 @@
           door.disabled = false;
           terug.disabled = false;
           door.textContent = 'Ja, annuleren';
+        });
+    });
+
+    vak.appendChild(start);
+    vak.appendChild(vraag);
+    return vak;
+  }
+
+  /* Wat er met een eerder verzoek is gebeurd. Zonder dit blok moet de klant
+     bellen om te vragen of we het gezien hebben, en dat telefoontje is precies
+     wat dit portaal hoort te besparen. */
+  function wijzigStand(r) {
+    /* Alles hieronder komt van de tussenlaag. Normaal is dat tekst, maar deze
+       code hoort ook overeind te blijven als er een getal of een object staat
+       — anders klapt het hele portaal eruit op een veld dat er niet toe doet.
+       Zie tests/faal-portalen.mjs. */
+    var stand = String(r.wijzigStand || '');
+    var soort = String(r.wijzigSoort || '');
+    var tekstVan = String(r.wijzigverzoek || '');
+    var vak = maak('div', 'afgezegd');
+    var kop = stand === 'Open' ? 'Uw verzoek ligt bij ons'
+            : stand === 'Ingewilligd' ? 'Uw verzoek is doorgevoerd'
+            : 'Uw verzoek is niet doorgevoerd';
+    vak.appendChild(maak('b', '', kop));
+
+    var wat = (soort ? soort.toLowerCase() + ': ' : '') + tekstVan;
+    vak.appendChild(document.createTextNode(
+      wat + (r.wijzigOp ? ' (doorgegeven op ' + datumKort(r.wijzigOp) + ')' : '')));
+
+    if (stand === 'Open') {
+      vak.appendChild(maak('p', '', 'Wij kijken ernaar en laten het weten. ' +
+        'Verandert er iets aan de prijs, dan hoort u dat vooraf.'));
+    } else if (stand === 'Afgewezen') {
+      vak.appendChild(maak('p', '', 'Bel ons gerust als u wilt weten waarom, ' +
+        'of als het toch anders moet.'));
+    }
+    return vak;
+  }
+
+  /* Een wijziging vragen. Nadrukkelijk vragen en niet zelf zetten: een stop
+     erbij of een ander afleveradres verandert de prijs, en die spreken we
+     samen af. Daarom staat dat er ook met zoveel woorden bij. */
+  function wijzigBlok(r) {
+    var vak = maak('div', 'afzeggen');
+    var start = maak('button', 'knop knop--rand', 'Wijziging doorgeven');
+    start.type = 'button';
+
+    var vraag = maak('div', 'afzeggen__vraag');
+    vraag.hidden = true;
+    vraag.appendChild(maak('p', '', 'Wat moet er anders? Wij kijken ernaar en ' +
+      'laten het weten. Verandert er iets aan de prijs — bijvoorbeeld bij een ' +
+      'extra stop of een verder afleveradres — dan hoort u dat vooraf.'));
+
+    var kies = document.createElement('select');
+    kies.setAttribute('aria-label', 'Waar gaat het over');
+    ['Extra stop', 'Ander afleveradres', 'Andere datum of tijd', 'Iets anders']
+      .forEach(function (naam) {
+        var o = document.createElement('option');
+        o.value = naam;
+        o.textContent = naam;
+        kies.appendChild(o);
+      });
+    vraag.appendChild(kies);
+
+    var tekst = document.createElement('textarea');
+    tekst.rows = 3;
+    tekst.maxLength = 1000;
+    tekst.placeholder = 'Bijvoorbeeld: er moet een doos mee naar Breda, ' +
+                        'Hoofdstraat 12, onderweg.';
+    tekst.setAttribute('aria-label', 'Wat er anders moet');
+    vraag.appendChild(tekst);
+
+    var rij = maak('div', 'knoppen');
+    var door = maak('button', 'knop', 'Versturen');
+    door.type = 'button';
+    var terug = maak('button', 'knop knop--rand', 'Toch niet');
+    terug.type = 'button';
+    rij.appendChild(door);
+    rij.appendChild(terug);
+    vraag.appendChild(rij);
+
+    start.addEventListener('click', function () {
+      start.hidden = true;
+      vraag.hidden = false;
+      tekst.focus();
+    });
+    terug.addEventListener('click', function () {
+      vraag.hidden = true;
+      start.hidden = false;
+    });
+    door.addEventListener('click', function () {
+      if (tekst.value.trim().length < 3) {
+        meldApp('Schrijf even wat er anders moet.');
+        tekst.focus();
+        return;
+      }
+      door.disabled = true;
+      terug.disabled = true;
+      door.textContent = 'Bezig\u2026';
+      verstuur({ actie: 'klantwijzig', rit: r.sleutel,
+                 soort: kies.value, tekst: tekst.value })
+        .then(function (data) {
+          meldApp('');
+          toon(data, r.sleutel);
+        })
+        .catch(function (fout) {
+          meldApp(fout.message);
+          door.disabled = false;
+          terug.disabled = false;
+          door.textContent = 'Versturen';
         });
     });
 

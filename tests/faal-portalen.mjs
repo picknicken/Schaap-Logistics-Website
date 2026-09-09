@@ -130,7 +130,20 @@ console.log('\nvelden die er niet zijn, of het verkeerde type hebben');
     [{ ok: true }, 'een antwoord zonder enige lijst'],
     [{ ok: true, dag, ritten: [{ id: 'recAAAAAAAAAAAAAA', naam: 'R', datum: dag,
        status: 'Bestaatniet', km: 10 }], aanvragen: [], opdrachten: [], klanten: [] },
-     'een status die niet bestaat']
+     'een status die niet bestaat'],
+    /* Het wijzigverzoek van een klant. Deze velden zijn tekst, maar het blok
+       roept er toLowerCase() op aan — en dat bestaat niet op een getal. Eén
+       verkeerd type en de hele ritkaart valt weg. */
+    [{ ok: true, dag, ritten: [{ id: 'recAAAAAAAAAAAAAA', naam: 'R', datum: dag,
+       status: 'Gepland', km: 10, wijzigStand: 42, wijzigSoort: 7,
+       wijzigverzoek: { niet: 'tekst' }, wijzigOp: 'gisteren' }],
+      aanvragen: [], opdrachten: [], klanten: [] },
+     'een wijzigverzoek met verkeerde types'],
+    [{ ok: true, dag, ritten: [{ id: 'recAAAAAAAAAAAAAA', naam: 'R', datum: dag,
+       status: 'Gepland', km: 10, wijzigStand: 'Open',
+       wijzigverzoek: XSS, wijzigSoort: XSS }],
+      aanvragen: [], opdrachten: [], klanten: [] },
+     'script in een wijzigverzoek']
   ];
   for (const [antwoord, wat] of gek) {
     const { ctx, p, stuk } = await opent(antwoord);
@@ -222,6 +235,10 @@ console.log('\n=== het klantportaal met vijandige gegevens ===');
       magAnnuleren: true, geannuleerdOp: '', ophaal: XSS, aflever: XSS, km: 10,
       tijd: XSS, bedrag: 100, getekend: XSS, getekendOp: XSS, afgeleverd: true,
       bevestigdOp: '', onderwegOp: new Date().toISOString(), krabbel: JS,
+      /* Het wijzigverzoek is de eigen tekst van de klant en komt dus zo terug.
+         Een tussenlaag die is overgenomen kan er iets anders in stoppen. */
+      magWijzigen: true, wijzigStand: XSS, wijzigSoort: XSS,
+      wijzigverzoek: XSS, wijzigOp: XSS,
       fotos: [{ naam: XSS, url: JS, klein: JS }] }],
     facturen: [{ nummer: XSS, datum: dag, vervalt: dag, totaal: 100, betaald: 0,
       openstaand: 100, status: XSS, link: JS, pdf: JS }]
