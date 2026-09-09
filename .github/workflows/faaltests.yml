@@ -1,0 +1,81 @@
+# Draait de faaltests bij elke wijziging.
+#
+# Waarom dit een eigen bestand is en niet een extra taak in
+# worker-uitrollen.yml: die workflow start alleen als er iets aan `worker/`
+# of `worker-portaal/` verandert, en dat is precies goed — je wilt niet bij
+# elke tekstwijziging een Worker opnieuw uitrollen. Maar de faaltests moeten
+# juist wél bij elke wijziging draaien: twee van de vier kijken naar de site
+# en de portalen, en die veranderen zonder dat er een Worker aan te pas komt.
+#
+# `on:` geldt per workflow en niet per taak, dus twee triggers betekent twee
+# bestanden. Ze samenvoegen zou betekenen dat je ofwel bij elke komma een
+# Worker uitrolt, ofwel de tests mist bij een wijziging aan de site.
+#
+# Wat ze doen staat in tests/LEESMIJ.md. Kort: ze controleren niet of iets
+# werkt maar of het stuk te krijgen is.
+
+name: Faaltests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  proeven:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Deze drie hebben niets nodig: ze roepen de Workers rechtstreeks aan
+      # met een nagebootste Airtable.
+      - name: Het openbare aanvraagadres
+        working-directory: tests
+        run: node faal-aanvragen.mjs
+
+      - name: Het portaal, rollen en grenzen
+        working-directory: tests
+        run: node faal-portaal.mjs
+
+      # Deze valt om zodra iemand een tarief op één van de twee plekken
+      # bijwerkt en de andere vergeet.
+      - name: Dezelfde prijs op de server en in de browser
+        working-directory: tests
+        run: node faal-zelfde-som.mjs
+
+      # De twee proeven met een browser. Playwright wordt hier geïnstalleerd
+      # en niet in het project: de site zelf heeft geen enkele afhankelijkheid
+      # en dat blijft zo. --no-save zorgt dat er geen package.json ontstaat.
+      - name: Browser klaarzetten
+        run: npm install --no-save --no-audit --no-fund playwright@1
+
+      - name: Chromium ophalen
+        run: npx playwright install --with-deps chromium
+
+      # Een gewone bestandsserver is genoeg; de proeven zetten de tussenlaag
+      # zelf klaar. Wachten tot hij luistert, anders draait de eerste proef
+      # tegen een dichte deur.
+      - name: De site serveren
+        run: |
+          python3 -m http.server 8097 --bind 127.0.0.1 &
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8097/ > /dev/null && break
+            sleep 1
+          done
+
+      - name: De factuurpagina en de rekenmachine
+        working-directory: tests
+        env:
+          PLAYWRIGHT_PAD: ${{ github.workspace }}/node_modules/playwright/index.js
+        run: node faal-site.mjs
+
+      - name: Beide portalen met vijandige gegevens
+        working-directory: tests
+        env:
+          PLAYWRIGHT_PAD: ${{ github.workspace }}/node_modules/playwright/index.js
+        run: node faal-portalen.mjs

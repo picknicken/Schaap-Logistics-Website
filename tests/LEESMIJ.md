@@ -38,7 +38,13 @@ Staat Playwright niet op de standaardplek, wijs er dan naar met
 adres, dan `SITE_ADRES=http://127.0.0.1:8080`.
 
 Elk bestand eindigt met `alles goed` of met het aantal fouten, en geeft een
-foutcode terug als er iets misgaat. Zo kunnen ze later in een GitHub Action.
+foutcode terug als er iets misgaat.
+
+Ze draaien ook vanzelf: `.github/workflows/faaltests.yml` voert alle vijf uit
+bij elke push naar `main` en bij elke pull request. Die workflow staat los van
+`worker-uitrollen.yml` omdat die laatste alleen mag afgaan als er werkelijk
+iets aan een Worker verandert, en `on:` in GitHub Actions per workflow geldt
+en niet per taak.
 
 ## Waar ze naar kijken
 
