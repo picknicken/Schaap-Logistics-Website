@@ -355,7 +355,7 @@ export default {
        ene keer per dag doet het factuurwerk, de rest van de minuten kijkt
        alleen of er iets is om naar je telefoon te sturen. */
     if (gebeurtenis && gebeurtenis.cron === DAGKLUS) {
-      ctx.waitUntil(markeerTeLateFacturen(env));
+      ctx.waitUntil(markeerTeLateFacturen(env).then(() => ochtendbericht(env)));
       return;
     }
     ctx.waitUntil(pushRonde(env));
@@ -672,7 +672,24 @@ async function zetStatus(env, body, origin) {
     if (!nu.onderweg) { velden[R.onderweg] = new Date().toISOString(); }
   }
 
-  if (body.status === 'Uitgevoerd') { await zorgVoorFactuur(env, id); }
+  /* Op Uitgevoerd zetten kan alleen met een klant eraan. Dit is een druk op
+     een knop in je portaal, achter je bureau of in de bus, en dus precies het
+     moment om het recht te zetten in plaats van het door te laten lopen naar
+     een factuur die je niet kunt versturen.
+
+     Het aftekenen met een handtekening kent deze rem niet, en dat is met
+     opzet: daar sta je bij de klant op de stoep. Zie zorgVoorFactuur. */
+  if (body.status === 'Uitgevoerd') {
+    const nu = await airtable(env, `${env.AIRTABLE_RITTEN}/${id}`);
+    if (!koppelIds((nu.fields || {})[R.klantlink]).length) {
+      return antwoord(409, {
+        fout: 'Deze rit hangt aan geen enkele klant. Koppel eerst een klant, ' +
+              'anders kun je er geen factuur van maken.',
+        geenKlant: true
+      }, origin, true);
+    }
+    await zorgVoorFactuur(env, id);
+  }
 
   const rit = naarRit(await patch(env, env.AIRTABLE_RITTEN, id, velden));
   return antwoord(200, { ok: true, rit }, origin, true);
@@ -1098,6 +1115,7 @@ async function koppelKlant(env, body, origin) {
     const rit = naarRit(
       await patch(env, env.AIRTABLE_RITTEN, id, { [R.klantlink]: [klantId] })
     );
+    await factuurInhalen(env, id);
     return antwoord(200, { ok: true, rit }, origin, true);
   }
 
@@ -1108,6 +1126,22 @@ async function koppelKlant(env, body, origin) {
   return antwoord(200, { ok: true, opdracht }, origin, true);
 }
 
+/* Een rit die al is afgetekend maar toen geen klant had, kreeg geen factuur.
+   Hang je hem er later alsnog aan, dan hoort die factuur er alsnog te komen —
+   anders had de rem van zorgVoorFactuur alleen maar één gat voor een ander
+   verruild, en blijft er werk liggen dat je nergens meer ziet. */
+async function factuurInhalen(env, ritId) {
+  try {
+    const rit = await airtable(env, `${env.AIRTABLE_RITTEN}/${ritId}`);
+    const f = rit.fields || {};
+    if (keuze(f[R.status]) !== 'Uitgevoerd') { return; }
+    if (koppelIds(f[R.facturen]).length) { return; }
+    await zorgVoorFactuur(env, ritId);
+  } catch (fout) {
+    console.log(`Factuur inhalen bij ${ritId} mislukt: ${fout.message}`);
+  }
+}
+
 async function koppelKlantAanRitten(env, opdrachtId, klantId) {
   try {
     const ruw = await airtable(env, `${env.AIRTABLE_OPDRACHTEN}/${opdrachtId}`);
@@ -1115,6 +1149,7 @@ async function koppelKlantAanRitten(env, opdrachtId, klantId) {
     for (const r of ritten) {
       const rid = (r && r.id) || r;
       await patch(env, env.AIRTABLE_RITTEN, rid, { [R.klantlink]: [klantId] });
+      await factuurInhalen(env, rid);
     }
   } catch (fout) {
     console.log(`Klant niet doorgezet naar de ritten van ${opdrachtId}: ${fout.message}`);
@@ -1843,11 +1878,102 @@ async function markeerTeLateFacturen(env) {
       });
     }
     console.log(`Te laat gezet: ${records.length} factuur/facturen`);
+
+    /* En een seintje naar je telefoon. Dit is de enige plek waar het hoort:
+       een factuur wordt maar één keer te laat, dus je krijgt hem ook maar één
+       keer. Een stempelveld is er niet voor nodig — de statuswissel naar
+       'Te laat' is zelf de stempel, want de zoekopdracht hierboven slaat over
+       wat er al op staat. */
+    const namen = records.map((r) => {
+      const f = r.fields || {};
+      return (eerste(f[FA.klant]) || f[FA.factuur] || 'Factuur') +
+             ' (' + Math.round(Number(f[FA.telaat]) || 0) + ' dagen)';
+    });
+    const bedrag = records.reduce((op, r) => op + (Number((r.fields || {})[FA.totaal]) || 0), 0);
+    await stuurPush(env, ['Eigenaar'], {
+      titel: records.length === 1 ? 'Factuur staat te lang open'
+                                  : records.length + ' facturen staan te lang open',
+      tekst: namen.slice(0, 3).join(', ') +
+             (namen.length > 3 ? ' en nog ' + (namen.length - 3) : '') +
+             ' — samen ' + euro(bedrag),
+      tag: 'telaat-' + vandaagInNederland(),
+      spoed: false
+    });
+
     return records.length;
   } catch (fout) {
     console.log('Te late facturen markeren mislukt: ' + fout.message);
     return 0;
   }
+}
+
+/* ------------------------------------------------------- het ochtendbericht
+
+   Eén melding per dag met wat er te doen is en wat er blijft liggen. Dit is
+   het antwoord op "ik wil meer zicht op wat er speelt" zonder dat je telefoon
+   de hele dag piept: de dingen die aandacht vragen komen naar jou toe in
+   plaats van dat jij ze in het portaal moet gaan zoeken.
+
+   Waarom dit geen stempelveld nodig heeft, terwijl de andere meldingen dat
+   wel hebben: die reageren op iets wat gebeurt en moeten dus onthouden of ze
+   al gestuurd zijn. Deze gaat af omdat het ochtend is. Eén keer per dag, want
+   het schema zegt het maar één keer per dag.
+
+   Wat er níét in staat: bedragen van losse ritten, klantnamen buiten wat je
+   zelf hebt ingevoerd, en niets uit het klantportaal. Een melding op een
+   vergrendeld scherm is leesbaar voor wie er toevallig langsloopt. */
+async function ochtendbericht(env) {
+  if (!pushKan(env)) { return; }
+  try {
+    const vandaag = vandaagInNederland();
+    const [ritten, facturen] = await Promise.all([
+      lijstOf(env, env.AIRTABLE_RITTEN,
+        `AND({${R.status}} != 'Geannuleerd', {${R.status}} != 'Uitgevoerd')`),
+      lijstOf(env, env.AIRTABLE_FACTUREN, `{${FA.telaat}} > 0`)
+    ]);
+
+    let vandaagAantal = 0, zonderKlant = 0, blijftOnderweg = 0;
+    for (const r of ritten) {
+      const f = r.fields || {};
+      const dag = String(f[R.datum] || '').slice(0, 10);
+      if (dag === vandaag) { vandaagAantal++; }
+      if (!koppelIds(f[R.klantlink]).length && dag && dag <= vandaag) { zonderKlant++; }
+      if (keuze(f[R.status]) === 'Onderweg' && dag && dag < vandaag) { blijftOnderweg++; }
+    }
+    const open = facturen.reduce(
+      (op, r) => op + (Number((r.fields || {})[FA.totaal]) || 0), 0);
+
+    /* Niets te melden is ook iets, maar geen melding waard. Een bericht dat
+       elke ochtend zegt dat er niets is, leer je binnen een week wegtikken —
+       en dan mis je hem op de dag dat er wel iets staat. */
+    const regels = [];
+    if (vandaagAantal) { regels.push(vandaagAantal + (vandaagAantal === 1 ? ' rit' : ' ritten') + ' vandaag'); }
+    if (blijftOnderweg) { regels.push(blijftOnderweg + ' nog op Onderweg'); }
+    if (zonderKlant) { regels.push(zonderKlant + ' zonder klant'); }
+    if (facturen.length) {
+      regels.push(facturen.length + ' factuur/facturen te laat, ' + euro(open));
+    }
+    if (!regels.length) { return; }
+
+    await stuurPush(env, ['Eigenaar'], {
+      titel: vandaagAantal ? 'Vandaag: ' + vandaagAantal + (vandaagAantal === 1 ? ' rit' : ' ritten')
+                           : 'Vandaag geen ritten gepland',
+      tekst: regels.join(' \u00b7 '),
+      tag: 'ochtend-' + vandaag,
+      spoed: false
+    });
+  } catch (fout) {
+    console.log('Ochtendbericht mislukt: ' + fout.message);
+  }
+}
+
+/* Een lijst records met een filter, of een lege lijst als het misgaat. */
+async function lijstOf(env, tabel, formule) {
+  const zoek = new URLSearchParams();
+  zoek.set('filterByFormula', formule);
+  zoek.set('pageSize', '100');
+  const data = await airtable(env, `${tabel}?${zoek}`);
+  return data.records || [];
 }
 
 /* ---------------------------------------------------- de conceptfactuur
@@ -1876,6 +2002,23 @@ async function zorgVoorFactuur(env, ritId) {
     const rit = await airtable(env, `${env.AIRTABLE_RITTEN}/${ritId}`);
     const f = rit.fields || {};
     if (koppelIds(f[R.facturen]).length) { return null; }
+
+    /* Geen klant, geen factuur. Naam, adres, btw-nummer en debiteurnummer op
+       de factuur komen alle vier via de koppeling uit Klanten; zonder klant
+       rolt er dus een factuur uit met een leeg adres. Dat mag niet — boven de
+       honderd euro moeten naam en adres van je afnemer erop staan — en het is
+       ook nog eens niet te innen.
+
+       Hier weigeren en niet bij het aftekenen, want dat gebeurt op de stoep
+       bij de klant: de handtekening is je bewijs van aflevering en die wil je
+       nooit kwijt omdat er een koppeling ontbreekt. De rit gaat gewoon op
+       Uitgevoerd, alleen de factuur wacht. Je portaal zet er een waarschuwing
+       bij, en zodra je met Klant koppelen de klant eraan hangt maakt het
+       portaal de factuur alsnog. */
+    if (!koppelIds(f[R.klantlink]).length) {
+      console.log(`Geen conceptfactuur bij ${ritId}: er hangt geen klant aan.`);
+      return null;
+    }
 
     /* Bij internationaal transport blijft de automatische berekening leeg en
        vul je Totaal excl. BTW zelf in. De oude automatisering nam alleen het
@@ -2427,6 +2570,17 @@ function kilometers(w) {
 const TIJDVAKKEN = ['Overdag', 'Avondrit (18:00-23:00)', 'Nacht- of weekendrit'];
 function tijdvakUit(w) {
   return TIJDVAKKEN.includes(String(w || '')) ? String(w) : null;
+}
+
+/* Een bedrag zoals het in een melding op je scherm hoort te staan. Geen
+   valutabibliotheek voor drie regels: een punt als duizendtal, een komma voor
+   de centen, zoals iedereen in Nederland het schrijft. */
+function euro(n) {
+  const c = Math.round((Number(n) || 0) * 100);
+  const heel = String(Math.floor(Math.abs(c) / 100));
+  const cent = String(Math.abs(c) % 100).padStart(2, '0');
+  return (c < 0 ? '-' : '') + '\u20ac ' +
+         heel.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + cent;
 }
 
 /* Een bedrag in euro's. Nul is een geldig antwoord — "deze rit kostte niets

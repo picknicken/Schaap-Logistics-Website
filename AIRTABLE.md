@@ -347,6 +347,30 @@ schadelijk is het niet, maar het staat slordig.
 Hetzelfde geldt in het klantportaal: daar komt de factuur binnen via
 `zonderBeheer`, en die functie is de enige plek waar dat gebeurt.
 
+### Geen factuur zonder klant
+
+Naam, adres, btw-nummer en debiteurnummer op een factuur zijn alle vier
+opzoekvelden door de koppeling naar `Klanten`. Hangt er geen klant aan de rit,
+dan rolt er een factuur uit met een leeg adres: niet te versturen, niet te innen,
+en boven de honderd euro inclusief btw ook niet toegestaan — daar zijn naam en
+adres van je afnemer verplicht.
+
+Daarom drie regels:
+
+- **Het portaal weigert een rit op *Uitgevoerd* te zetten zonder klant.** Dat is
+  een knop achter je bureau, dus het moment om het recht te zetten.
+- **Aftekenen met een handtekening weigert niets.** Daar sta je bij de klant op de
+  stoep, en een bewijs van aflevering dat je kwijtraakt omdat er een koppeling
+  ontbreekt is erger dan een factuur die een dag later komt. De rit gaat gewoon op
+  *Uitgevoerd*, alleen de factuur wacht.
+- **Koppel je die klant later alsnog**, met *Klant koppelen*, dan komt de factuur
+  er op dat moment alsnog — precies één keer.
+
+Tot die tijd staat de rit met een waarschuwing in je portaal, en telt hij mee in
+het ochtendbericht op je telefoon.
+
+`tests/faal-klantplicht.mjs` bewaakt alle drie.
+
 ### Eenmalige klanten en vaste klanten
 
 Op `Klanten` staat `Soort klant` (`fldSLJJ5sdfsZrUzI`): **Eenmalig** of **Vaste

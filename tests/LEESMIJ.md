@@ -1,6 +1,6 @@
 # Faaltests
 
-Deze zeven bestanden testen niet of iets werkt. Ze proberen het stuk te krijgen.
+Deze acht bestanden testen niet of iets werkt. Ze proberen het stuk te krijgen.
 
 Dat is een ander soort proef dan de gewone tests, en hij hoort er apart te
 staan. Een gewone test vraagt: doet de knop wat de knop moet doen. Deze vragen:
@@ -22,6 +22,7 @@ node faal-aanvragen.mjs      # het openbare aanvraagadres
 node faal-portaal.mjs        # het portaal: rollen, grenzen, lekken
 node faal-zelfde-som.mjs     # rekent de prijs op de server na tegen de browser
 node faal-zelfde-som-airtable.mjs   # en tegen de formule in Airtable
+node faal-klantplicht.mjs    # geen factuur zonder klant, en de dagmeldingen
 ```
 
 `faal-portaal.mjs` laadt de portaal-Worker, en die importeert de Anthropic-SDK
@@ -46,7 +47,7 @@ adres, dan `SITE_ADRES=http://127.0.0.1:8080`.
 Elk bestand eindigt met `alles goed` of met het aantal fouten, en geeft een
 foutcode terug als er iets misgaat.
 
-Ze draaien ook vanzelf: `.github/workflows/faaltests.yml` voert ze alle zeven uit
+Ze draaien ook vanzelf: `.github/workflows/faaltests.yml` voert ze alle acht uit
 bij elke push naar `main` en bij elke pull request. Die workflow staat los van
 `worker-uitrollen.yml` omdat die laatste alleen mag afgaan als er werkelijk
 iets aan een Worker verandert, en `on:` in GitHub Actions per workflow geldt
@@ -90,6 +91,19 @@ workflow, niet in een appje.
 te zien of te doen krijgt dat niet voor hem is. Formule-injectie in de codes,
 de grens tussen chauffeur en eigenaar, de grens tussen klant en de rest,
 grenswaarden op alle getallen, en pushmeldingen als achterdeur.
+
+**`faal-klantplicht.mjs`** — een factuur zonder klant is niet te versturen en
+niet te innen: naam, adres, btw-nummer en debiteurnummer komen alle vier via de
+koppeling uit Klanten. Deze proef bewaakt waar die rem wel en niet zit. Wel op
+het knopje Uitgevoerd, want daar sta je achter je bureau. Niet op het aftekenen,
+want daar sta je bij de klant op de stoep en is je bewijs van aflevering meer
+waard dan een factuur die een dag later komt. En omdat een rem die werk laat
+liggen alleen maar een ander gat maakt: koppel je later alsnog een klant aan een
+afgeronde rit, dan hoort die factuur er alsnog te komen — precies één keer.
+
+Hier staan ook de twee meldingen uit de ochtendklus in: het bericht over
+facturen die te lang openstaan (dat maar één keer per factuur mag komen) en het
+ochtendbericht (dat stil hoort te blijven als er niets te melden is).
 
 **`faal-site.mjs`** — de factuurpagina krijgt alles uit de adresregel, dus
 iedereen die een link kan maken bepaalt wat erop staat. Script, onzinbedragen,

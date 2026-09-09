@@ -319,6 +319,31 @@ aanvraag stilletjes op afgehandeld staan. Die proef draait bij elke wijziging
 mee. Dat er werkelijk een melding op het scherm verschijnt is daarna met de
 hand vastgesteld — geen enkele proef hier kan dat.
 
+**Wat er nu naar je telefoon gaat.** Vier dingen:
+
+| Wanneer | Wat |
+| --- | --- |
+| Meteen | Een nieuwe aanvraag via de site — spoed in de titel |
+| Meteen | Een klant die een rit afzegt — ook naar de chauffeur die hem zou rijden |
+| 's Ochtends | Een factuur die te lang openstaat, met het bedrag erbij. Eén keer per factuur, niet elke dag opnieuw |
+| 's Ochtends | Het dagbericht: hoeveel ritten vandaag, wat er nog op *Onderweg* staat, wat er zonder klant hangt, wat er openstaat |
+
+Dat ochtendbericht blijft stil als er niets te melden is. Met opzet: een bericht
+dat elke dag zegt dat er niets is, leer je binnen een week wegtikken — en dan mis
+je hem op de dag dat er wél iets staat.
+
+Er staan met opzet geen bedragen van losse ritten of klantnamen in die je niet
+zelf hebt ingevoerd. Een melding op een vergrendeld scherm is leesbaar voor wie
+er toevallig langsloopt.
+
+**Wat er niet in zit, en waarom.** Een melding bij *nieuwe rit aangemaakt* is er
+niet: die ritten maak je zelf aan, en je telefoon laten piepen om je te vertellen
+wat je net zelf hebt getikt is ruis. Een melding bij *rit gewijzigd door de klant*
+is er ook niet, om een andere reden: een klant kán niets wijzigen. In het
+klantportaal kan hij precies twee dingen — kijken en annuleren. Wil je dat hij een
+extra stop of een ander afleveradres kan doorgeven, dan is dat eerst bouwen; de
+melding volgt dan vanzelf.
+
 **De twee mails staan nog aan, met opzet.** `Seintje bij een nieuwe aanvraag`
 en `Seintje bij een annulering door de klant` in Airtable blijven voorlopig
 staan. De proefmelding bewijst de leiding, niet de praktijk: hij werd gestuurd
