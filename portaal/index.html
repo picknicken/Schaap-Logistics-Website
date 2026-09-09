@@ -653,6 +653,12 @@ input{font:inherit}
 .bewijs--wacht{background:#fff8e6;border-color:#f0dfae;color:#7a5a00}
 .bewijs--wacht b{color:#5c4300}
 
+/* Weggooien. Rood genoeg om op te vallen, niet zo rood dat het de kaart
+   overheerst — het staat onderaan en je gebruikt het bijna nooit. */
+.knop--weg{
+  background:var(--paper);border:1.5px solid #d9705f;color:#8c2415;
+}
+
 /* De notitie bij een klant. Leeg is hij een grijs regeltje dat niet in de weg
    zit; staat er iets, dan hoort hij op te vallen — dat is het hele punt. */
 .notitie{margin:0 0 12px}
@@ -919,7 +925,7 @@ input{font:inherit}
     <div class="wrap kop__rij">
       <img class="kop__logo" src="../assets/logo-schaap-express-wit.png" alt="Schaap Express Transport" width="1200" height="360">
       <span class="kop__titel">Chauffeursportaal<small id="kop-wie" hidden></small></span>
-      <button class="kop__uit" id="uitloggen" type="button">Sluiten</button>
+      <button class="kop__uit" id="uitloggen" type="button">Uitloggen</button>
     </div>
   </header>
 
@@ -957,6 +963,9 @@ input{font:inherit}
     </button>
     <button class="tab" id="tab-klanten" role="tab" aria-selected="false" type="button">
       Klanten
+    </button>
+    <button class="tab" id="tab-chauffeurs" role="tab" aria-selected="false" type="button">
+      Chauffeurs
     </button>
   </div>
 
@@ -1180,6 +1189,14 @@ input{font:inherit}
               aria-label="Zoekopdracht wissen">&times;</button>
     </div>
     <div id="lijst-klanten" class="lijst"></div>
+  </div>
+
+  <!-- Wie er voor je rijdt. Nu ben jij dat zelf; dit tabblad staat er met het
+       oog op uitbreiding, zodat je bij de eerste chauffeur niet eerst iets
+       hoeft te bouwen. Toegangscodes staan er met opzet niet in: die horen in
+       Airtable en niet in het geheugen van een telefoon. -->
+  <div id="paneel-chauffeurs" class="wrap" hidden>
+    <div id="lijst-chauffeurs" class="lijst"></div>
   </div>
 
   <div id="paneel-meldingen" class="wrap" hidden>

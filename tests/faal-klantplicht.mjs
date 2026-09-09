@@ -126,6 +126,15 @@ globalThis.fetch = async (url, opties = {}) => {
   }
 
   if (u.includes('/tblF')) {
+    /* Eén factuur opvragen op id geeft dat record terug, niet een lijst. Zonder
+       dit onderscheid krijgt de Worker een antwoord zonder fields en houdt hij
+       elke factuur voor niet-concept — dan slaagt de proef om de verkeerde
+       reden: er wordt niets weggegooid, maar niet doordat de grens werkte. */
+    const fid = (u.split('?')[0].match(/\/(rec[A-Za-z0-9]{14})$/) || [])[1];
+    if (fid && m === 'GET') {
+      return new Response(JSON.stringify(facturen[fid] || { id: fid, fields: {} }),
+        { status: 200 });
+    }
     if (m === 'POST') {
       /* Airtable neemt records aan als {records:[{fields}]} en geeft ze zo ook
          terug. Een kaler antwoord laat maak() struikelen, en dan slaagt deze
@@ -737,6 +746,163 @@ console.log('\nen wat een chauffeur hiermee mag');
     keur('een chauffeur komt niet bij ' + actie, r.status === 401 || r.status === 403,
       r.status);
   }
+}
+
+/* =========================================================================
+   Weggooien, en een chauffeur die zelf een rit oppakt.
+   ========================================================================= */
+console.log('\n=== weggooien ===\n');
+
+let verwijderd = [];
+{
+  const echt = globalThis.fetch;
+  globalThis.fetch = async (url, opties = {}) => {
+    if ((opties.method || 'GET') === 'DELETE') {
+      verwijderd.push(String(url));
+      return new Response('{"deleted":true}', { status: 200 });
+    }
+    return echt(url, opties);
+  };
+
+  /* Een geplande rit mag gewoon weg: dat is de vergissing en de proefrit. */
+  zetKlaar();
+  verwijderd = [];
+  let res = await doe({ actie: 'ritweg', id: 'recGeplandGeen001' });
+  keur('een geplande rit mag weg', res.status === 200, res.status);
+  keur('en is werkelijk weggegooid', verwijderd.length === 1, verwijderd.length);
+
+  /* Een uitgevoerde rit niet. Die is gereden: handtekening, kilometers in je
+     dagstaat, meestal een factuur. */
+  zetKlaar();
+  verwijderd = [];
+  res = await doe({ actie: 'ritweg', id: 'recAfgetekend0001' });
+  keur('een uitgevoerde rit mag niet weg', res.status === 409, res.status);
+  keur('en blijft dus staan', verwijderd.length === 0, verwijderd.length);
+  let t = await res.text();
+  keur('met de reden erbij: annuleren is het alternatief',
+    /Geannuleerd/.test(t), t.slice(0, 160));
+
+  /* Een geplande rit met een verstuurde factuur eraan: die factuur is het
+     bewijs, en de rit ligt eronder. */
+  zetKlaar();
+  verwijderd = [];
+  ritten.recGeplandGeen001.fields.Facturen = [{ id: 'recFactuur0000001' }];
+  facturen.recFactuur0000001 = { id: 'recFactuur0000001',
+    fields: { Factuur: 'F-1', Status: 'Verstuurd' } };
+  res = await doe({ actie: 'ritweg', id: 'recGeplandGeen001' });
+  keur('een rit met een verstuurde factuur eraan mag niet weg',
+    res.status === 409, res.status);
+  t = await res.text();
+  keur('en verwijst naar de creditnota', /creditnota/i.test(t), t.slice(0, 160));
+
+  /* Met alleen een concept eraan mag het wel. */
+  zetKlaar();
+  verwijderd = [];
+  ritten.recGeplandGeen001.fields.Facturen = [{ id: 'recFactuur0000001' }];
+  facturen.recFactuur0000001 = { id: 'recFactuur0000001',
+    fields: { Factuur: 'F-1', Status: 'Concept' } };
+  res = await doe({ actie: 'ritweg', id: 'recGeplandGeen001' });
+  keur('met alleen een conceptfactuur eraan mag het wel', res.status === 200, res.status);
+
+  console.log('\nen facturen');
+  zetKlaar();
+  verwijderd = [];
+  facturen.recFactuur0000001 = { id: 'recFactuur0000001',
+    fields: { Factuur: 'F-1', Status: 'Concept' } };
+  res = await doe({ actie: 'factuurweg', id: 'recFactuur0000001' });
+  keur('een conceptfactuur mag weg', res.status === 200, res.status);
+  keur('en is weg', verwijderd.length === 1, verwijderd.length);
+
+  for (const stand of ['Verstuurd', 'Te laat', 'Betaald']) {
+    zetKlaar();
+    verwijderd = [];
+    facturen.recFactuur0000001 = { id: 'recFactuur0000001',
+      fields: { Factuur: 'F-1', Status: stand } };
+    res = await doe({ actie: 'factuurweg', id: 'recFactuur0000001' });
+    keur('een factuur op ' + stand + ' mag NIET weg', res.status === 409, res.status);
+    keur('  en blijft staan', verwijderd.length === 0, verwijderd.length);
+  }
+
+  globalThis.fetch = echt;
+}
+
+console.log('\n=== een chauffeur pakt zelf een rit op ===\n');
+{
+  const CHAUF = 'chauffeurscode-abcd';
+  const echt = globalThis.fetch;
+  globalThis.fetch = async (url, opties = {}) => {
+    const u = String(url);
+    if (u.includes('/tblC')) {
+      const leesbaar = decodeURIComponent(u.replace(/\+/g, ' '));
+      const gezocht = (leesbaar.match(/\{Toegangscode\} = '([^']*)'/) || [])[1];
+      return new Response(JSON.stringify({ records: gezocht === CHAUF
+        ? [{ id: 'recChauffeur00001', fields: { Chauffeur: 'Piet', Rol: 'Chauffeur',
+            Toegangscode: CHAUF, Actief: true } }] : [] }), { status: 200 });
+    }
+    return echt(url, opties);
+  };
+  const alsPiet = (lading) => worker.fetch(new Request('https://p.dev/', {
+    method: 'POST',
+    headers: { Origin: 'https://schaaplogistics.nl', 'Content-Type': 'application/json',
+               'X-Portaal-Code': CHAUF, 'CF-Connecting-IP': '10.0.3.' + (1 + Math.floor(Math.random() * 200)) },
+    body: JSON.stringify(lading)
+  }), env);
+
+  zetKlaar();
+  ritten.recGeplandGeen001.fields.Ritdatum = VANDAAG;
+  const zien = await (await alsPiet({ actie: 'overzicht', dag: VANDAAG })).json();
+  const vrij = (zien.ritten || []).filter((r) => !r.chauffeur);
+  keur('Piet ziet een rit die nog vrij ligt', vrij.length >= 1, JSON.stringify(zien.ritten || []).slice(0, 200));
+  keur('en er staat geen geld bij',
+    vrij.length && vrij[0].bedrag === undefined && vrij[0].winst === undefined,
+    JSON.stringify(vrij[0] || {}).slice(0, 200));
+
+  let res = await alsPiet({ actie: 'ritoppakken', id: 'recGeplandGeen001' });
+  keur('hij kan hem oppakken', res.status === 200, res.status);
+  keur('en staat er dan op', ritten.recGeplandGeen001.fields.Chauffeur === 'Piet',
+    ritten.recGeplandGeen001.fields.Chauffeur);
+
+  res = await alsPiet({ actie: 'ritoppakken', id: 'recGeplandGeen001' });
+  keur('nog een keer oppakken zegt dat hij al van hem is', res.status === 409, res.status);
+
+  /* Een rit die van iemand anders is. */
+  zetKlaar();
+  ritten.recGeplandGeen001.fields.Chauffeur = 'Klaas';
+  res = await alsPiet({ actie: 'ritoppakken', id: 'recGeplandGeen001' });
+  keur('een rit van Klaas kan hij niet overnemen', res.status === 409, res.status);
+  let t = await res.text();
+  keur('en hij hoort wie hem rijdt', /Klaas/.test(t), t.slice(0, 120));
+  keur('Klaas blijft erop staan',
+    ritten.recGeplandGeen001.fields.Chauffeur === 'Klaas');
+
+  /* Loslaten. */
+  zetKlaar();
+  ritten.recGeplandGeen001.fields.Chauffeur = 'Piet';
+  res = await alsPiet({ actie: 'ritloslaten', id: 'recGeplandGeen001' });
+  keur('zijn eigen rit loslaten mag', res.status === 200, res.status);
+  keur('en dan is hij weer vrij',
+    !ritten.recGeplandGeen001.fields.Chauffeur,
+    ritten.recGeplandGeen001.fields.Chauffeur);
+
+  zetKlaar();
+  ritten.recGeplandGeen001.fields.Chauffeur = 'Klaas';
+  res = await alsPiet({ actie: 'ritloslaten', id: 'recGeplandGeen001' });
+  keur('die van Klaas loslaten mag niet', res.status === 403, res.status);
+
+  zetKlaar();
+  ritten.recGeplandGeen001.fields.Chauffeur = 'Piet';
+  ritten.recGeplandGeen001.fields.Status = 'Onderweg';
+  res = await alsPiet({ actie: 'ritloslaten', id: 'recGeplandGeen001' });
+  keur('en loslaten terwijl je onderweg bent ook niet', res.status === 409, res.status);
+
+  /* En wat hij niet mag blijft wat hij niet mag. */
+  for (const actie of ['ritweg', 'factuurweg', 'klantnotitie', 'toegangweg']) {
+    const r = await alsPiet({ actie, id: 'recGeplandGeen001',
+      klantId: 'recKlant000000001' });
+    keur('een chauffeur komt niet bij ' + actie, r.status === 403, r.status);
+  }
+
+  globalThis.fetch = echt;
 }
 
 console.log(fouten ? '\n' + fouten + ' fout(en)\n' : '\nalles goed\n');

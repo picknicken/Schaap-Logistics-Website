@@ -163,9 +163,29 @@
     openen(ingetypt);
   });
 
+  /* Uitloggen brengt je naar de website. Behalve als het portaal vanaf je
+     beginscherm draait: dan is er geen adresbalk en geen terugknop, en zou je
+     jezelf op de marketingpagina opsluiten zonder weg terug. In dat geval
+     blijft het bij het inlogscherm — dat is waar je toch heen wilt.
+
+     Zo doet de knop bij een klant op een gedeelde computer wat je verwacht
+     (weg uit het portaal, terug naar de site) zonder de app onbruikbaar te
+     maken voor wie hem heeft geïnstalleerd. */
+  function naarBuiten() {
+    var alsApp = false;
+    try {
+      alsApp = (window.matchMedia &&
+                window.matchMedia('(display-mode: standalone)').matches) ||
+               window.navigator.standalone === true;
+    } catch (e) { alsApp = false; }
+    if (alsApp) { return; }
+    try { window.location.href = '../'; } catch (e) { /* dan blijft het slot */ }
+  }
+
   el('uitloggen').addEventListener('click', function () {
     vergeet();
     meldSlot('');
+    naarBuiten();
   });
 
   /* --------------------------------------------------------- tabbladen */

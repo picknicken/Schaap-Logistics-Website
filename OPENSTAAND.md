@@ -343,6 +343,54 @@ meteen binnen, met SPOED in de titel als het spoed is.
 niet: die ritten maak je zelf aan, en je telefoon laten piepen om je te vertellen
 wat je net zelf hebt getikt is ruis.
 
+### Een chauffeur die zelf ritten oppakt
+
+Een chauffeur ziet in zijn portaal nu ook de ritten van die dag die **nog geen
+chauffeur** hebben, met een knop *Ik rijd hem*. Loslaten mag ook, zolang hij
+niet vertrokken is — daarna is het geen planning meer maar een probleem waar
+iemand van moet weten.
+
+Wat hij daarmee níét kan: een aanvraag van de website aannemen. Daar zit een
+prijs aan en dat is jouw beslissing. Hij ziet ook nog steeds geen bedragen, geen
+winst en geen klantgegevens buiten wat hij nodig heeft om te rijden.
+
+Zolang jij de enige bent verandert er niets: er zijn geen ritten zonder
+chauffeur waar iemand anders op kan drukken.
+
+### Rit of factuur weggooien
+
+Voor een vergissing en voor het uitproberen. Met twee grenzen die er niet uit
+kunnen, en het is goed om te weten waarom.
+
+**Een verstuurde factuur gaat niet weg.** Je factuurnummers horen aaneensluitend
+te zijn; een gat erin is bij een controle het eerste wat opvalt, en je kunt niet
+laten zien wat erin zat. Draai hem terug met een creditnota — die staat al in
+`AIRTABLE.md` beschreven en laat wél zien wat er gebeurd is. Een conceptfactuur
+mag gewoon weg.
+
+**Een uitgevoerde rit gaat ook niet weg.** Die is gereden: er hangt een
+handtekening aan, kilometers die in je dagstaat meetellen, en meestal een
+factuur. Zet hem op *Geannuleerd* als hij toch niet doorging.
+
+Wat wél weg mag: een rit die nog gepland staat of onderweg was en nooit is
+afgerond, en een conceptfactuur. Twee keer drukken, en het komt niet terug.
+
+### Uitloggen
+
+De knop heet nu *Uitloggen* en brengt je naar de website. Behalve als het
+portaal vanaf je beginscherm draait: daar is geen adresbalk en geen terugknop,
+en zou je jezelf op de marketingpagina opsluiten. Dan blijft het bij het
+inlogscherm.
+
+### Tabblad Chauffeurs
+
+Wie er voor je rijdt, met rol, of ze actief zijn en wanneer ze voor het laatst
+binnenkwamen. Nu ben jij de enige; het staat er met het oog op uitbreiding,
+zodat je bij de eerste chauffeur niet eerst iets hoeft te bouwen.
+
+Toegangscodes staan er met opzet niet in. Die horen in Airtable; wie zijn code
+kwijt is krijgt een nieuwe, en dat is veiliger dan hem kunnen opzoeken.
+
 ### De deur van het portaal
 
 Twee dingen bijgezet na een keer goed kijken naar de beveiliging.

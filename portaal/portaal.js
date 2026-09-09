@@ -289,6 +289,10 @@
      verstuurd zodra er weer bereik is. Op volgorde, want Onderweg hoort vóór
      Uitgevoerd aan te komen. */
 
+  /* Wie er is ingelogd, zodat een ritkaart weet of een rit van jou is of nog
+     vrij ligt. Wordt gezet bij elk overzicht. */
+  var wieIkBen = null;
+
   var SL_RIJ = 'sl-portaal-rij';
   var SL_DAG = 'sl-portaal-dag-';
   var DAGEN_BEWAARD = 7;
@@ -482,6 +486,25 @@
 
   /* ------------------------------------------------------------ toegang */
 
+  /* Uitloggen brengt je naar de website. Behalve als het portaal vanaf je
+     beginscherm draait: dan is er geen adresbalk en geen terugknop, en zou je
+     jezelf op de marketingpagina opsluiten zonder weg terug. In dat geval
+     blijft het bij het inlogscherm — dat is waar je toch heen wilt.
+
+     Zo doet de knop bij een klant op een gedeelde computer wat je verwacht
+     (weg uit het portaal, terug naar de site) zonder de app onbruikbaar te
+     maken voor wie hem heeft geïnstalleerd. */
+  function naarBuiten() {
+    var alsApp = false;
+    try {
+      alsApp = (window.matchMedia &&
+                window.matchMedia('(display-mode: standalone)').matches) ||
+               window.navigator.standalone === true;
+    } catch (e) { alsApp = false; }
+    if (alsApp) { return; }
+    try { window.location.href = '../'; } catch (e) { /* dan blijft het slot */ }
+  }
+
   /* Het adres blijft staan als je uitlogt. Alleen de code raak je kwijt —
      anders moet je bij elke keer sluiten ook die hele workers.dev-URL weer
      overtypen, en dat is precies het soort werk dat niemand volhoudt. */
@@ -568,6 +591,7 @@
   el('uitloggen').addEventListener('click', function () {
     vergeetCode();
     meldSlot('');
+    naarBuiten();
   });
 
   /* --------------------------------------------------------------- dag */
@@ -878,10 +902,12 @@
        al buiten; dit is alleen om hem niet tegen een dichte deur te laten
        lopen. */
     var ik = (data && data.ik) || null;
+    wieIkBen = ik;
     var alleenRitten = !!ik && ik.rol !== 'Eigenaar';
     /* Meldingen gaan over aanvragen, klanten en facturen — jouw bedrijfsvoering.
        Een chauffeur heeft daar niets te zoeken, dus dat tabblad gaat mee weg. */
-    ['tab-aanvragen', 'tab-planning', 'tab-meldingen', 'tab-klanten'].forEach(function (id) {
+    ['tab-aanvragen', 'tab-planning', 'tab-meldingen', 'tab-klanten',
+     'tab-chauffeurs'].forEach(function (id) {
       var t = el(id);
       if (t) { t.hidden = alleenRitten; }
     });
@@ -968,7 +994,8 @@
     b.hidden = !aantal;
   }
 
-  var TABBLADEN = ['ritten', 'aanvragen', 'prijs', 'planning', 'meldingen', 'klanten'];
+  var TABBLADEN = ['ritten', 'aanvragen', 'prijs', 'planning', 'meldingen',
+                   'klanten', 'chauffeurs'];
 
   function kiesTab(naam) {
     tabblad = naam;
@@ -992,6 +1019,72 @@
     if (naam === 'meldingen') { haalMeldingen(); }
     if (naam === 'klanten') { tekenKlanten(); }
     if (naam === 'prijs') { toonPrijs(); }
+    if (naam === 'chauffeurs') { haalChauffeurs(); }
+  }
+
+  /* ------------------------------------------------------------ chauffeurs
+
+     Wie er voor je rijdt. Nu ben jij dat zelf, maar dit staat er met het oog
+     op uitbreiding: bij de eerste chauffeur hoef je niet eerst iets te bouwen.
+
+     Toegangscodes staan er met opzet niet in. Die horen in Airtable en niet in
+     het geheugen van een telefoon — wie zijn code kwijt is krijgt een nieuwe,
+     en dat is veiliger dan hem kunnen opzoeken. */
+  var chauffeurs = [];
+
+  function haalChauffeurs() {
+    var lijst = el('lijst-chauffeurs');
+    if (!lijst) { return; }
+    if (chauffeurs.length) { tekenChauffeurs(); return; }
+    lijst.innerHTML = '';
+    lijst.appendChild(maak('div', 'leeg', 'Bezig met ophalen…'));
+    verstuur('chauffeurs', {})
+      .then(function (data) {
+        chauffeurs = (data && data.chauffeurs) || [];
+        tekenChauffeurs();
+      })
+      .catch(function (fout) {
+        lijst.innerHTML = '';
+        lijst.appendChild(maak('div', 'leeg', fout.message));
+      });
+  }
+
+  function tekenChauffeurs() {
+    var lijst = el('lijst-chauffeurs');
+    if (!lijst) { return; }
+    lijst.innerHTML = '';
+
+    if (!chauffeurs.length) {
+      lijst.appendChild(maak('div', 'leeg',
+        'Nog niemand in de tabel Chauffeurs. Zet er een regel in met een naam ' +
+        'en een toegangscode, dan kan die persoon in dit portaal en zijn eigen ' +
+        'ritten oppakken.'));
+      return;
+    }
+
+    chauffeurs.forEach(function (c) {
+      var kaart = maak('div', 'klantkaart');
+      var kop = maak('div', 'klantkaart__kop');
+      var titel = maak('div');
+      titel.appendChild(maak('div', 'klantkaart__naam', c.naam || 'Naamloos'));
+      var onder = [c.rol];
+      if (!c.heeftCode) { onder.push('nog geen toegangscode'); }
+      if (c.gezien) { onder.push('laatst gezien ' + datumKort(String(c.gezien).slice(0, 10))); }
+      titel.appendChild(maak('div', 'klantkaart__sub', onder.join(' \u00b7 ')));
+      kop.appendChild(titel);
+
+      var merk = maak('span', 'klantkaart__soort', c.actief ? 'Actief' : 'Uit');
+      if (c.actief) { merk.setAttribute('data-vast', ''); }
+      kop.appendChild(merk);
+      kaart.appendChild(kop);
+
+      if (!c.heeftCode) {
+        kaart.appendChild(maak('div', 'klantkaart__open',
+          'Zonder toegangscode kan deze persoon nergens in. Zet er een in ' +
+          'Airtable bij de chauffeur.'));
+      }
+      lijst.appendChild(kaart);
+    });
   }
 
   TABBLADEN.forEach(function (t) {
@@ -1899,6 +1992,14 @@
       lijf.appendChild(afzeg);
     }
 
+    /* Weggooien staat helemaal onderaan en vraagt om twee keer drukken. Het is
+       er voor een vergissing en voor het uitproberen, niet voor dagelijks
+       gebruik — en de tussenlaag weigert het bij een uitgevoerde rit of een
+       verstuurde factuur, dus wat hier weg kan is ook wat weg mag. */
+    if (wieIkBen && wieIkBen.rol === 'Eigenaar' && rit.status !== 'Uitgevoerd') {
+      knoppen.appendChild(weggooiKnop('Rit verwijderen', 'ritweg', rit.id));
+    }
+
     /* --- de klant vraagt een wijziging --- */
     if (rit.wijzigStand) { lijf.appendChild(wijzigBlok(rit)); }
 
@@ -2126,7 +2227,45 @@
     var concept = conceptKnop(rit);
     if (concept) { knoppen.appendChild(concept); }
 
-    if (rit.status === 'Gepland') {
+    /* Een rit die nog vrij ligt: dan is oppakken het enige wat er te doen is,
+       en de knop Onderweg zou onzin zijn — je kunt niet vertrekken met een rit
+       die niet van jou is. */
+    var vrij = rit.status === 'Gepland' && !String(rit.chauffeur || '').trim();
+    var vanMij = !!wieIkBen && !!rit.chauffeur &&
+      String(rit.chauffeur).trim().toLowerCase() ===
+      String(wieIkBen.naam || '').trim().toLowerCase();
+
+    if (vrij) {
+      var pak = maak('button', 'knop knop--groen', 'Ik rijd hem');
+      pak.type = 'button';
+      pak.addEventListener('click', function () {
+        bezig(pak, 'Bezig…', function (klaar) {
+          meldApp('');
+          verstuur('ritoppakken', { id: rit.id })
+            .then(function (data) { ververs(data.rit); })
+            .catch(function (fout) { meldApp(fout.message); klaar(false); });
+        });
+      });
+      knoppen.appendChild(pak);
+    }
+
+    /* Loslaten mag zolang je niet vertrokken bent. Alleen bij je eigen rit, en
+       alleen als je chauffeur bent: de eigenaar heeft de planknoppen. */
+    if (vanMij && rit.status === 'Gepland' && wieIkBen && wieIkBen.rol !== 'Eigenaar') {
+      var los = maak('button', 'knop knop--rand', 'Toch niet rijden');
+      los.type = 'button';
+      los.addEventListener('click', function () {
+        bezig(los, 'Bezig…', function (klaar) {
+          meldApp('');
+          verstuur('ritloslaten', { id: rit.id })
+            .then(function (data) { ververs(data.rit); })
+            .catch(function (fout) { meldApp(fout.message); klaar(false); });
+        });
+      });
+      knoppen.appendChild(los);
+    }
+
+    if (rit.status === 'Gepland' && !vrij) {
       var vertrek = maak('button', 'knop knop--blauw', 'Onderweg');
       vertrek.type = 'button';
       vertrek.addEventListener('click', function () {
@@ -2516,6 +2655,17 @@
     if (f.creditVan) {
       vak.appendChild(maak('p', 'factuur__uitleg',
         'Creditnota; draait factuur ' + f.creditVan + ' terug.'));
+    }
+
+    /* Alleen een concept mag weg. Een verstuurde factuur draai je terug met een
+       creditnota: je nummering hoort aaneensluitend te zijn, en een gat erin is
+       precies wat bij een controle opvalt. De tussenlaag weigert het ook, maar
+       een knop die je aanbiedt en dan weigert is een knop die niet hoort te
+       staan. */
+    if (f.status === 'Concept' && wieIkBen && wieIkBen.rol === 'Eigenaar') {
+      var weg = weggooiKnop('Concept verwijderen', 'factuurweg', f.id);
+      weg.classList.add('factuur__weg');
+      vak.appendChild(weg);
     }
     if (f.gecrediteerd) {
       vak.appendChild(maak('p', 'factuur__uitleg',
@@ -3341,6 +3491,33 @@
       'zelf pas je hierboven aan \u2014 stops, kilometers of adres \u2014 zodat ' +
       'de prijs klopt.'));
     return vak;
+  }
+
+  /* Eén knop voor het weggooien van een rit of een conceptfactuur. Twee keer
+     drukken, want dit komt niet terug. De tussenlaag beslist of het mag; deze
+     knop vraagt het alleen. */
+  function weggooiKnop(tekst, actie, id) {
+    var knop = maak('button', 'knop knop--weg', tekst);
+    knop.type = 'button';
+    var zeker = false;
+    knop.addEventListener('click', function () {
+      if (!zeker) {
+        zeker = true;
+        knop.textContent = 'Zeker weten? Nog een keer';
+        setTimeout(function () {
+          if (zeker) { zeker = false; knop.textContent = tekst; }
+        }, 5000);
+        return;
+      }
+      zeker = false;
+      bezig(knop, 'Bezig…', function (klaar) {
+        meldApp('');
+        verstuur(actie, { id: id })
+          .then(function () { haalDag(); })
+          .catch(function (fout) { meldApp(fout.message); klaar(false); });
+      });
+    });
+    return knop;
   }
 
   function contactBlok(rit) {

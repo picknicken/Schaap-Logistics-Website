@@ -412,6 +412,11 @@ function magVanOrigin(origin, toegestaan) {
 const CHAUFFEUR_MAG = new Set([
   'overzicht', 'ritten', 'status', 'handtekening', 'notitie', 'ritkm', 'ritkosten',
   'dagstaat', 'ritfoto', 'ritcontact',
+  /* Zelf een vrije rit oppakken, en hem weer loslaten zolang je niet bent
+     vertrokken. Deze twee staan met opzet NIET in RIT_ACTIES: die lijst eist
+     dat de rit al van jou is, en bij het oppakken is dat juist niet zo. Ze
+     doen hun eigen controle. */
+  'ritoppakken', 'ritloslaten',
   /* Terugzoeken mag hij ook, maar hij krijgt alleen zijn eigen ritten terug —
      daar zorgt dezelfde zeef voor als bij het dagoverzicht. */
   'zoekritten',
@@ -620,6 +625,8 @@ async function schakel(env, body, origin, wie) {
     case 'ritfoto':      return await zetRitFoto(env, body, origin);
     case 'notitie':      return await zetNotitie(env, body, origin);
     case 'ritcontact':   return await zetContact(env, body, origin);
+    case 'ritoppakken':  return await pakRitOp(env, body, origin, wie);
+    case 'ritloslaten':  return await laatRitLos(env, body, origin, wie);
     case 'accepteer':    return await accepteerAanvraag(env, body, origin);
     case 'afwijzen':     return await wijsAanvraagAf(env, body, origin);
     case 'planrit':      return await planRit(env, body, origin);
@@ -629,9 +636,12 @@ async function schakel(env, body, origin, wie) {
     case 'ritkosten':    return await zetRitKosten(env, body, origin);
     case 'koppelklant':  return await koppelKlant(env, body, origin);
     case 'wijzigbesluit':return await wijzigBesluit(env, body, origin);
+    case 'ritweg':       return await verwijderRit(env, body, origin);
+    case 'factuurweg':   return await verwijderFactuur(env, body, origin);
     case 'nieuweklant':  return await nieuweKlant(env, body, origin);
     case 'uitnodiging':  return await stuurUitnodiging(env, body, origin);
     case 'klantsoort':   return await zetKlantsoort(env, body, origin);
+    case 'chauffeurs':   return await haalChauffeurs(env, body, origin);
     case 'klantnotitie': return await zetKlantnotitie(env, body, origin);
     case 'klantzelf':    return await zetZelfbediening(env, body, origin);
     case 'toegangweg':   return await trekToegangIn(env, body, origin);
@@ -786,6 +796,71 @@ async function zetStatus(env, body, origin) {
   }
 
   const rit = naarRit(await patch(env, env.AIRTABLE_RITTEN, id, velden));
+  return antwoord(200, { ok: true, rit }, origin, true);
+}
+
+/* Een chauffeur pakt zelf een vrije rit op.
+
+   Waarom dit geen gewone rit-actie is: RIT_ACTIES controleert vooraf dat de
+   rit al op jouw naam staat, en dat is hier per definitie niet zo. De controle
+   staat dus hier, en hij is strenger dan die van de eigenaar: de rit moet
+   werkelijk vrij zijn en nog gereden moeten worden.
+
+   De eigenaar mag dit ook — die kan zichzelf op een rit zetten — maar voor hem
+   is het zelden de weg; hij heeft de planknoppen. */
+async function pakRitOp(env, body, origin, wie) {
+  const id = recordId(body.id);
+  if (!id) { return antwoord(400, { fout: 'Ongeldig rit-id' }, origin, true); }
+
+  const naam = String((wie && wie.naam) || '').trim();
+  if (!naam) {
+    return antwoord(400, {
+      fout: 'Jouw naam staat niet in de administratie. Vraag of die wordt ingevuld.'
+    }, origin, true);
+  }
+
+  const record = await airtable(env, `${env.AIRTABLE_RITTEN}/${id}`);
+  const f = record.fields || {};
+  const bezet = String(f[R.chauffeur] || '').trim();
+  if (bezet) {
+    /* Twee mensen die tegelijk op dezelfde rit drukken: de tweede hoort te
+       horen wie hem heeft, niet dat er iets misging. */
+    return antwoord(409, {
+      fout: bezet.toLowerCase() === naam.toLowerCase()
+        ? 'Deze rit staat al op jouw naam.'
+        : bezet + ' rijdt deze rit al.'
+    }, origin, true);
+  }
+  if ((keuze(f[R.status]) || 'Gepland') !== 'Gepland') {
+    return antwoord(409, {
+      fout: 'Deze rit is niet meer op te pakken.'
+    }, origin, true);
+  }
+
+  const rit = naarRitVoorChauffeur(
+    await patch(env, env.AIRTABLE_RITTEN, id, { [R.chauffeur]: naam }));
+  return antwoord(200, { ok: true, rit }, origin, true);
+}
+
+/* En weer loslaten. Alleen je eigen rit, en alleen zolang je niet bent
+   vertrokken: staat hij op Onderweg, dan ben je al bezig en is loslaten geen
+   planning maar een probleem waar iemand van moet weten. */
+async function laatRitLos(env, body, origin, wie) {
+  const id = recordId(body.id);
+  if (!id) { return antwoord(400, { fout: 'Ongeldig rit-id' }, origin, true); }
+
+  const record = await airtable(env, `${env.AIRTABLE_RITTEN}/${id}`);
+  if (!ritIsVan(record, wie)) {
+    return antwoord(403, { fout: 'Deze rit staat niet op jouw naam.' }, origin, true);
+  }
+  if ((keuze((record.fields || {})[R.status]) || 'Gepland') !== 'Gepland') {
+    return antwoord(409, {
+      fout: 'Je bent al onderweg met deze rit. Bel even als het niet lukt.'
+    }, origin, true);
+  }
+
+  const rit = naarRitVoorChauffeur(
+    await patch(env, env.AIRTABLE_RITTEN, id, { [R.chauffeur]: '' }));
   return antwoord(200, { ok: true, rit }, origin, true);
 }
 
@@ -1218,6 +1293,84 @@ async function koppelKlant(env, body, origin) {
   );
   await koppelKlantAanRitten(env, id, klantId);
   return antwoord(200, { ok: true, opdracht }, origin, true);
+}
+
+/* ------------------------------------------------------------ weggooien
+
+   Voor een vergissing en voor het uitproberen. Met twee grenzen die er niet
+   uit kunnen, en het is goed om te weten waarom.
+
+   Een verstuurde factuur gooi je niet weg. Je factuurnummers horen
+   aaneensluitend te zijn; een gat erin is precies wat de Belastingdienst bij
+   een controle als eerste opvalt, en je kunt niet laten zien wat er in dat gat
+   zat. Een verstuurde factuur draai je terug met een creditnota — die staat in
+   AIRTABLE.md beschreven en laat wél zien wat er gebeurd is. Een conceptfactuur
+   is nog nergens heen en mag gewoon weg.
+
+   Een uitgevoerde rit gooi je ook niet weg. Die is gereden: er hangt een
+   handtekening aan, kilometers die in je dagstaat meetellen, en meestal een
+   factuur. Weggooien betekent dat je administratie niet meer klopt met wat er
+   werkelijk gebeurd is. Zet hem op Geannuleerd als hij niet doorging, of laat
+   hem staan.
+
+   Wat er wél weg mag: een rit die nog gepland staat of onderweg was en nooit
+   is afgerond, en een conceptfactuur. Dat dekt de vergissing en de proefrit. */
+async function verwijderRit(env, body, origin) {
+  const id = recordId(body.id);
+  if (!id) { return antwoord(400, { fout: 'Ongeldig rit-id' }, origin, true); }
+
+  const record = await airtable(env, `${env.AIRTABLE_RITTEN}/${id}`);
+  const f = record.fields || {};
+  const status = keuze(f[R.status]) || 'Gepland';
+
+  if (status === 'Uitgevoerd') {
+    return antwoord(409, {
+      fout: 'Deze rit is uitgevoerd. Die hoort te blijven staan — er hangt een ' +
+            'handtekening en kilometers aan. Zet hem op Geannuleerd als hij ' +
+            'toch niet doorging.'
+    }, origin, true);
+  }
+
+  /* Hangt er een factuur aan die al de deur uit is, dan is de rit het bewijs
+     eronder. Die twee horen bij elkaar te blijven. */
+  const facturen = koppelIds(f[R.facturen]);
+  if (facturen.length) {
+    for (const fid of facturen) {
+      try {
+        const fac = await airtable(env, `${env.AIRTABLE_FACTUREN}/${fid}`);
+        if (keuze((fac.fields || {})[FA.status]) !== 'Concept') {
+          return antwoord(409, {
+            fout: 'Er hangt een verstuurde factuur aan deze rit. Draai die ' +
+                  'eerst terug met een creditnota.'
+          }, origin, true);
+        }
+      } catch (fout) {
+        return antwoord(502, { fout: fout.message }, origin, true);
+      }
+    }
+  }
+
+  await airtable(env, `${env.AIRTABLE_RITTEN}/${id}`, { method: 'DELETE' });
+  console.log(`Rit ${id} verwijderd (${status}).`);
+  return antwoord(200, { ok: true, verwijderd: id }, origin, true);
+}
+
+async function verwijderFactuur(env, body, origin) {
+  const id = recordId(body.id);
+  if (!id) { return antwoord(400, { fout: 'Ongeldig factuur-id' }, origin, true); }
+
+  const record = await airtable(env, `${env.AIRTABLE_FACTUREN}/${id}`);
+  const status = keuze((record.fields || {})[FA.status]) || '';
+  if (status !== 'Concept') {
+    return antwoord(409, {
+      fout: 'Alleen een conceptfactuur mag weg. Deze is al verstuurd; draai ' +
+            'hem terug met een creditnota, dan blijft je nummering kloppen.'
+    }, origin, true);
+  }
+
+  await airtable(env, `${env.AIRTABLE_FACTUREN}/${id}`, { method: 'DELETE' });
+  console.log(`Conceptfactuur ${id} verwijderd.`);
+  return antwoord(200, { ok: true, verwijderd: id }, origin, true);
 }
 
 /* Een wijzigverzoek van een klant afhandelen: inwilligen of afwijzen.
@@ -2917,7 +3070,15 @@ async function rittenOphalen(env, van, tot, wie) {
   if (!wie || wie.rol === 'Eigenaar') {
     return records.map(naarRit);
   }
-  return records.filter((r) => ritIsVan(r, wie)).map(naarRitVoorChauffeur);
+  /* Een chauffeur ziet zijn eigen ritten, plus wat er die dag nog vrij ligt.
+     Dat tweede is nieuw en het is de hele bedoeling: zo kan hij zelf een rit
+     oppakken in plaats van te wachten tot iemand hem toewijst.
+
+     Een vrije rit die al gereden of afgezegd is heeft geen zin meer om op te
+     pakken, dus die blijft eruit. */
+  return records
+    .filter((r) => ritIsVan(r, wie) || ritIsVrij(r))
+    .map(naarRitVoorChauffeur);
 }
 
 /* Alleen aanvragen waar nog iets mee moet. Afgewezen en al omgezette
@@ -3477,6 +3638,34 @@ const MW = {
   gezien: 'Laatst ingelogd'
 };
 
+/* De lijst met chauffeurs, voor het tabblad in je portaal. Met het oog op
+   uitbreiding: nu ben jij de enige, straks staan er meer.
+
+   Wat er nadrukkelijk NIET in zit: de toegangscodes. Die staan in Airtable en
+   horen daar; ze over de lijn sturen zodat ze in het geheugen van een telefoon
+   belanden is precies wat je niet wilt. Wie zijn code kwijt is krijgt een
+   nieuwe, dat is veiliger dan hem kunnen opzoeken. */
+async function haalChauffeurs(env, body, origin) {
+  const zoek = new URLSearchParams();
+  zoek.set('pageSize', '100');
+  zoek.append('sort[0][field]', MW.naam);
+  const data = await airtable(env, `${env.AIRTABLE_CHAUFFEURS}?${zoek}`);
+
+  const chauffeurs = (data.records || []).map((r) => {
+    const f = r.fields || {};
+    return {
+      id:     r.id,
+      naam:   f[MW.naam] || '',
+      rol:    keuze(f[MW.rol]) || 'Chauffeur',
+      actief: f[MW.actief] !== false,
+      gezien: f[MW.gezien] || '',
+      /* Of er een code is, niet welke. */
+      heeftCode: !!String(f[MW.code] || '').trim()
+    };
+  });
+  return antwoord(200, { ok: true, chauffeurs }, origin, true);
+}
+
 async function zoekMedewerker(env, ruweCode) {
   const code = schoneCode(ruweCode);
   if (!code) { return null; }
@@ -3533,6 +3722,9 @@ function naarRitVoorChauffeur(record) {
   return {
     id:         record.id,
     naam:       f[R.rit] || '',
+    /* Wie hem rijdt, zodat het portaal een vrije rit anders kan tonen dan een
+       eigen rit. Geen geld en geen klantgegevens: dit is alleen een naam. */
+    chauffeur:  String(f[R.chauffeur] || '').trim(),
     datum:      f[R.datum] || '',
     type:       keuze(f[R.type]),
     status:     keuze(f[R.status]) || 'Gepland',
@@ -3566,6 +3758,14 @@ function naarRitVoorChauffeur(record) {
    alleen wat op zijn naam staat. Vergelijken gebeurt op de naam zoals hij in
    Chauffeurs staat tegen het veld Chauffeur op de rit — hoofdletters en
    spaties tellen niet mee, want die typt niemand twee keer hetzelfde. */
+/* Een rit zonder chauffeur die nog gereden moet worden. */
+function ritIsVrij(record) {
+  const f = record.fields || {};
+  if (String(f[R.chauffeur] || '').trim()) { return false; }
+  const status = keuze(f[R.status]) || 'Gepland';
+  return status === 'Gepland';
+}
+
 function ritIsVan(record, wie) {
   if (wie.rol === 'Eigenaar') { return true; }
   const opDeRit = String((record.fields || {})[R.chauffeur] || '').trim().toLowerCase();
