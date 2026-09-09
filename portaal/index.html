@@ -197,50 +197,30 @@ input{font:inherit}
    dan hoort hij er niet als een fout uit te zien. */
 .melding--goed{border-left-color:var(--ok);background:var(--ok-vlak);color:#11603c}
 
-/* ------------------------------------------------------------ tabbladen */
-/* De rij past zich aan: een chauffeur heeft er maar een, en dan hoort die
-   de hele breedte te krijgen in plaats van een derde. */
-/* Vijf tabbladen passen op een telefoon niet meer naast elkaar. Met flex in
-   plaats van een raster verdelen ze zich over de breedte zolang het kan, en
-   schuiven ze zodra het niet meer kan — in plaats van dat de laatste half van
-   het scherm valt. Op een breed scherm verandert er niets. */
-/* De schuifbalk en de menuknop horen bij elkaar en plakken samen bovenaan.
-   De knop staat absoluut gepositioneerd, dus hij heeft dit omhulsel nodig om
-   zich tegen af te zetten — anders zweeft hij tegen de pagina. */
+/* ------------------------------------------------------------ tabbladen
+
+   Er was een schuifbalk met alle tabbladen naast elkaar. Op een telefoon
+   pasten er drie van de zeven; de rest viel erbuiten en bestond daarmee niet.
+   Nu is er alleen een menu, en houdt deze balk bij waar je bent. */
 .tabbalk{
   position:sticky;top:0;z-index:19;background:var(--navy);
+  border-top:1px solid rgba(255,255,255,.08);
 }
 /* De dagbalk plakt ook bovenaan en staat later in de pagina, dus die zou het
    opengeklapte menu overdekken. Zolang het menu open is gaat de balk erboven. */
 .tabbalk[data-open]{z-index:30}
-.tabs{
-  display:flex;overflow-x:auto;overscroll-behavior-x:contain;
-  -webkit-overflow-scrolling:touch;scrollbar-width:none;
-  background:var(--navy);border-top:1px solid rgba(255,255,255,.08);
-  /* Ruimte rechts voor de menuknop, anders schuift het laatste tabblad
-     eronderdoor en kun je er niet op drukken. */
-  padding-right:44px;
+.tabbalk__rij{
+  position:relative;display:flex;align-items:center;gap:12px;min-height:44px;
 }
-.tabs::-webkit-scrollbar{display:none}
-/* Een randje schaduw rechts zodra er meer is dan past; anders lijkt een
-   afgesneden tabblad een fout in plaats van een hint. */
-.tabs[data-meer]{
-  -webkit-mask-image:linear-gradient(to right,#000 calc(100% - 70px),transparent);
-  mask-image:linear-gradient(to right,#000 calc(100% - 70px),transparent);
+.tabbalk__nu{
+  flex:1;min-width:0;color:#fff;font-size:.95rem;font-weight:700;
+  letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
-.tab{
-  flex:1 0 auto;white-space:nowrap;
-  padding:11px 13px 10px;color:#8fa2be;font-size:.8rem;font-weight:600;
-  display:flex;align-items:center;justify-content:center;gap:6px;
-  border-bottom:2.5px solid transparent;
-}
-.tab[aria-selected="true"]{color:#fff;border-bottom-color:var(--amber)}
 .tab__badge{
   min-width:19px;height:19px;padding:0 5px;border-radius:99px;
   background:var(--urgent);color:#fff;font-size:.68rem;font-weight:700;
   display:grid;place-items:center;font-variant-numeric:tabular-nums;
 }
-.tab[aria-selected="true"] .tab__badge{background:var(--amber);color:var(--navy)}
 .tab__badge[hidden]{display:none!important}
 
 /* ------------------------------------------------------- offlinebalk
@@ -699,19 +679,35 @@ input{font:inherit}
   background:var(--paper);border:1.5px solid #d9705f;color:#8c2415;
 }
 
-/* Het hamburgermenu naast de tabbalk. Hij zweeft rechtsboven op de balk zelf,
-   zodat hij geen eigen regel kost op een scherm dat toch al smal is. */
+/* Het menu waarmee je van tabblad wisselt. Hij staat rechts in de balk, waar
+   de knop stond toen er nog een schuifbalk naast lag: dezelfde plek, dezelfde
+   duim. */
 .menuknop{
-  position:absolute;top:0;right:0;z-index:21;
-  width:44px;height:41px;display:flex;flex-direction:column;
+  position:relative;flex:none;margin-right:-8px;
+  width:48px;height:44px;display:flex;flex-direction:column;
   align-items:center;justify-content:center;gap:4px;
-  background:var(--navy);border:0;cursor:pointer;
+  background:none;border:0;cursor:pointer;
 }
-.menuknop span{display:block;width:17px;height:2px;background:#8fa2be;border-radius:2px}
-.menuknop[aria-expanded="true"] span{background:#fff}
+.menuknop__streep{
+  display:block;width:19px;height:2px;background:#8fa2be;border-radius:2px;
+}
+.menuknop[aria-expanded="true"] .menuknop__streep{background:#fff}
+
+/* Het belletje op de knop. Zonder balk zie je de tellers pas als je het menu
+   opent, en dan weet je niet dát je hoort te kijken. Dit telt alleen wat om
+   een reactie vraagt — nieuwe aanvragen en ongelezen meldingen — en alleen van
+   tabbladen waar je nu niet op staat. */
+.menuknop__bel{
+  position:absolute;top:4px;right:2px;
+  min-width:17px;height:17px;padding:0 4px;border-radius:99px;
+  background:var(--urgent);color:#fff;font-size:.63rem;font-weight:700;
+  display:grid;place-items:center;font-variant-numeric:tabular-nums;
+  border:2px solid var(--navy);box-sizing:content-box;
+}
+.menuknop__bel[hidden]{display:none!important}
 
 .tabmenu{
-  position:absolute;top:41px;right:6px;z-index:22;min-width:172px;
+  position:absolute;top:46px;right:0;z-index:22;min-width:196px;
   background:var(--paper);border:1px solid var(--line);border-radius:12px;
   box-shadow:0 12px 32px rgba(11,21,38,.22);padding:6px;
 }
@@ -1010,41 +1006,23 @@ input{font:inherit}
     </div>
   </div>
 
-  <!-- De schuifbalk blijft, want op een breed scherm past alles en is een menu
-       een extra tik. Maar wat er rechts buiten beeld valt zie je niet, en dan
-       weet je niet dat het bestaat — vandaar de knop ernaast met alles onder
-       elkaar. -->
+  <!-- Geen schuifbalk meer, alleen dit. De balk liet op een telefoon drie van
+       de zeven tabbladen zien en de rest viel erbuiten; met een menu dat alles
+       toont is die halve rij een strook scherm die niets toevoegt. Wat er wel
+       moet staan is waar je bent — zonder balk zegt een losse knop dat niet. -->
   <div class="tabbalk">
-  <button class="menuknop" id="tabmenu-knop" type="button"
-          aria-expanded="false" aria-controls="tabmenu" aria-label="Alle tabbladen">
-    <span></span><span></span><span></span>
-  </button>
-
-  <div class="tabmenu" id="tabmenu" hidden></div>
-
-  <div class="tabs" role="tablist">
-    <button class="tab" id="tab-ritten" role="tab" aria-selected="true" type="button">
-      Ritten <span class="tab__badge" id="badge-ritten" hidden>0</span>
-    </button>
-    <button class="tab" id="tab-aanvragen" role="tab" aria-selected="false" type="button">
-      Aanvragen <span class="tab__badge" id="badge-aanvragen" hidden>0</span>
-    </button>
-    <button class="tab" id="tab-meldingen" role="tab" aria-selected="false" type="button">
-      Meldingen <span class="tab__badge" id="badge-meldingen" hidden>0</span>
-    </button>
-    <button class="tab" id="tab-planning" role="tab" aria-selected="false" type="button">
-      Planning <span class="tab__badge" id="badge-planning" hidden>0</span>
-    </button>
-    <button class="tab" id="tab-klanten" role="tab" aria-selected="false" type="button">
-      Klanten
-    </button>
-    <button class="tab" id="tab-chauffeurs" role="tab" aria-selected="false" type="button">
-      Chauffeurs
-    </button>
-    <button class="tab" id="tab-prijs" role="tab" aria-selected="false" type="button">
-      Prijs
-    </button>
-  </div>
+    <div class="wrap tabbalk__rij">
+      <b class="tabbalk__nu" id="tabbalk-nu">Ritten</b>
+      <button class="menuknop" id="tabmenu-knop" type="button"
+              aria-expanded="false" aria-haspopup="true" aria-controls="tabmenu"
+              aria-label="Menu">
+        <span class="menuknop__streep"></span>
+        <span class="menuknop__streep"></span>
+        <span class="menuknop__streep"></span>
+        <span class="menuknop__bel" id="tabmenu-bel" hidden>0</span>
+      </button>
+      <div class="tabmenu" id="tabmenu" role="menu" hidden></div>
+    </div>
   </div>
 
   <div id="paneel-ritten">

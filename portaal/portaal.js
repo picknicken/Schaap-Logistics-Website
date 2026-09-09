@@ -906,13 +906,11 @@
     var alleenRitten = !!ik && ik.rol !== 'Eigenaar';
     /* Meldingen gaan over aanvragen, klanten en facturen — jouw bedrijfsvoering.
        Een chauffeur heeft daar niets te zoeken, dus dat tabblad gaat mee weg. */
-    ['tab-aanvragen', 'tab-planning', 'tab-meldingen', 'tab-klanten',
-     'tab-chauffeurs'].forEach(function (id) {
-      var t = el(id);
-      if (t) { t.hidden = alleenRitten; }
-    });
+    verborgen = alleenRitten
+      ? ['aanvragen', 'planning', 'meldingen', 'klanten', 'chauffeurs']
+      : [];
     if (alleenRitten && tabblad !== 'ritten') { kiesTab('ritten'); }
-    meetTabbalk();
+    regelMenuknop();
 
     var wieVak = el('kop-wie');
     if (wieVak) {
@@ -978,20 +976,43 @@
 
   /* -------------------------------------------------------- tabbladen */
 
+  /* De tellers per tabblad. Ze stonden op de knoppen in de schuifbalk; die is
+     er niet meer, dus houden we ze hier bij en tekenen we ze in het menu en op
+     de menuknop. */
+  var tellers = { ritten: 0, aanvragen: 0, planning: 0, meldingen: 0 };
+
   function tekenBadges() {
-    var open = ritten.filter(function (r) {
+    tellers.ritten = ritten.filter(function (r) {
       return r.status === 'Gepland' || r.status === 'Onderweg';
     }).length;
-    badge('badge-ritten', open);
-    badge('badge-aanvragen', aanvragen.length);
-    badge('badge-planning', opdrachten.length);
-    badge('badge-meldingen', meldingen.filter(function (m) { return !m.gezien; }).length);
+    tellers.aanvragen = aanvragen.length;
+    tellers.planning = opdrachten.length;
+    tellers.meldingen = meldingen.filter(function (m) { return !m.gezien; }).length;
+    tekenMenubel();
+    if (tabmenuOpen()) { vulTabmenu(); }
   }
 
-  function badge(id, aantal) {
-    var b = el(id);
-    b.textContent = aantal;
-    b.hidden = !aantal;
+  /* Wat er op de knop komt te staan: het aantal ongelezen meldingen, en verder
+     niets.
+
+     Niet alle tellers bij elkaar. Het aantal open ritten van vandaag is een
+     gegeven en geen oproep — dat zou er altijd staan, en een belletje dat
+     altijd brandt kijk je binnen een week overheen. En de aanvragen er niet bij
+     optellen: een nieuwe aanvraag ís al een melding (zie bouwMeldingen), dus
+     dan telde dezelfde aanvraag twee keer mee en zou de knop 4 zeggen bij twee
+     dingen.
+
+     Sta je zelf op Meldingen, dan is het geen nieuws meer en gaat hij uit. En
+     een chauffeur ziet dat tabblad niet, dus krijgt hij er ook geen belletje
+     over: een rood bolletje dat naar een tabblad wijst dat voor hem niet
+     bestaat is erger dan geen bolletje. */
+  function tekenMenubel() {
+    var bel = el('tabmenu-bel');
+    if (!bel) { return; }
+    var som = (tabblad !== 'meldingen' && magTab('meldingen'))
+      ? (tellers.meldingen || 0) : 0;
+    bel.textContent = som > 99 ? '99+' : String(som);
+    bel.hidden = !som;
   }
 
   /* De volgorde van de tabbladen, en daarmee ook van het menu. Niet willekeurig
@@ -1005,21 +1026,30 @@
   var TABBLADEN = ['ritten', 'aanvragen', 'meldingen', 'planning',
                    'klanten', 'chauffeurs', 'prijs'];
 
+  var TABNAAM = {
+    ritten: 'Ritten', aanvragen: 'Aanvragen', meldingen: 'Meldingen',
+    planning: 'Planning', klanten: 'Klanten', chauffeurs: 'Chauffeurs',
+    prijs: 'Prijs'
+  };
+
+  /* Welke tabbladen deze persoon niet mag zien. Stond eerst als hidden op de
+     knoppen in de balk; nu die weg is, is dit de plek waar het staat. */
+  var verborgen = [];
+
+  function magTab(t) { return verborgen.indexOf(t) === -1; }
+
+  function zichtbareTabs() { return TABBLADEN.filter(magTab); }
+
   function kiesTab(naam) {
     tabblad = naam;
     TABBLADEN.forEach(function (t) {
-      el('tab-' + t).setAttribute('aria-selected', String(t === naam));
       el('paneel-' + t).hidden = (t !== naam);
     });
+    /* Zonder balk is dit het enige dat vertelt waar je bent. */
+    var nu = el('tabbalk-nu');
+    if (nu) { nu.textContent = TABNAAM[naam] || naam; }
     window.scrollTo(0, 0);
-    /* Past de balk niet, dan schuift het gekozen tabblad in beeld. Anders druk
-       je op iets wat half buiten het scherm staat en zie je daarna niet waar je
-       bent. */
-    var knop = el('tab-' + naam);
-    if (knop && knop.scrollIntoView) {
-      knop.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-    }
-    meetTabbalk();
+    tekenMenubel();
 
     /* Meldingen halen een ruimer venster op dan de dag die op het scherm
        staat: een rit die volgende week is afgezegd hoor je nu te zien, niet
@@ -1285,62 +1315,26 @@
     return vak;
   }
 
-  TABBLADEN.forEach(function (t) {
-    el('tab-' + t).addEventListener('click', function () { kiesTab(t); });
-  });
-
-  /* Alleen vervagen als er werkelijk meer is dan past. Een vervaagde rand op
-     een balk die helemaal past ziet eruit als een weergavefout. */
-  function meetTabbalk() {
-    var balk = document.querySelector('.tabs');
-    if (!balk) { return; }
-    /* Eerst meten zonder de ruimte die de menuknop zelf inneemt, anders meet je
-       je eigen knop mee en past het nooit. */
-    balk.style.paddingRight = '0px';
-    var past = balk.scrollWidth - balk.clientWidth <= 4;
-
-    /* Het menu bestaat omdat er tabbladen buiten de balk vallen. Vallen ze er
-       niet buiten — een breed scherm, of een chauffeur met twee tabbladen —
-       dan is het een knop die niets toevoegt en gaat hij weg. */
+  /* Valt er niets te kiezen, dan hoeft er geen menu te zijn. Dat kan alleen
+     bij een rol die maar één tabblad overhoudt; een chauffeur heeft er twee en
+     krijgt hem dus wel. */
+  function regelMenuknop() {
     var knop = el('tabmenu-knop');
-    if (knop) {
-      knop.hidden = past;
-      if (past) { sluitTabmenu(); }
-    }
-
-    balk.style.paddingRight = past ? '0px' : '';
-    if (past) { balk.removeAttribute('data-meer'); }
-    else { balk.setAttribute('data-meer', ''); }
-  }
-  window.addEventListener('resize', meetTabbalk);
-
-  /* ------------------------------------------------------- hamburgermenu
-
-     De schuifbalk laat maar zien wat er past. Wat erbuiten valt bestaat voor
-     wie er niet toevallig langs veegt niet. Dit menu zet alles onder elkaar,
-     met dezelfde tellers erbij, zodat je in een oogopslag ziet wat er ligt.
-
-     De lijst wordt bij elke opening opnieuw opgebouwd: welke tabbladen je
-     mag zien hangt af van wie er inlogt, en de tellers lopen tijdens het
-     werken op. Een lijst die je een keer bouwt loopt achter. */
-
-  function tabLabel(t) {
-    var knop = el('tab-' + t);
-    if (!knop) { return t; }
-    /* Alleen de tekst, niet de teller — die zetten we er zelf apart bij. */
-    var tekst = '';
-    Array.prototype.forEach.call(knop.childNodes, function (n) {
-      if (n.nodeType === 3) { tekst += n.textContent; }
-    });
-    return tekst.trim() || t;
+    if (!knop) { return; }
+    var meer = zichtbareTabs().length > 1;
+    knop.hidden = !meer;
+    if (!meer) { sluitTabmenu(); }
+    tekenMenubel();
   }
 
-  function zichtbareTabs() {
-    return TABBLADEN.filter(function (t) {
-      var knop = el('tab-' + t);
-      return knop && !knop.hidden;
-    });
-  }
+  /* ------------------------------------------------------------- het menu
+
+     Dit is de enige manier om van tabblad te wisselen. Alles onder elkaar, met
+     de tellers erbij, zodat je in een oogopslag ziet waar werk ligt.
+
+     De lijst wordt bij elke opening opnieuw opgebouwd: welke tabbladen je mag
+     zien hangt af van wie er inlogt, en de tellers lopen tijdens het werken op.
+     Een lijst die je één keer bouwt loopt achter. */
 
   function vulTabmenu() {
     var menu = el('tabmenu');
@@ -1349,13 +1343,14 @@
     zichtbareTabs().forEach(function (t) {
       var knop = document.createElement('button');
       knop.type = 'button';
-      knop.textContent = tabLabel(t);
+      knop.setAttribute('role', 'menuitem');
+      knop.textContent = TABNAAM[t] || t;
       if (t === tabblad) { knop.setAttribute('aria-current', 'true'); }
-      var teller = el('badge-' + t);
-      if (teller && !teller.hidden && teller.textContent) {
+      var aantal = tellers[t] || 0;
+      if (aantal) {
         var b = document.createElement('span');
         b.className = 'tab__badge';
-        b.textContent = teller.textContent;
+        b.textContent = aantal > 99 ? '99+' : String(aantal);
         knop.appendChild(b);
       }
       knop.addEventListener('click', function () {

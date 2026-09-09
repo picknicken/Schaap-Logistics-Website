@@ -409,21 +409,42 @@ want dat is één en dezelfde pagina.
 De bedragen veranderen niet; alleen de volgorde van de regels. De faaltest
 controleert nu naast de optelsom ook de volgorde.
 
-### Het menu bij de tabbladen
+### Een menu in plaats van de tabbladenbalk
 
-Zeven tabbladen passen niet op een telefoonscherm. De balk schuift, maar wat
-erbuiten valt zie je niet — en wat je niet ziet bestaat niet. Daar liep je zelf
+Zeven tabbladen passen niet op een telefoonscherm. De balk schuifde, maar wat
+erbuiten viel zag je niet — en wat je niet ziet bestaat niet. Daar liep je zelf
 tegenaan: *Chauffeurs* stond er wel, maar je vond het niet.
 
-Naast de balk staat nu een menuknop met alles onder elkaar, met dezelfde
-tellers erbij, zodat je in één blik ziet waar werk ligt. De schuifbalk blijft:
-voor de drie tabbladen waar je de hele dag tussen springt is een menu een tik
-extra.
+De balk is er nu helemaal uit. Er staat één regel bovenaan: links **waar je
+bent**, rechts de menuknop. Drukken geeft alle tabbladen onder elkaar, met de
+tellers erbij en een vinkje bij het tabblad waar je staat. Sluit op kiezen, op
+ergens anders drukken en op Escape.
 
-De knop verschijnt alleen als er werkelijk iets buiten de balk valt. Op een
-breed scherm passen alle zeven en verdwijnt hij; bij een chauffeur, die er twee
-overhoudt, staat hij er ook niet. Een knop die alleen herhaalt wat je al ziet is
-een knop te veel.
+**Waarom de balk weg mocht.** Hij liet drie van de zeven zien. Voor die drie
+scheelde hij een tik, maar de andere vier verstopte hij — en dat is precies het
+probleem dat het menu oplost. Twee manieren om hetzelfde te doen waarvan er één
+onbetrouwbaar is, is er één te veel. Het scheelt ook een strook scherm, en dat
+is op een telefoon in een bus geen kleinigheid.
+
+**Wat de balk wél deed en het menu moest overnemen: de tellers.** Die stonden op
+de knoppen en waren dus altijd in beeld. Nu zitten ze in het menu, en zou je ze
+pas zien als je het opent — dan weet je niet dát je hoort te kijken. Daarom
+staat er een rood belletje op de menuknop zelf.
+
+Dat belletje telt **alleen ongelezen meldingen**, en niets anders. Niet het
+aantal open ritten van vandaag: dat is een gegeven en geen oproep, en dan zou
+het altijd branden — een belletje dat altijd brandt kijk je binnen een week
+overheen. En niet de aanvragen erbij opgeteld: een nieuwe aanvraag ís al een
+melding, dus dan telde dezelfde aanvraag twee keer mee en zei de knop 4 bij twee
+dingen. Dat had ik eerst zo gebouwd; de faaltest wees het aan.
+
+Sta je zelf op Meldingen, dan gaat het belletje uit. Een chauffeur ziet dat
+tabblad niet en krijgt er dus ook geen belletje over: een rood bolletje dat naar
+een tabblad wijst dat voor hem niet bestaat is erger dan geen bolletje.
+
+**De volgorde** is gegroepeerd en niet gegroeid: eerst wat op je ligt te wachten
+(Ritten, Aanvragen, Meldingen), dan het vooruitzicht (Planning), dan met wie je
+werkt (Klanten, Chauffeurs), en als laatste het gereedschap (Prijs).
 
 ### Tabblad Chauffeurs
 
@@ -652,8 +673,8 @@ netjes van h1 naar h2 zonder gaten, en de foutpagina werkt weer — die verwees 
 de domeinverhuizing nog naar het oude adres en kwam daardoor zonder opmaak en met
 dode links binnen.
 
-**723 controles draaien groen**, verdeeld over negen faaltests: 196 in een
-echte browser (`faal-portalen` 138, `faal-site` 58), 434 tegen de portaal-Worker
+**727 controles draaien groen**, verdeeld over negen faaltests: 200 in een
+echte browser (`faal-portalen` 142, `faal-site` 58), 434 tegen de portaal-Worker
 (`faal-portaal` 154, `faal-klantplicht` 195, `faal-toegang` 31, `faal-push` 54),
 79 tegen de aanvraag-Worker en 14 op de prijsberekening. Daaronder zitten
 controles dat de prijzen op de site kloppen met de calculator, dat een klant

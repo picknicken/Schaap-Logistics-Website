@@ -104,11 +104,14 @@ console.log('\nscript in elk veld dat op het scherm komt');
   keur('en geen enkele afbeelding ook niet',
     !srcs.some((s) => /^\s*javascript:/i.test(s || '')), srcs.filter((s) => /javascript/i.test(s || '')).join(' '));
 
-  await p.click('#tab-aanvragen');
-  await p.waitForTimeout(200);
+  const naarTab = async (naam) => {
+    await p.click('#tabmenu-knop');
+    await p.click('#tabmenu button:has-text("' + naam + '")');
+    await p.waitForTimeout(200);
+  };
+  await naarTab('Aanvragen');
   keur('de aanvragen ook niet stuk', !(await geraakt()) && !popup());
-  await p.click('#tab-klanten');
-  await p.waitForTimeout(200);
+  await naarTab('Klanten');
   keur('de klanten ook niet', !(await geraakt()) && !popup());
 
   keur('geen javascriptfouten', stuk.length === 0, stuk.join(' | '));
@@ -368,15 +371,15 @@ console.log('\n=== de knoppen op een ritkaart ===');
 }
 
 /* =========================================================================
-   Het hamburgermenu naast de schuifbalk.
+   Het menu. Er is geen schuifbalk meer, dus dit is de enige manier om van
+   tabblad te wisselen — en daarmee is elke fout erin een portaal waar je
+   vastzit op het tabblad waar je toevallig staat.
 
-   De balk laat op een telefoon maar drie van de zeven tabbladen zien. Wat
-   erbuiten valt bestaat voor wie er niet langs veegt niet, en daar ging het
-   mis: Shane wist niet dat Chauffeurs er was. Het menu moet dus alles tonen
-   dat je mag zien, en het moet ook werkelijk bovenop liggen — de dagbalk
-   eronder plakt ook bovenaan en zou het anders overdekken.
+   Het moet dus alles tonen wat je mag zien, zeggen waar je nu bent, en
+   werkelijk bovenop liggen: de dagbalk eronder plakt ook bovenaan en zou het
+   anders overdekken.
    ========================================================================= */
-console.log('\n=== het hamburgermenu ===');
+console.log('\n=== het menu ===');
 {
   const alsEigenaar = () => opent({ ok: true, dag,
     ik: { rol: 'Eigenaar', naam: 'Shane' },
@@ -436,8 +439,9 @@ console.log('\n=== het hamburgermenu ===');
     await p.click('#tabmenu-knop');
     await p.click('#tabmenu button:has-text("Chauffeurs")');
     keur('kiezen sluit het menu', !(await p.isVisible('#tabmenu')));
-    keur('en zet het gekozen tabblad aan',
-      await p.getAttribute('#tab-chauffeurs', 'aria-selected') === 'true');
+    keur('en de balk zegt waar je nu bent',
+      (await p.textContent('#tabbalk-nu')).trim() === 'Chauffeurs',
+      await p.textContent('#tabbalk-nu'));
     keur('het paneel erbij staat open',
       await p.isVisible('#paneel-chauffeurs'));
     keur('en het oude paneel is weg',
@@ -458,47 +462,78 @@ console.log('\n=== het hamburgermenu ===');
     await ctx.close();
   }
 
-  /* Een chauffeur houdt Ritten en Prijs over. Die twee passen ruim op een
-     telefoon, dus valt er niets buiten de balk en heeft een menu geen nut.
-     Een knop die alleen herhaalt wat je al ziet is een knop te veel. */
+  /* Een chauffeur houdt Ritten en Prijs over. Twee is meer dan een, dus hij
+     heeft het menu nodig: zonder balk is dit de enige manier om te wisselen. */
   {
     const { ctx, p } = await opent({ ok: true, dag,
       ik: { rol: 'Chauffeur', naam: 'Piet' },
       ritten: [{ id: 'recAAAAAAAAAAAAAA', naam: 'mijn', datum: dag,
         status: 'Gepland', km: 20, chauffeur: 'Piet' }],
       aanvragen: [], opdrachten: [], klanten: [] });
-    keur('een chauffeur krijgt geen menuknop',
-      !(await p.isVisible('#tabmenu-knop')));
-    keur('en zijn tabbladen staan er gewoon',
-      (await p.isVisible('#tab-ritten')) && (await p.isVisible('#tab-prijs')));
-    /* En het laatste tabblad moet volledig aanraakbaar zijn: zonder knop hoort
-       de gereserveerde ruimte rechts ook weg te zijn. */
-    const rechts = await p.evaluate(() => {
-      const balk = document.querySelector('.tabs');
-      const zichtbaar = Array.from(balk.querySelectorAll('.tab'))
-        .filter((t) => !t.hidden);
-      const laatst = zichtbaar[zichtbaar.length - 1];
-      return Math.round(balk.getBoundingClientRect().right -
-                        laatst.getBoundingClientRect().right);
-    });
-    keur('en er blijft geen lege strook rechts staan', rechts <= 2, rechts);
+    keur('een chauffeur krijgt de menuknop ook', await p.isVisible('#tabmenu-knop'));
+    await p.click('#tabmenu-knop');
+    const regels = await p.$$eval('#tabmenu button',
+      (l) => l.map((k) => (k.textContent || '').trim()));
+    keur('met alleen wat hij mag zien',
+      regels.length === 2 && /^Ritten/.test(regels[0]) && /^Prijs/.test(regels[1]),
+      regels.join(' | '));
+    keur('en Klanten staat er niet tussen',
+      !regels.some((t) => /Klanten|Chauffeurs|Meldingen|Aanvragen/.test(t)),
+      regels.join(' | '));
     await ctx.close();
   }
 
-  /* Op een breed scherm passen alle zeven wel. Dan is de schuifbalk het menu
-     en hoort de knop ook daar te verdwijnen. */
+  /* Er is geen schuifbalk meer. Stond die er nog, dan zouden er twee manieren
+     zijn om hetzelfde te doen en zou de menuknop op een breed scherm weer
+     kunnen verdwijnen. */
   {
     const { ctx, p } = await opent({ ok: true, dag,
       ik: { rol: 'Eigenaar', naam: 'Shane' },
       ritten: [], aanvragen: [], opdrachten: [], klanten: [] });
+    keur('er staat geen schuifbalk met tabbladen meer',
+      (await p.$$('.tabs, [role="tablist"]')).length === 0);
     await p.setViewportSize({ width: 1200, height: 900 });
     await p.waitForTimeout(120);
-    keur('op een breed scherm verdwijnt de menuknop',
-      !(await p.isVisible('#tabmenu-knop')));
+    keur('en op een breed scherm blijft de menuknop staan',
+      await p.isVisible('#tabmenu-knop'));
     await p.setViewportSize({ width: 390, height: 900 });
     await p.waitForTimeout(120);
-    keur('en hij komt terug zodra het scherm weer smal is',
-      await p.isVisible('#tabmenu-knop'));
+    keur('op een smal scherm ook', await p.isVisible('#tabmenu-knop'));
+    await ctx.close();
+  }
+
+  /* Het belletje op de knop. Zonder balk zie je de tellers pas als je het menu
+     opent — dan moet de knop zelf zeggen dát er iets ligt.
+
+     Twee nieuwe aanvragen leveren twee meldingen op. De knop hoort er dus 2 te
+     zeggen en niet 4: een aanvraag is al een melding, en die twee bij elkaar
+     optellen telt dezelfde twee dingen dubbel. */
+  {
+    const { ctx, p } = await alsEigenaar();
+    const bel = await p.textContent('#tabmenu-bel');
+    keur('de knop draagt het aantal ongelezen meldingen',
+      (await p.isVisible('#tabmenu-bel')) && bel.trim() === '2', bel);
+
+    /* Sta je er zelf op, dan is het geen nieuws meer. */
+    await p.click('#tabmenu-knop');
+    await p.click('#tabmenu button:has-text("Meldingen")');
+    await p.waitForTimeout(300);
+    keur('en zwijgt zodra je op Meldingen staat',
+      !(await p.isVisible('#tabmenu-bel')),
+      await p.textContent('#tabmenu-bel'));
+    await ctx.close();
+  }
+
+  /* Een chauffeur mag geen aanvragen zien, dus mag hij er ook geen belletje
+     over krijgen. Anders wijst een rood bolletje naar een tabblad dat voor hem
+     niet bestaat. */
+  {
+    const { ctx, p } = await opent({ ok: true, dag,
+      ik: { rol: 'Chauffeur', naam: 'Piet' },
+      ritten: [], klanten: [], opdrachten: [],
+      aanvragen: [{ id: 'recQQQQQQQQQQQQQQ', naam: 'A', datum: dag, status: 'Nieuw' }] });
+    keur('een chauffeur krijgt geen belletje',
+      !(await p.isVisible('#tabmenu-bel')));
     await ctx.close();
   }
 }
