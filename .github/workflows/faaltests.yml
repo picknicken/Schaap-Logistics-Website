@@ -81,8 +81,26 @@ jobs:
       - name: Browser klaarzetten
         run: npm install --no-save --no-audit --no-fund playwright@1
 
+      # --with-deps draait apt-get op de runner om de systeembibliotheken van
+      # Chromium bij te zetten, en juist dat viel twee keer achter elkaar om:
+      # "Some index files failed to download". Dat is de pakketspiegel van
+      # GitHub, niet iets aan deze code — maar het legde wel de hele
+      # browserproef stil terwijl er nog geen enkele proef was gestart.
+      #
+      # Vandaar: drie pogingen, en lukt het dan nog niet, dan de browser zonder
+      # die apt-stap. Het image van ubuntu-latest draagt de bibliotheken die
+      # Chromium nodig heeft in de regel al. Ontbreekt er toch een, dan valt de
+      # browser om in de proef zelf en zie je dat daar — een stap die zwijgt is
+      # erger dan een proef die klaagt.
       - name: Chromium ophalen
-        run: npx playwright install --with-deps chromium
+        run: |
+          for i in 1 2 3; do
+            npx playwright install --with-deps chromium && exit 0
+            echo "Poging $i mislukt; opnieuw over ${i}0 seconden."
+            sleep ${i}0
+          done
+          echo "Systeempakketten lukten niet. Nu alleen de browser."
+          npx playwright install chromium
 
       # Een gewone bestandsserver is genoeg; de proeven zetten de tussenlaag
       # zelf klaar. Wachten tot hij luistert, anders draait de eerste proef
