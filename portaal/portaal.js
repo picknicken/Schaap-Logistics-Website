@@ -2172,14 +2172,6 @@
       lijf.appendChild(afzeg);
     }
 
-    /* Weggooien staat helemaal onderaan en vraagt om twee keer drukken. Het is
-       er voor een vergissing en voor het uitproberen, niet voor dagelijks
-       gebruik — en de tussenlaag weigert het bij een uitgevoerde rit of een
-       verstuurde factuur, dus wat hier weg kan is ook wat weg mag. */
-    if (wieIkBen && wieIkBen.rol === 'Eigenaar' && rit.status !== 'Uitgevoerd') {
-      knoppen.appendChild(weggooiKnop('Rit verwijderen', 'ritweg', rit.id));
-    }
-
     /* --- de klant vraagt een wijziging --- */
     if (rit.wijzigStand) { lijf.appendChild(wijzigBlok(rit)); }
 
@@ -2473,6 +2465,19 @@
         }
       });
       knoppen.appendChild(afblazen);
+    }
+
+    /* Weggooien staat helemaal onderaan en vraagt om twee keer drukken. Het is
+       er voor een vergissing en voor het uitproberen, niet voor dagelijks
+       gebruik — en de tussenlaag weigert het bij een uitgevoerde rit of een
+       verstuurde factuur, dus wat hier weg kan is ook wat weg mag.
+
+       Deze regel hoort ná het aanmaken van `knoppen` te staan. Stond hij eerder
+       hoger in deze functie, en dat gaf `undefined is not an object`: door
+       var-hoisting bestaat de naam daar al maar is hij nog leeg, dus het viel
+       niet op bij het laden maar bij het tekenen van elke rit. */
+    if (wieIkBen && wieIkBen.rol === 'Eigenaar' && rit.status !== 'Uitgevoerd') {
+      knoppen.appendChild(weggooiKnop('Rit verwijderen', 'ritweg', rit.id));
     }
 
     if (knoppen.children.length) { lijf.appendChild(knoppen); }

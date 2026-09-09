@@ -143,13 +143,68 @@ console.log('\nvelden die er niet zijn, of het verkeerde type hebben');
        status: 'Gepland', km: 10, wijzigStand: 'Open',
        wijzigverzoek: XSS, wijzigSoort: XSS }],
       aanvragen: [], opdrachten: [], klanten: [] },
-     'script in een wijzigverzoek']
+     'script in een wijzigverzoek'],
+    /* Ingelogd als eigenaar. Zonder dit blijft `ik` leeg, en dan slaat het
+       portaal elke tak over die alleen voor de eigenaar bedoeld is — de
+       verwijderknop bijvoorbeeld. Precies daar zat een fout die geen enkele
+       proef zag: hij stond hoger in de functie dan waar de knoppenrij wordt
+       aangemaakt, en gaf 'undefined is not an object' bij het tekenen van
+       elke rit. De proeven bleven groen omdat die regel nooit werd bereikt. */
+    [{ ok: true, dag, ik: { rol: 'Eigenaar', naam: 'Eigenaar' },
+       ritten: [{ id: 'recAAAAAAAAAAAAAA', naam: 'R', datum: dag,
+         status: 'Gepland', km: 10, klant: 'Klant BV', ophaal: 'A', aflever: 'B' }],
+       aanvragen: [], opdrachten: [], klanten: [] },
+     'ingelogd als eigenaar'],
+    [{ ok: true, dag, ik: { rol: 'Eigenaar', naam: 'Eigenaar' },
+       ritten: [
+         { id: 'recAAAAAAAAAAAAAA', naam: 'A', datum: dag, status: 'Gepland', km: 10 },
+         { id: 'recBBBBBBBBBBBBBB', naam: 'B', datum: dag, status: 'Onderweg', km: 20,
+           chauffeur: 'Piet' },
+         { id: 'recCCCCCCCCCCCCCC', naam: 'C', datum: dag, status: 'Uitgevoerd', km: 30,
+           klant: 'K', handtekening: '' },
+         { id: 'recDDDDDDDDDDDDDD', naam: 'D', datum: dag, status: 'Geannuleerd', km: 5 }
+       ], aanvragen: [], opdrachten: [], klanten: [] },
+     'als eigenaar met elke ritstatus'],
+    [{ ok: true, dag, ik: { rol: 'Chauffeur', naam: 'Piet' },
+       ritten: [
+         { id: 'recAAAAAAAAAAAAAA', naam: 'vrij', datum: dag, status: 'Gepland', km: 10 },
+         { id: 'recBBBBBBBBBBBBBB', naam: 'mijn', datum: dag, status: 'Gepland', km: 20,
+           chauffeur: 'Piet' }
+       ], aanvragen: [], opdrachten: [], klanten: [] },
+     'als chauffeur met een vrije en een eigen rit']
   ];
   for (const [antwoord, wat] of gek) {
     const { ctx, p, stuk } = await opent(antwoord);
     const open = await p.isVisible('#app').catch(() => false);
     keur(wat + ' laat het portaal open', open, 'app zichtbaar: ' + open);
     keur(wat + ' levert geen javascriptfout op', stuk.length === 0, stuk.join(' | '));
+
+    /* Kijken naar pageerror alleen is niet genoeg, en dat is hier op een
+       vervelende manier gebleken. Een fout binnen het tekenen van de ritten
+       valt in de .catch() van haalDag en komt als rode melding op het scherm —
+       geen pageerror, dus de proef bleef groen terwijl het portaal in de
+       praktijk een lege lijst met een foutmelding liet zien.
+
+       Dus: staat er een melding, dan is dat een fout. En zijn er ritten
+       meegestuurd, dan horen er ook kaarten te staan. */
+    const melding = await p.evaluate(() => {
+      const m = document.getElementById('app-melding');
+      return m && !m.hidden ? (m.textContent || '').trim() : '';
+    }).catch(() => '');
+    keur(wat + ' geeft geen foutmelding op het scherm', melding === '', melding);
+
+    /* Alleen de ritten van de dag die op het scherm staat. Het portaal toont
+       één dag; een rit met een andere datum, of zonder datum, hoort er terecht
+       niet te staan. Zonder dit onderscheid rekent de proef die eruit als een
+       fout, en dan wijst hij naar iets dat juist goed gaat. */
+    const verwacht = Array.isArray(antwoord.ritten)
+      ? antwoord.ritten.filter((r) => r && r.datum === dag).length
+      : 0;
+    if (verwacht) {
+      const kaarten = await p.locator('#lijst .rit').count().catch(() => 0);
+      keur(wat + ' tekent de ' + verwacht + ' rit(ten) werkelijk',
+        kaarten === verwacht, kaarten + ' kaarten');
+    }
     await ctx.close();
   }
 }
