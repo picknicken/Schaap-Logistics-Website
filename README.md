@@ -625,10 +625,18 @@ nummer, het totaal heet niet "te betalen", er staat geen betaalverzoek onder, en
 er staat een strook boven die zegt dat de rit nog loopt. De uitleg over hoe je er
 een PDF van maakt staat er bewust niet bij — een concept hoort niet in Airtable.
 
-De berekening staat op vier plekken en moet overal gelijk zijn: `assets/site.js`
-voor de website, het veld *Automatisch totaal excl. BTW* in Airtable, de formule
-*Factuurlink* voor de echte factuur, en `conceptLink()` in `portaal/portaal.js`
-voor het concept. Wijzig je een tarief, loop ze alle vier langs.
+De berekening staat op drie plekken en moet overal gelijk zijn:
+`assets/site.js` voor de website én het portaal, `worker/aanvragen.js` voor wat
+er bij een aanvraag wordt bewaard, en de velden *Automatisch totaal excl. BTW*
+en *Factuurlink* in Airtable. Wijzig je een tarief, loop ze alle drie langs — en
+draai daarna `tests/faal-zelfde-som.mjs`, die valt om als de eerste twee uit
+elkaar lopen.
+
+Het waren er vier: `conceptLink()` in `portaal/portaal.js` had een eigen
+tarieventabel. Sinds het portaal `assets/site.js` laadt voor het tabblad Prijs
+haalt het concept zijn tarieven daar vandaan. Is dat bestand er niet, dan
+verdwijnt de knop naar de conceptfactuur — beter geen knop dan een bedrag dat
+nergens op berust.
 
 ### Een offerte om achter te laten
 

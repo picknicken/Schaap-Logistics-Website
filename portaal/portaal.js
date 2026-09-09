@@ -1545,26 +1545,45 @@
      lopen. Wat er niet in kan zitten zijn de klantgegevens: adres, btw-nummer
      en debiteurnummer staan in Airtable en niet op de ritkaart. Die blijven
      dus leeg tot de factuur er echt is. */
-  /* Dezelfde bedragen als op de site en in Airtable, en net als daar zonder
-     btw — zo staat de hele prijslijst, want zo noemt zakelijk vervoer zijn
-     prijzen. De factuurpagina rekent er ook in en zet de btw er zelf onder. */
-  var TARIEVEN = {
-    'Standaard transport':      { start: 75,  km: 1.00 },
-    'Spoedtransport':           { start: 100, km: 1.50 },
-    'Directe spoed':            { start: 125, km: 2.00 },
-    'Internationaal transport': { start: 150, km: 2.00 }
-  };
+  /* Het tarief bij een ritsoort, uit assets/site.js. Hier stond eerst een eigen
+     tabel met dezelfde vier bedragen erin. Die kon weg toen dit portaal site.js
+     ging laden voor het tabblad Prijs: één plek waar de tarieven staan is één
+     plek om te vergeten bij te werken.
 
+     Airtable noemt een ritsoort bij zijn volledige naam ("Spoedtransport"),
+     site.js gebruikt sleutels ("spoed"). Daarom zoeken we op naam. */
+  function tariefVan(soort) {
+    if (!window.SL || !window.SL.CONFIG) { return null; }
+    var ritten = window.SL.CONFIG.ritten;
+    var sleutels = Object.keys(ritten);
+    for (var i = 0; i < sleutels.length; i++) {
+      if (ritten[sleutels[i]].naam === soort) { return ritten[sleutels[i]]; }
+    }
+    return ritten.standaard || null;
+  }
+
+  /* Geeft null terug als de rekenmachine er niet is. De knop verdwijnt dan;
+     zie conceptKnop. Beter een knop die er niet staat dan een knop die een
+     bedrag toont dat nergens op berust. */
   function conceptLink(rit) {
-    var t = TARIEVEN[rit.type] || TARIEVEN['Standaard transport'];
+    var t = tariefVan(rit.type);
+    if (!t) { return null; }
     var km = Number(rit.km) || 0;
     var ritprijs = Math.max(t.start + km * t.km,
-                            rit.type === 'Internationaal transport' ? 200 : 75);
+                            t.minimum || window.SL.CONFIG.minimum);
     /* De tijdtoeslag rekent hetzelfde als de site en als Airtable: een
-       percentage van de ritprijs met een ondergrens. */
-    var deel = rit.tijdvak === 'Avondrit (18:00-23:00)' ? 0.20
-             : rit.tijdvak === 'Nacht- of weekendrit' ? 0.40 : 0;
-    var bodem = deel === 0.20 ? 25 : deel === 0.40 ? 50 : 0;
+       percentage van de ritprijs met een ondergrens. Ook die twee getallen
+       komen nu uit site.js, om dezelfde reden als het tarief hierboven: ze
+       stonden hier los ingetikt en liepen dus achter zodra ze daar wijzigden.
+       Airtable noemt het tijdvak bij de naam die site.js er ook aan geeft. */
+    var tv = null;
+    var tijdSleutels = Object.keys(window.SL.CONFIG.tijden);
+    for (var j = 0; j < tijdSleutels.length; j++) {
+      var kandidaat = window.SL.CONFIG.tijden[tijdSleutels[j]];
+      if (kandidaat.naam === rit.tijdvak) { tv = kandidaat; }
+    }
+    var deel = tv ? tv.deel : 0;
+    var bodem = tv ? tv.bodem : 0;
     var tijd = deel ? Math.round(Math.max(ritprijs * deel, bodem) * 100) / 100 : 0;
     var wacht = Number(rit.wachttijd) || 0;
     var wachttoeslag = Math.ceil(Math.max(0, wacht - 15) / 15) * 15;
@@ -1583,7 +1602,7 @@
     q.set('kmtarief', String(t.km));
     q.set('start', String(t.start));
     q.set('stops', String(Number(rit.stops) || 0));
-    q.set('stoptarief', '25');
+    q.set('stoptarief', String(window.SL.CONFIG.stoptoeslag));
     q.set('tijdtoeslag', String(tijd));
     q.set('tijdvak', rit.tijdvak || '');
     q.set('wacht', String(wacht));
@@ -1603,8 +1622,10 @@
   }
 
   function conceptKnop(rit) {
+    var adres = conceptLink(rit);
+    if (!adres) { return null; }
     var a = maak('a', 'knop knop--rand', 'Bekijk de conceptfactuur');
-    a.href = conceptLink(rit);
+    a.href = adres;
     a.target = '_blank';
     a.rel = 'noopener';
     return a;
@@ -2083,7 +2104,8 @@
        aan het eind: juist onderweg wil je weten of die wachttijd van veertig
        minuten en die tol er goed op staan, want daarna is de rit uitgevoerd en
        staat de factuur er. */
-    knoppen.appendChild(conceptKnop(rit));
+    var concept = conceptKnop(rit);
+    if (concept) { knoppen.appendChild(concept); }
 
     if (rit.status === 'Gepland') {
       var vertrek = maak('button', 'knop knop--blauw', 'Onderweg');
@@ -2330,11 +2352,12 @@
     /* Ook bij een aanvraag die je nog niet hebt aangenomen: wat zou deze rit
        opleveren? Dat wil je weten voordat je ja zegt, niet erna. De aanvraag
        heeft dezelfde velden onder andere namen. */
-    knoppen.appendChild(conceptKnop({
+    var conceptAanvraag = conceptKnop({
       type: a.dienst, km: a.afstand, stops: a.stops, tijdvak: a.tijdvak,
       ophaal: a.ophaal, aflever: a.aflever, klant: a.bedrijf,
       datum: a.datum, wachttijd: 0, doorbereken: 0, korting: 0, kortingRe: ''
-    }));
+    });
+    if (conceptAanvraag) { knoppen.appendChild(conceptAanvraag); }
 
     if (a.telefoon) {
       var bel = maak('a', 'knop knop--rand', 'Bel ' + (a.contact || a.bedrijf || 'de klant'));
