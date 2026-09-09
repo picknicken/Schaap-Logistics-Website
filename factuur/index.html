@@ -39,11 +39,6 @@ body{
   padding:24px 16px 64px;
 }
 
-/* De conceptstrook is oranje en niet blauw: dit is geen bediening maar een
-   waarschuwing dat je naar iets kijkt dat nog niet vaststaat. */
-.balk--concept{background:#fff6e5;border-color:#f0d9a8;color:#7a5a12}
-.balk--concept b{color:#5c430b}
-
 /* ---------- balk met bediening, verdwijnt bij printen ---------- */
 /* display:flex wint het anders van het hidden-attribuut, waardoor de balk
    toch bij de klant in beeld zou komen. */
@@ -62,6 +57,18 @@ body{
 }
 .balk button:hover{background:#ffc04d}
 .balk button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+
+/* De twee stroken die geen bediening zijn maar een mededeling over wat je voor
+   je hebt. Ze staan hier ná .balk en niet ervoor: bij gelijke voorrang wint de
+   laatste regel, en ervoor deden ze niets — de conceptstrook was al die tijd
+   donkerblauw terwijl er in de code stond dat hij oranje was. */
+.balk--concept{background:#fff6e5;color:#7a5a12}
+.balk--concept b{color:#5c430b}
+.balk--offerte{background:#e9f6ef;color:#155e3b}
+.balk--offerte b{color:#0d472b}
+.balk--offerte button{background:#12a15c;color:#fff}
+.balk--offerte button:hover{background:#0e8a4e}
+.balk--offerte button:focus-visible{outline:2px solid #0b1526}
 
 /* ---------- het vel ---------- */
 .vel{
@@ -195,6 +202,19 @@ tbody td.af{color:#1d7a4c}
   </p>
 </div>
 
+<!-- Een offerte om achter te laten. Zelfde vel, andere kop: een prijs die nog
+     geen opdracht is. Het chauffeursportaal maakt hem vanaf het tabblad Prijs,
+     zodat je bij een klant aan de balie een papier kunt achterlaten in plaats
+     van een bedrag te noemen dat hij morgen kwijt is. -->
+<div class="balk balk--offerte" id="offertebalk" hidden>
+  <p>
+    <b>Dit is een offerte.</b> Nog geen opdracht en nog geen factuur. Druk op
+    de knop hiernaast om er een PDF van te maken, of print hem uit om achter te
+    laten.
+  </p>
+  <button type="button" id="printen-offerte">Opslaan als PDF</button>
+</div>
+
 <div class="balk" id="balk" hidden>
   <p>
     <b>Zo maak je hier een PDF van:</b> druk op de knop hiernaast en kies bij
@@ -212,6 +232,9 @@ tbody td.af{color:#1d7a4c}
   }
   if (vroeg.get('concept') === '1') {
     document.getElementById('conceptbalk').hidden = false;
+  }
+  if (vroeg.get('offerte') === '1') {
+    document.getElementById('offertebalk').hidden = false;
   }
 </script>
 
@@ -301,7 +324,20 @@ tbody td.af{color:#1d7a4c}
       Dit bedrag krijgt u van ons terug. Wij verrekenen het met een openstaande
       factuur, of maken het aan u over als er niets meer openstaat.
     </p>
-    <p>
+    <!-- Bij een offerte vraag je ook niets: je doet een aanbod, en dat heeft een
+         houdbaarheidsdatum in plaats van een betaaltermijn. -->
+    <p id="v-offertezin" hidden>
+      Deze prijs is geldig tot <b id="v-geldig">—</b>. De afstand is een
+      schatting op basis van de opgegeven adressen; wij factureren de werkelijk
+      gereden kilometers. Wachttijd boven het kwartier, extra stops en
+      doorberekende kosten zoals tol of parkeren komen erbij tegen de tarieven
+      op onze tarievenpagina. Alle bedragen zijn exclusief btw.
+    </p>
+    <p id="v-akkoordzin" hidden>
+      Akkoord? Laat het ons weten, dan plannen wij de rit in en bevestigen wij
+      datum en tijd.
+    </p>
+    <p id="v-betaalblok">
       <b>Betaalgegevens</b>
       <!-- PLACEHOLDER bankgegevens -->
       <span class="betaalregels">
@@ -349,6 +385,27 @@ tbody td.af{color:#1d7a4c}
   function datum(w) {
     var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(w || '');
     return m ? m[3] + '-' + m[2] + '-' + m[1] : (w || '—');
+  }
+
+  function vandaag() {
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') +
+           '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  /* Tot wanneer een offerte geldt. Standaard veertien dagen na de datum die
+     erop staat; met ?geldig=30 maak je dat langer. Een aanbod zonder einddatum
+     staat eeuwig open, en dan sta je over een half jaar met een prijs van
+     vandaag naar een tank van morgen te kijken. */
+  function geldigTot() {
+    var dagen = parseInt(q.get('geldig'), 10);
+    if (!(dagen > 0)) { dagen = 14; }
+    var basis = lees('datum', vandaag());
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(basis);
+    var d = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date();
+    d.setDate(d.getDate() + dagen);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') +
+           '-' + String(d.getDate()).padStart(2, '0');
   }
 
   function zet(id, waarde) {
@@ -411,6 +468,13 @@ tbody td.af{color:#1d7a4c}
      met een creditnota. Dat is hetzelfde vel papier, maar met een eigen nummer,
      negatieve bedragen, een verwijzing naar de factuur die wordt teruggedraaid,
      en geen verzoek om te betalen — je geeft juist iets terug. */
+  /* Hoe dit vel in het tabblad van de browser heet. Stond hieronder drie keer
+     los ingesteld en werd daarna alsnog overschreven door de regel onderaan,
+     dus een concept heette in het tabblad gewoon "Factuur" — en dat is precies
+     het geval waarin de naam ertoe doet, want daar staan er vijf naast elkaar
+     open. Nu staat de naam hier en wordt hij één keer gezet. */
+  var soortNaam = 'Factuur';
+
   /* Een concept is geen factuur: geen nummer, geen betaalverzoek, en dat moet
      er ook op staan. Anders belandt er straks een conceptje bij een klant die
      denkt dat hij moet betalen. */
@@ -427,7 +491,40 @@ tbody td.af{color:#1d7a4c}
     /* "Te betalen" hoort er niet op: er valt nog niets te betalen. */
     zet('v-totaallabel', 'Totaal');
     document.getElementById('v-betaalzin').hidden = true;
-    document.title = 'Conceptfactuur — Schaap Express Transport';
+    soortNaam = 'Conceptfactuur';
+  }
+
+  /* Een offerte is een aanbod en geen rekening. Zelfde vel, andere kop, en
+     alles wat naar betalen wijst gaat eraf: geen factuurnummer, geen
+     betaaltermijn, geen rekeningnummer. In plaats daarvan een datum waarop het
+     aanbod verloopt — zonder die datum staat een prijs eeuwig open, en dat is
+     precies wat je niet wilt als de brandstof duurder wordt. */
+  var offerte = q.get('offerte') === '1';
+  if (offerte) {
+    zet('v-titel', 'Offerte');
+    zet('v-nrlabel', 'Offertenr.');
+    /* Zonder eigen nummer krijgt de offerte er een van de datum. Zo kun je er
+       aan de telefoon naar verwijzen; een papier zonder kenmerk is een papier
+       waarvan niemand weet welk het is. */
+    zet('v-nr', q.get('nr') ||
+      ('OFF-' + String(q.get('datum') || vandaag()).replace(/-/g, '')));
+    zet('v-totaallabel', 'Totaal');
+    /* Een ritdatum is er nog niet: er is nog geen opdracht. */
+    if (!q.get('ritdatum')) { zet('v-ritdatum', 'nog te plannen'); }
+    document.getElementById('v-betaalzin').hidden = true;
+    document.getElementById('v-betaalblok').hidden = true;
+    document.getElementById('v-offertezin').hidden = false;
+    document.getElementById('v-akkoordzin').hidden = false;
+    zet('v-geldig', datum(geldigTot()));
+    /* Wat een offerte nog niet heeft — debiteurnummer, btw-nummer van de klant,
+       een referentie — krijgt een streepje in plaats van een leeg vakje. Een
+       leeg vakje leest als een fout; een streepje leest als "nog niet". Het vak
+       Klant blijft wél leeg: dat is op papier een regel om in te vullen. */
+    ['v-debiteur', 'v-klantbtw', 'v-referentie', 'v-opdracht'].forEach(function (id) {
+      var e = document.getElementById(id);
+      if (e && !e.textContent.trim()) { e.textContent = '\u2014'; }
+    });
+    soortNaam = 'Offerte';
   }
 
   if (credit) {
@@ -438,7 +535,7 @@ tbody td.af{color:#1d7a4c}
     document.getElementById('v-creditvan').hidden = false;
     document.getElementById('v-betaalzin').hidden = true;
     document.getElementById('v-creditzin').hidden = false;
-    document.title = 'Creditfactuur — Schaap Express Transport';
+    soortNaam = 'Creditfactuur';
     zet('v-route', '—');
     zet('v-omschrijving', 'Creditering van factuur ' + (creditVan || ''));
   }
@@ -590,8 +687,12 @@ tbody td.af{color:#1d7a4c}
   zet('v-btw',       euro.format(btw));
   zet('v-totaal',    euro.format(subtotaal + btw));
 
-  document.title = 'Factuur ' + (lees('nr', 'SL-2026-0001') || '') + ' — Schaap Express Transport';
+  var titelNr = document.getElementById('v-nr').textContent.trim();
+  document.title = soortNaam + (titelNr && titelNr !== '\u2014' ? ' ' + titelNr : '') +
+                   ' — Schaap Express Transport';
   document.getElementById('printen').addEventListener('click', function () { window.print(); });
+  document.getElementById('printen-offerte')
+    .addEventListener('click', function () { window.print(); });
 })();
 </script>
 </body>

@@ -805,6 +805,8 @@ input{font:inherit}
 .uitslag__regel--som span{font-weight:700}
 .uitslag__noot{font-size:.78rem;color:var(--muted);line-height:1.45}
 .uitslag__knoppen{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.uitslag__voorwie{margin:0}
+.uitslag .knop{width:100%}
 .uitslag__knoppen .knop{width:100%}
 .uitslag__knoppen .knop[data-klaar]{background:var(--ok-vlak);border-color:var(--ok);color:#11603c}
 
@@ -1102,6 +1104,18 @@ input{font:inherit}
           <button class="knop knop--donker" id="prijs-deel" type="button">Versturen</button>
           <button class="knop knop--rand" id="prijs-kopie" type="button">Kopieer</button>
         </div>
+        <!-- Sta je bij iemand aan de balie, dan is een papier beter dan een
+             bedrag dat hij morgen kwijt is. Dit opent hetzelfde vel als de
+             factuur, met een offertekop en een geldigheidsdatum erop. De naam
+             staat hier en niet bovenaan: voor een prijs aan de telefoon heb je
+             hem niet nodig, voor een papier wel. -->
+        <label class="veld uitslag__voorwie">
+          <span>Voor wie</span>
+          <input id="prijs-klant" type="text" autocomplete="organization"
+                 maxlength="80" placeholder="bedrijfsnaam, voor op de offerte">
+        </label>
+        <a class="knop knop--rand" id="prijs-offerte" href="#" target="_blank"
+           rel="noopener">Offerte maken</a>
       </div>
     </div>
   </div>

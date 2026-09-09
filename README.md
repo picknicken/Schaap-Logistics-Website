@@ -294,8 +294,10 @@ Iemand belt en vraagt wat spoed van Rotterdam naar Venlo kost. Kies het soort
 rit, typ twee postcodes — de afstand rekent zichzelf uit, en je kunt er
 overheen typen als je weet dat de route omrijdt — kies het tijdvak en het
 aantal stops, en het bedrag staat er. Met de opbouw eronder, zodat je kunt
-zeggen waar het vandaan komt in plaats van alleen een getal te noemen. Twee
-knoppen: versturen als appje of mailtje, of kopiëren.
+zeggen waar het vandaan komt in plaats van alleen een getal te noemen. Drie
+knoppen: versturen als appje of mailtje, kopiëren, of er een **offerte** van
+maken om uit te printen of als PDF achter te laten — zie *Een offerte om achter
+te laten*, verderop.
 
 Groot staat het bedrag zonder btw, want dat is wat een zakelijke klant hoort te
 horen en wat als subtotaal op de factuur komt. Eronder staat wat er werkelijk
@@ -618,6 +620,30 @@ De berekening staat op vier plekken en moet overal gelijk zijn: `assets/site.js`
 voor de website, het veld *Automatisch totaal excl. BTW* in Airtable, de formule
 *Factuurlink* voor de echte factuur, en `conceptLink()` in `portaal/portaal.js`
 voor het concept. Wijzig je een tarief, loop ze alle vier langs.
+
+### Een offerte om achter te laten
+
+Hetzelfde vel papier, maar dan als aanbod. Onder het tabblad *Prijs* staat
+**Offerte maken**: vul eventueel in voor wie hij is en je hebt een pagina die je
+uitprint of als PDF bewaart. Sta je bij iemand aan de balie, dan laat je een
+papier achter in plaats van een bedrag te noemen dat hij morgen kwijt is.
+
+Wat er anders aan is dan een factuur: de kop zegt *Offerte*, het nummer heet een
+offertenummer (en wordt uit de datum afgeleid als je er zelf geen meegeeft), het
+totaal heet niet "te betalen", en het rekeningnummer staat er niet op. In plaats
+daarvan staat er tot wanneer de prijs geldt — veertien dagen, of wat je met
+`?geldig=30` meegeeft — met het voorbehoud over de gereden kilometers en de
+toeslagen, en een regel over wat de klant doet als hij akkoord is. Een aanbod
+zonder einddatum staat eeuwig open, en dan sta je over een half jaar met een
+prijs van vandaag naar een tank van morgen te kijken.
+
+De bedragen gaan als losse posten mee in de adresregel — starttarief,
+kilometers, toeslagen — en niet als één totaal. De factuurpagina telt ze zelf
+op, precies zoals ze op het scherm stonden waar je hem vandaan haalde; zo is er
+geen tweede rekenmachine die kan afwijken.
+
+Wie de pagina rechtstreeks wil aanroepen: `?offerte=1` naast de gewone
+factuurparameters, plus optioneel `nr` en `geldig`.
 
 ### Inloggen: eigenaar en chauffeurs
 

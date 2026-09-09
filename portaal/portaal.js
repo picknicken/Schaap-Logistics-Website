@@ -3532,6 +3532,7 @@
     el('prijs-van').addEventListener('input', verversPrijs);
     el('prijs-naar').addEventListener('input', verversPrijs);
     el('prijs-km').addEventListener('input', verversPrijs);
+    el('prijs-klant').addEventListener('input', verversPrijs);
 
     el('prijs-kopie').addEventListener('click', function () {
       kopieer(prijsTekst(), el('prijs-kopie'));
@@ -3636,6 +3637,36 @@
       ? 'Internationaal gaat altijd op offerte: dit is een richtprijs, geen aanbod.'
       : 'Prijsindicatie op een geschatte rijafstand. Er wordt gefactureerd op ' +
         'de werkelijk gereden kilometers.';
+
+    el('prijs-offerte').href = offerteLink(b, km);
+  }
+
+  /* Hetzelfde vel als de conceptfactuur, maar met een offertekop en een
+     geldigheidsdatum. De bedragen gaan als losse posten mee — starttarief,
+     kilometers, toeslagen — en niet als één totaal: de factuurpagina rekent ze
+     zelf op, en zo staat er op het papier precies dezelfde opbouw als op het
+     scherm waar je hem vandaan hebt. */
+  function offerteLink(b, km) {
+    var q = new URLSearchParams();
+    q.set('offerte', '1');
+    q.set('datum', vandaagIso());
+    /* Zonder naam blijft het vak Klant leeg. Dat is met opzet: op een geprint
+       vel is dat een regel om met de hand in te vullen, en dat is beter dan
+       een voorbeeldnaam die iemand vergeet weg te halen. */
+    var wie = el('prijs-klant').value.trim();
+    if (wie) { q.set('klant', wie); }
+    q.set('van', el('prijs-van').value.trim());
+    q.set('naar', el('prijs-naar').value.trim());
+    q.set('oms', b.tarief.naam);
+    q.set('km', String(km));
+    q.set('kmtarief', String(b.tarief.km));
+    q.set('start', String(b.tarief.start));
+    q.set('minimum', String(b.tarief.minimum || window.SL.CONFIG.minimum));
+    q.set('stops', String(b.stops));
+    q.set('stoptarief', String(window.SL.CONFIG.stoptoeslag));
+    q.set('tijdtoeslag', String(b.tijdSom));
+    q.set('tijdvak', b.tijdstip.deel ? b.tijdstip.naam : '');
+    return '../factuur/?' + q.toString();
   }
 
   /* De opbouw van het bedrag, in dezelfde volgorde als de calculator op de
