@@ -261,7 +261,7 @@
      factuur opzoeken — hoort er niet in: dan zou het scherm doen alsof er iets
      gebeurd is terwijl er nog niets is. Die zeggen gewoon dat er geen bereik
      is. */
-  var WACHT_ACTIES = ['status', 'notitie', 'ritkm', 'ritkosten', 'dagstaat',
+  var WACHT_ACTIES = ['status', 'notitie', 'ritkm', 'ritkosten', 'ritcontact', 'dagstaat',
                       'handtekening', 'ritfoto'];
 
   var wachtrij = [];
@@ -1774,15 +1774,33 @@
     var lijf = maak('div', 'rit__lijf');
 
     var dl = maak('dl', 'paar');
-    function regel(naam, waarde) {
+
+    /* Wat je onderweg overtypt in een ander scherm krijgt een knop. Een adres
+       in de navigatie van de bus, een ritnummer in een appje aan de klant, een
+       telefoonnummer dat je in WhatsApp wilt zoeken in plaats van bellen: dat
+       zijn de vier die je anders met een duim en een schuin oog overneemt, en
+       daar gaat een cijfer bij mis. */
+    function regel(naam, waarde, kopieerbaar) {
       if (!waarde && waarde !== 0) { return; }
       dl.appendChild(maak('dt', '', naam));
-      dl.appendChild(maak('dd', '', waarde));
+      var dd = maak('dd');
+      dd.appendChild(maak('span', '', String(waarde)));
+      if (kopieerbaar) {
+        var knop = maak('button', 'paar__kopie', 'Kopieer');
+        knop.type = 'button';
+        knop.setAttribute('aria-label', naam + ' kopiëren');
+        knop.addEventListener('click', function () { kopieer(String(waarde), knop); });
+        dd.appendChild(knop);
+      }
+      dl.appendChild(dd);
     }
-    regel('Rit', rit.naam);
+    regel('Rit', rit.naam, true);
     regel('Soort', rit.type);
-    regel('Ophalen', rit.ophaal);
-    regel('Bezorgen', rit.aflever);
+    regel('Ophalen', rit.ophaal, true);
+    regel('Bezorgen', rit.aflever, true);
+    regel('Telefoon', rit.telefoon, true);
+    regel('Ter plaatse', rit.contact, true);
+    regel('Tel. daar', rit.contactTel, true);
     if (rit.km) { regel('Afstand', Math.round(rit.km) + ' km'); }
     if (rit.tijd) { regel('Ophalen om', rit.tijd); }
     if (rit.wachttijd) { regel('Wachttijd', rit.wachttijd + ' min'); }
@@ -1972,6 +1990,7 @@
       });
       lijf.appendChild(kmKnop);
 
+      lijf.appendChild(contactBlok(rit));
       lijf.appendChild(kostenBlok(rit));
     }
 
@@ -2011,6 +2030,16 @@
       var bel = maak('a', 'knop knop--rand', 'Bel ' + (rit.klant || 'de klant'));
       bel.href = 'tel:' + String(rit.telefoon).replace(/[^\d+]/g, '');
       knoppen.appendChild(bel);
+    }
+
+    /* Staat je voor een gesloten poort, dan wil je niet het kantoor van de
+       klant bellen maar de man die achter dat hek staat. Deze knop staat
+       bovenaan in de rij, want dat is het moment waarop je hem nodig hebt. */
+    if (rit.contactTel) {
+      var belDaar = maak('a', 'knop knop--rand',
+        'Bel ' + (rit.contact || 'ter plaatse'));
+      belDaar.href = 'tel:' + String(rit.contactTel).replace(/[^\d+]/g, '');
+      knoppen.insertBefore(belDaar, knoppen.firstChild);
     }
 
     /* Op elk moment van de rit kunnen zien wat de factuur wordt. Niet alleen
@@ -2556,12 +2585,17 @@
     return r;
   }
 
+  /* Het opschrift wordt onthouden en teruggezet. Eerst stond hier het woord
+     "Kopieer" hard ingetikt, en dat werkt zolang elke knop zo heet; de knop op
+     de prijsopgave heet anders en kreeg dan na anderhalve seconde de verkeerde
+     naam. */
   function kopieer(tekst, knop) {
+    var opschrift = knop.textContent;
     var klaar = function () {
       knop.textContent = 'Gekopieerd';
       knop.setAttribute('data-klaar', '');
       setTimeout(function () {
-        knop.textContent = 'Kopieer';
+        knop.textContent = opschrift;
         knop.removeAttribute('data-klaar');
       }, 1500);
     };
@@ -3026,18 +3060,92 @@
      tijdens het rijden — maar wel bij de hand als je met de bon in je hand
      naast de bus staat. Vul je het niet in, dan blijft je winstcijfer leeg en
      weet je aan het eind van de maand niet wat een rit werkelijk opleverde. */
-  function kostenBlok(rit) {
-    var blok = maak('details', 'kosten');
+  /* Wie er bij het adres staat. Dat hoor je onderweg — van de planner, of van
+     de man zelf toen hij belde waar je bleef — en het is precies het soort
+     gegeven dat in je gesprekslijst blijft hangen in plaats van bij de rit.
+     Volgende week rijd je dezelfde route en zoek je het opnieuw uit.
+
+     Ingeklapt, want negen van de tien ritten hebben het niet nodig. Staat er
+     iets in, dan staat het bovenin de kaart en zit er een belknop bij. */
+  function contactBlok(rit) {
+    var blok = maak('details', 'vouw');
     blok.open = false;
 
-    var kop = maak('summary', 'kosten__kop');
+    var kop = maak('summary', 'vouw__kop');
+    kop.appendChild(maak('span', '', 'Contact ter plaatse'));
+    kop.appendChild(maak('b', '', rit.contact || rit.contactTel || 'niet ingevuld'));
+    blok.appendChild(kop);
+
+    var lijf = maak('div', 'vouw__lijf');
+
+    var rij = maak('div', 'velrij');
+    var naamVeld = tekstVeld('Naam', rit.contact, 'magazijn, portier, monteur');
+    var telVeld = tekstVeld('Telefoon', rit.contactTel, '06…');
+    telVeld.invoer.type = 'tel';
+    telVeld.invoer.inputMode = 'tel';
+    rij.appendChild(naamVeld);
+    rij.appendChild(telVeld);
+    lijf.appendChild(rij);
+
+    lijf.appendChild(maak('div', 'terzijde',
+      'De klant zit op kantoor, deze persoon staat bij het hek. Blijft bij de ' +
+      'rit staan, ook als je hem volgende maand opnieuw rijdt.'));
+
+    var knop = maak('button', 'knop knop--rand', 'Contact opslaan');
+    knop.type = 'button';
+    knop.addEventListener('click', function () {
+      bezig(knop, 'Opslaan…', function (klaar) {
+        schrijf('ritcontact', {
+          id: rit.id,
+          contact: naamVeld.invoer.value,
+          telefoon: telVeld.invoer.value
+        }, function () {
+          return Object.assign({}, rit, {
+            wacht: true,
+            contact: naamVeld.invoer.value.trim(),
+            contactTel: telVeld.invoer.value.trim()
+          });
+        }).then(function (data) {
+          ververs(data.rit);
+          meldApp('');
+          klaar(true);
+        }).catch(function (fout) { meldApp(fout.message); klaar(false); });
+      });
+    });
+    lijf.appendChild(knop);
+
+    blok.appendChild(lijf);
+    return blok;
+  }
+
+  /* Een gewoon tekstveld met een label erboven, in dezelfde vorm als
+     getalVeld hierboven. */
+  function tekstVeld(naam, waarde, hint) {
+    var veld = maak('label', 'veld');
+    veld.style.margin = '0';
+    veld.appendChild(maak('span', '', naam));
+    var invoer = document.createElement('input');
+    invoer.type = 'text';
+    invoer.maxLength = 100;
+    invoer.value = waarde || '';
+    if (hint) { invoer.placeholder = hint; }
+    veld.appendChild(invoer);
+    veld.invoer = invoer;
+    return veld;
+  }
+
+  function kostenBlok(rit) {
+    var blok = maak('details', 'vouw');
+    blok.open = false;
+
+    var kop = maak('summary', 'vouw__kop');
     kop.appendChild(maak('span', '', 'Kosten van deze rit'));
     kop.appendChild(maak('b', '', rit.kosten
       ? euroCent.format(rit.kosten)
       : 'nog niet ingevuld'));
     blok.appendChild(kop);
 
-    var lijf = maak('div', 'kosten__lijf');
+    var lijf = maak('div', 'vouw__lijf');
 
     var rij1 = maak('div', 'velrij');
     var brandstof = euroVeld('Brandstof', rit.brandstof);

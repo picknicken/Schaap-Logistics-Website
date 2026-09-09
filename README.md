@@ -38,8 +38,8 @@ die serveert `diensten/index.html` wel gewoon op `/diensten/`.
 ```
 portaal/
   index.html      het chauffeursportaal zelf
-  portaal.js      het script erbij — bewust hier en niet in assets/, want een
-                  service worker komt niet buiten zijn eigen map
+  portaal.js      het script erbij — hier en niet in assets/, zodat pagina,
+                  script en service worker in één map bij elkaar staan
   sw.js           de service worker: pushmeldingen, en opengaan zonder bereik
   manifest.webmanifest   waarmee het op je beginscherm een app wordt
 
@@ -214,7 +214,7 @@ je telefoon, met knoppen om de status om te zetten, een route te starten en de
 ontvanger te laten tekenen. Nergens naartoe gelinkt vanaf de site — zet hem op je
 beginscherm als snelkoppeling.
 
-Vijf tabbladen, met een teller erop zodat je in één blik ziet waar iets ligt. Op
+Zes tabbladen, met een teller erop zodat je in één blik ziet waar iets ligt. Op
 een telefoon passen ze niet allemaal naast elkaar; de balk schuift dan mee en het
 tabblad dat je kiest schuift vanzelf in beeld.
 
@@ -239,6 +239,18 @@ tabblad dat je kiest schuift vanzelf in beeld.
   routebeschrijving in, en dan levert zoeken op een plaatsnaam ritten op die met
   die plaats niets te maken hebben. Een chauffeur mag ook zoeken, maar komt
   alleen zijn eigen ritten tegen en ziet daar geen bedragen bij.
+- **Kopieerknoppen.** Achter het ritnummer, de twee adressen en de
+  telefoonnummers zit een knopje *Kopieer*. Dat is voor wat je onderweg toch in
+  een ander scherm overtypt: een adres in de navigatie van de bus, een ritnummer
+  in een appje aan de klant. Met een duim op een schokkende weg gaat daar een
+  cijfer bij mis, en een verkeerd huisnummer kost een half uur.
+- **Contact ter plaatse.** Wie er bij de poort staat en op welk nummer je hem
+  bereikt — de magazijnmeester, de portier, de monteur. Staat in een ingeklapt
+  vak op de ritkaart, en zodra het is ingevuld staat het bovenin met een
+  belknop erbij. Naast het nummer van de klant, niet in plaats daarvan: de klant
+  zit op kantoor en deze persoon staat bij het hek. Het blijft bij de rit
+  staan, dus volgende maand hoef je het niet opnieuw uit te zoeken. Het
+  klantportaal ziet het nooit.
 - **Status omzetten.** *Onderweg* legt meteen het vertrektijdstip vast, zodat je
   achteraf ziet hoe lang een rit werkelijk duurde.
 - **Route starten.** Bij een geplande rit wijst de knop naar het ophaaladres, bij
@@ -275,6 +287,32 @@ tabblad dat je kiest schuift vanzelf in beeld.
   bijtelling. Het verschil hoort verklaarbaar te zijn; daar is het tekstvakje
   voor. Staat het op een negatief getal, dan klopt de eindstand niet of staan er
   te veel kilometers op een rit.
+
+**Prijs** — wat kost het, terwijl de klant nog aan de lijn is.
+
+Iemand belt en vraagt wat spoed van Rotterdam naar Venlo kost. Kies het soort
+rit, typ twee postcodes — de afstand rekent zichzelf uit, en je kunt er
+overheen typen als je weet dat de route omrijdt — kies het tijdvak en het
+aantal stops, en het bedrag staat er. Met de opbouw eronder, zodat je kunt
+zeggen waar het vandaan komt in plaats van alleen een getal te noemen. Twee
+knoppen: versturen als appje of mailtje, of kopiëren.
+
+Groot staat het bedrag zonder btw, want dat is wat een zakelijke klant hoort te
+horen en wat als subtotaal op de factuur komt. Eronder staat wat er werkelijk
+betaald wordt.
+
+Twee dingen die het zelf voor je invult. Bel je 's avonds over een spoedrit,
+dan staat de avondtoeslag er meteen in — vergeten kost geld, en een bedrag
+terugdraaien dat je al genoemd hebt kost meer. Kies je een geplande rit, dan
+gaat hij weer op *overdag* staan. Wat je zelf aanklikt blijft staan.
+
+Dit rekent met `assets/site.js`, hetzelfde bestand als de calculator op de
+homepage. Niet een kopie van de tarieven maar het bestand zelf: verandert er een
+tarief, dan verandert het hier mee. Een tweede lijstje zou vroeg of laat
+achterlopen, en dan noem je aan de telefoon een ander bedrag dan de klant op
+zijn scherm ziet. Dat bestand staat buiten `portaal/` en gaat daarom apart mee
+in de cache van de service worker (`BUITEN` in `portaal/sw.js`); ontbreekt het
+toch, dan valt alleen dit tabblad uit met een uitleg erbij.
 
 **Klanten** — opzoeken wie iemand is terwijl je aan de telefoon zit.
 
@@ -415,8 +453,9 @@ pagina en het script los van elkaar, en een app op het beginscherm houdt de
 pagina hardnekkig vast. Komt er een pagina van gisteren bij een script van
 vandaag, dan zoekt dat script knoppen die er nog niet zijn — en dan valt het
 hele portaal stil. Verander je `portaal/portaal.js` of `assets/klant.js`, hoog dat
-nummer dan op, dan horen ze weer bij elkaar. Staat het ook in `KERN` in
-`portaal/sw.js`, hoog het daar dan mee op. Als tweede vangnet slaat het portaal
+nummer dan op, dan horen ze weer bij elkaar. Staat het ook in `KERN` of
+`BUITEN` in `portaal/sw.js`, hoog het daar dan mee op — anders vult de service
+worker een versie voor die de pagina nooit opvraagt. Als tweede vangnet slaat het portaal
 de kalender over in plaats van stuk te vallen als het vak er niet staat; daar
 staat een test op.
 
@@ -472,10 +511,15 @@ verstuurd. Voor een handtekening en een foto is dat afgevangen: dezelfde
 ondertekenaar of dezelfde bestandsnaam levert geen tweede bijlage op. Twee
 dezelfde krabbels aan één rit is geen beter bewijs.
 
-Omdat een service worker alleen bestanden kan onderscheppen die binnen zijn
-eigen map vallen, staat het script van het portaal in `portaal/portaal.js` en
-niet in `assets/`. Anders zou je zonder bereik wel de pagina krijgen maar niet
-het script, en dat is een leeg scherm met een titel.
+Het bereik van een service worker — de map waar hij zelf in staat — bepaalt
+welke *pagina's* hij bedient. Alles wat zo'n pagina daarna opvraagt loopt langs
+hem, ook als dat bestand ergens anders staat; daarom kan `assets/site.js` gewoon
+mee in de cache. Hier stond eerder dat hij niet buiten zijn eigen map kon kijken,
+en dat klopte niet. Dat `portaal.js` naast de pagina staat is dus geen
+noodzaak maar een keuze: pagina, script en service worker horen bij elkaar te
+staan. Wat wél nodig is: alles wat zonder bereik moet werken staat in `KERN` of
+`BUITEN` in `portaal/sw.js`, met het versienummer erachter dat ook in
+`portaal/index.html` staat.
 
 ### Een rit buiten de website om
 

@@ -627,7 +627,16 @@ input{font:inherit}
 .rit__lijf{border-top:1px solid var(--line);padding:14px 16px;display:grid;gap:14px}
 .paar{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:.88rem}
 .paar dt{color:var(--muted);font-size:.8rem}
-.paar dd{color:var(--heading)}
+.paar dd{color:var(--heading);display:flex;align-items:flex-start;gap:8px}
+.paar dd > span{flex:1;min-width:0;word-break:break-word}
+/* Klein en grijs: het is een hulpje, geen knop waar de kaart om draait. */
+.paar__kopie{
+  flex:none;border:1px solid var(--line);background:var(--paper-2);color:var(--muted);
+  border-radius:7px;padding:3px 8px;font-size:.7rem;font-weight:600;line-height:1.5;
+  white-space:nowrap;
+}
+.paar__kopie:hover{border-color:var(--amber-2);color:var(--amber-2)}
+.paar__kopie[data-klaar]{color:var(--ok);border-color:var(--ok)}
 .knoppen{display:grid;gap:8px}
 .knoppen--twee{grid-template-columns:1fr 1fr}
 
@@ -697,22 +706,23 @@ input{font:inherit}
 }
 .fotos img{width:100%;height:100%;display:block;object-fit:cover}
 
-/* Wat de rit jou kostte. Ingeklapt, want tijdens het rijden is het in de weg;
-   met de bon in je hand klap je hem open. */
-.kosten{border:1px solid var(--line);border-radius:11px;overflow:hidden;background:var(--paper-2)}
-.kosten__kop{
+/* Een blok dat dichtzit tot je het nodig hebt: wat de rit jou kostte, en wie
+   er bij de poort staat. Tijdens het rijden zijn ze allebei in de weg; met de
+   bon in je hand, of met de portier aan de lijn, klap je er een open. */
+.vouw{border:1px solid var(--line);border-radius:11px;overflow:hidden;background:var(--paper-2)}
+.vouw__kop{
   display:flex;justify-content:space-between;align-items:baseline;gap:12px;
   padding:11px 14px;list-style:none;cursor:pointer;
   font-size:.78rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
   color:var(--muted);
 }
-.kosten__kop::-webkit-details-marker{display:none}
-.kosten__kop b{
+.vouw__kop::-webkit-details-marker{display:none}
+.vouw__kop b{
   font-size:.95rem;font-weight:700;color:var(--heading);letter-spacing:0;
   text-transform:none;font-variant-numeric:tabular-nums;
 }
-.kosten__lijf{padding:0 14px 14px;display:grid;gap:10px}
-.kosten .veld input{background:var(--paper)}
+.vouw__lijf{padding:0 14px 14px;display:grid;gap:10px}
+.vouw .veld input{background:var(--paper)}
 .winst{
   display:flex;flex-direction:column;justify-content:flex-end;
   background:var(--ok-vlak);border:1px solid var(--ok);border-radius:10px;

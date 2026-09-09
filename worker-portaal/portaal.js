@@ -63,6 +63,11 @@ const R = {
   kortingRe:  'Reden korting',
   klant:      'Klantnaam',
   telefoon:   'Klant telefoon',
+  /* Wie er bij de poort staat en op welk nummer je hem bereikt. Naast de
+     klant, niet in plaats daarvan: de klant zit op kantoor, deze persoon
+     staat bij het hek en weet waar de pallet heen moet. */
+  contact:    'Contact ter plaatse',
+  contactTel: 'Telefoon ter plaatse',
   opmerking:  'Opmerkingen',
   chauffeur:  'Chauffeur',
   totaal:     'Automatisch totaal excl. BTW',
@@ -327,7 +332,7 @@ function magVanOrigin(origin, toegestaan) {
    krijgt ze niet terug als winstcijfer. */
 const CHAUFFEUR_MAG = new Set([
   'overzicht', 'ritten', 'status', 'handtekening', 'notitie', 'ritkm', 'ritkosten',
-  'dagstaat', 'ritfoto',
+  'dagstaat', 'ritfoto', 'ritcontact',
   /* Terugzoeken mag hij ook, maar hij krijgt alleen zijn eigen ritten terug —
      daar zorgt dezelfde zeef voor als bij het dagoverzicht. */
   'zoekritten',
@@ -473,7 +478,7 @@ export default {
 /* De acties die op één rit werken. Voor een chauffeur wordt bij deze eerst
    gecontroleerd of die rit van hem is. */
 const RIT_ACTIES = new Set(['status', 'handtekening', 'notitie', 'ritkm', 'ritkosten',
-                            'ritfoto']);
+                            'ritfoto', 'ritcontact']);
 
 /* Wat een chauffeur nooit terugkrijgt, ook niet als een actie het per ongeluk
    meestuurt. Dit zijn de velden waar geld in staat. */
@@ -516,6 +521,7 @@ async function schakel(env, body, origin, wie) {
     case 'handtekening': return await zetHandtekening(env, body, origin);
     case 'ritfoto':      return await zetRitFoto(env, body, origin);
     case 'notitie':      return await zetNotitie(env, body, origin);
+    case 'ritcontact':   return await zetContact(env, body, origin);
     case 'accepteer':    return await accepteerAanvraag(env, body, origin);
     case 'afwijzen':     return await wijsAanvraagAf(env, body, origin);
     case 'planrit':      return await planRit(env, body, origin);
@@ -777,6 +783,26 @@ async function zetRitFoto(env, body, origin) {
   await uploadBijlage(env, id, R.fotos, type, base64, schoon);
   const na = await airtable(env, `${env.AIRTABLE_RITTEN}/${id}`);
   return antwoord(200, { ok: true, nieuw: true, rit: naarRit(na) }, origin, true);
+}
+
+/* De naam en het nummer van wie er bij het adres staat. Wordt onderweg
+   ingevuld — je krijgt het aan de telefoon of van de planner van de klant —
+   en hoort dan bij de rit te blijven staan, niet in je gesprekslijst.
+
+   Een leeg veld is een geldige waarde: iemand die er niet meer werkt hoor je
+   te kunnen weghalen. Daarom wordt er niet op inhoud gecontroleerd, alleen op
+   lengte. */
+async function zetContact(env, body, origin) {
+  const id = recordId(body.id);
+  if (!id) { return antwoord(400, { fout: 'Ongeldig rit-id' }, origin, true); }
+  const rit = naarRit(await patch(env, env.AIRTABLE_RITTEN, id, {
+    [R.contact]:    String(body.contact || '').slice(0, 100),
+    /* Airtable's telefoonveld is soepel, maar een halve roman erin zetten is
+       geen telefoonnummer. Cijfers, plus, spatie en de tekens die in een
+       geschreven nummer voorkomen; de rest gaat eruit. */
+    [R.contactTel]: String(body.telefoon || '').replace(/[^\d+()\- ]/g, '').slice(0, 30)
+  }));
+  return antwoord(200, { ok: true, rit }, origin, true);
 }
 
 async function zetNotitie(env, body, origin) {
@@ -2443,6 +2469,8 @@ function naarRit(record) {
     kortingRe:  f[R.kortingRe] || '',
     klant:      eerste(f[R.klant]),
     telefoon:   eerste(f[R.telefoon]),
+    contact:    f[R.contact] || '',
+    contactTel: f[R.contactTel] || '',
     opmerking:  f[R.opmerking] || '',
     bedrag:     f[R.totaal] || 0,
     getekend:   f[R.getekendD] || '',
@@ -2857,6 +2885,8 @@ function naarRitVoorChauffeur(record) {
     wachttijd:  f[R.wachttijd] || 0,
     klant:      eerste(f[R.klant]),
     telefoon:   eerste(f[R.telefoon]),
+    contact:    f[R.contact] || '',
+    contactTel: f[R.contactTel] || '',
     opmerking:  f[R.opmerking] || '',
     getekend:   f[R.getekendD] || '',
     getekendOp: f[R.getekendO] || '',

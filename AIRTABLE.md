@@ -644,6 +644,15 @@ dat gaat dan voor en de vraag verdwijnt uit het inlogscherm.
 | `Onderweg sinds` | Wanneer je vertrok. Samen met `Getekend op` de werkelijke ritduur |
 | `Afleverbewijs` | *Compleet*, of *Ontbreekt* bij een uitgevoerde rit zonder handtekening |
 | `Klantnaam`, `Klant telefoon` | Opzoekvelden; zonder deze ziet het portaal alleen een record-id |
+| `Contact ter plaatse` (`fldvTTEoiQZxCueRN`) | Wie er bij het hek staat: de magazijnmeester, de portier, de monteur. In te vullen vanuit het portaal |
+| `Telefoon ter plaatse` (`fldx5fgIbQ1BVfZMW`) | Het nummer dat je belt als je voor een gesloten poort staat. Op de ritkaart staat er een belknop bij |
+
+`Contact ter plaatse` staat naast `Klant telefoon` en niet in plaats daarvan:
+de klant zit op kantoor en deze persoon staat bij de poort. Het is het soort
+gegeven dat anders in je gesprekslijst blijft hangen, en dan zoek je het
+volgende maand opnieuw uit als je dezelfde route rijdt. Het klantportaal krijgt
+deze twee velden nooit te zien — daar staat een eigen lijst velden, en die twee
+staan er niet op.
 
 `Onderweg sinds` wordt alleen gezet als het veld nog leeg is, en dat kijkt de
 Worker zelf na — niet de telefoon. Twee keer op *Onderweg* drukken mag je
