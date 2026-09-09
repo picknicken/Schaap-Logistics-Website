@@ -931,7 +931,7 @@
     b.hidden = !aantal;
   }
 
-  var TABBLADEN = ['ritten', 'aanvragen', 'planning', 'meldingen', 'klanten'];
+  var TABBLADEN = ['ritten', 'aanvragen', 'prijs', 'planning', 'meldingen', 'klanten'];
 
   function kiesTab(naam) {
     tabblad = naam;
@@ -954,6 +954,7 @@
        pas als je die dag opzoekt. */
     if (naam === 'meldingen') { haalMeldingen(); }
     if (naam === 'klanten') { tekenKlanten(); }
+    if (naam === 'prijs') { toonPrijs(); }
   }
 
   TABBLADEN.forEach(function (t) {
@@ -3333,6 +3334,251 @@
         knop.textContent = oud;
       }
     });
+  }
+
+  /* -------------------------------------------------- prijs aan de telefoon
+
+     Iemand belt en vraagt wat spoed van Rotterdam naar Venlo kost. Tot nu toe
+     was het antwoord "ik reken het even uit en bel je terug", of een bedrag uit
+     het hoofd dat later niet klopte met de site.
+
+     Dit rekent met assets/site.js — hetzelfde bestand dat de calculator op de
+     homepage gebruikt. Niet een kopie van de tarieven maar het bestand zelf, en
+     dat is het hele punt: verandert er een tarief, dan verandert het hier mee.
+     Een tweede lijstje tarieven in dit bestand zou vroeg of laat achterlopen,
+     en dan noem je aan de telefoon een ander bedrag dan de klant op zijn scherm
+     ziet staan.
+
+     Zonder dat bestand valt alleen dit tabblad uit, met een uitleg. */
+
+  var prijsGebouwd = false;
+  var pSoort = 'spoed';        /* wat er meestal gebeld wordt */
+  var pTijd  = 'dag';
+  var pStops = 0;
+  var pTijdZelf = false;       /* heeft hij het tijdvak zelf aangeraakt? */
+  var pKmGezet = null;         /* de afstand die wij in het veld hebben gezet */
+
+  function prijsKan() { return !!(window.SL && window.SL.bereken); }
+
+  function toonPrijs() {
+    var kan = prijsKan();
+    el('prijs-uit').hidden = kan;
+    el('prijs-vak').hidden = !kan;
+    if (!kan) { return; }
+    if (!prijsGebouwd) { bouwPrijs(); prijsGebouwd = true; }
+    verversPrijs();
+  }
+
+  function keuzeknop(rij, waarde, kop, uitleg, kies) {
+    var k = maak('button', 'keuze__knop');
+    k.type = 'button';
+    k.setAttribute('aria-pressed', 'false');
+    k.setAttribute('data-waarde', String(waarde));
+    k.appendChild(maak('b', '', kop));
+    if (uitleg) { k.appendChild(maak('small', '', uitleg)); }
+    k.addEventListener('click', function () { kies(waarde); });
+    rij.appendChild(k);
+    return k;
+  }
+
+  function zetGekozen(rij, waarde) {
+    var knoppen = rij.querySelectorAll('.keuze__knop');
+    for (var i = 0; i < knoppen.length; i++) {
+      knoppen[i].setAttribute('aria-pressed',
+        String(knoppen[i].getAttribute('data-waarde') === String(waarde)));
+    }
+  }
+
+  function bouwPrijs() {
+    var C = window.SL.CONFIG;
+
+    var soortRij = el('prijs-soort');
+    Object.keys(C.ritten).forEach(function (sleutel) {
+      var r = C.ritten[sleutel];
+      keuzeknop(soortRij, sleutel, r.naam.replace(' transport', ''), r.kort, function (w) {
+        pSoort = w;
+        /* Bij spoed gaat het over nu. Staat het al buiten kantooruren, dan
+           hoort de toeslag er ook in te zitten — vergeten kost geld en het
+           napraten van een bedrag dat je al genoemd hebt kost meer. Heeft hij
+           het tijdvak zelf gekozen, dan blijft die keuze staan. */
+        if (!pTijdZelf) { pTijd = C.ritten[w] && C.ritten[w].spoed ? tijdvakNu() : 'dag'; }
+        verversPrijs();
+      });
+    });
+
+    var tijdRij = el('prijs-tijd');
+    Object.keys(C.tijden).forEach(function (sleutel) {
+      var kort = { dag: 'Overdag', avond: 'Avond', nacht: 'Nacht of weekend' };
+      keuzeknop(tijdRij, sleutel, kort[sleutel] || C.tijden[sleutel].naam, '', function (w) {
+        pTijd = w;
+        pTijdZelf = true;
+        verversPrijs();
+      });
+    });
+
+    var stopRij = el('prijs-stops');
+    [0, 1, 2, 3].forEach(function (n) {
+      keuzeknop(stopRij, n, String(n), '', function (w) { pStops = Number(w); verversPrijs(); });
+    });
+
+    el('prijs-van').addEventListener('input', verversPrijs);
+    el('prijs-naar').addEventListener('input', verversPrijs);
+    el('prijs-km').addEventListener('input', verversPrijs);
+
+    el('prijs-kopie').addEventListener('click', function () {
+      kopieer(prijsTekst(), el('prijs-kopie'));
+    });
+    el('prijs-deel').addEventListener('click', function () {
+      var tekst = prijsTekst();
+      if (navigator.share) {
+        navigator.share({ title: 'Prijsopgave Schaap Logistics', text: tekst })
+          .catch(function () { /* weggeklikt is geen fout */ });
+      } else {
+        kopieer(tekst, el('prijs-deel'));
+      }
+    });
+
+    if (!pTijdZelf) { pTijd = window.SL.CONFIG.ritten[pSoort].spoed ? tijdvakNu() : 'dag'; }
+  }
+
+  /* Het tijdvak waar we nu in zitten. Zaterdag en zondag tellen als weekend;
+     dat zit al in tijdvakUit en hoort hier niet nog een keer te staan. */
+  function tijdvakNu() {
+    var n = new Date();
+    var twee = function (x) { return (x < 10 ? '0' : '') + x; };
+    return window.SL.tijdvakUit(alsDatum(n),
+      twee(n.getHours()) + ':' + twee(n.getMinutes()));
+  }
+
+  /* De afstand die we zelf kunnen schatten, of null. Buitenland kan niet: de
+     postcodetabel in site.js is Nederlands. */
+  function prijsSchatting() {
+    if (window.SL.CONFIG.ritten[pSoort].buitenland) { return null; }
+    var a = window.SL.postcodeUit(el('prijs-van').value);
+    var b = window.SL.postcodeUit(el('prijs-naar').value);
+    if (!a || !b) { return null; }
+    if (!window.SL.regioVan(a) || !window.SL.regioVan(b)) { return null; }
+    return { km: window.SL.schatAfstand(a, b), van: a, naar: b };
+  }
+
+  function verversPrijs() {
+    var C = window.SL.CONFIG;
+    zetGekozen(el('prijs-soort'), pSoort);
+    zetGekozen(el('prijs-tijd'), pTijd);
+    zetGekozen(el('prijs-stops'), pStops);
+
+    var schat = prijsSchatting();
+    var veld = el('prijs-km');
+
+    /* De schatting komt in het veld te staan en niet ergens ernaast: dan kun
+       je hem overschrijven als je weet dat de route omrijdt, en zie je in één
+       oogopslag met welk getal er gerekend is. Maak je het veld leeg, dan komt
+       de schatting terug.
+
+       Om te weten of hij het getal zelf heeft ingetikt onthouden we wat wij er
+       neerzetten. Alleen kijken of het veld gevuld is werkt niet: dan geldt
+       onze eigen schatting bij de eerstvolgende druk op een knop ineens als
+       zijn invoer, en verandert de afstand niet meer mee als hij een andere
+       postcode intypt. */
+    var eigen = veld.value.trim() !== '' && Number(veld.value) !== pKmGezet;
+    var km;
+    if (schat && !eigen) {
+      km = schat.km;
+      if (Number(veld.value) !== km) { veld.value = km; }
+      pKmGezet = km;
+    } else {
+      km = Math.round(Number(veld.value)) || 0;
+      if (eigen) { pKmGezet = null; }
+    }
+
+    var noot = el('prijs-kmnoot');
+    if (C.ritten[pSoort].buitenland) {
+      noot.textContent = 'Over de grens reken ik de afstand niet uit. Vul de ' +
+                         'kilometers zelf in — heen, en niet terug.';
+    } else if (eigen && schat) {
+      noot.textContent = 'Zelf ingevuld. Maak het veld leeg voor de schatting ' +
+                         'van ' + schat.km + ' km.';
+    } else if (schat) {
+      noot.textContent = 'Geschat op postcode ' + schat.van + ' en ' + schat.naar +
+                         '. Klopt dat niet, typ er dan overheen.';
+    } else {
+      noot.textContent = 'Vul twee Nederlandse postcodes in, dan reken ik de ' +
+                         'afstand zelf. Of vul hier de kilometers in.';
+    }
+
+    var uitslag = el('prijs-uitslag');
+    if (!(km > 0)) { uitslag.hidden = true; return; }
+    uitslag.hidden = false;
+
+    var b = window.SL.bereken(pSoort, km, pTijd, pStops);
+    el('prijs-groot').textContent = euroCent.format(b.totaalExcl);
+    el('prijs-klein').textContent = euroCent.format(b.totaalIncl) +
+                                    ' inclusief 21% btw';
+
+    var vak = el('prijs-regels');
+    vak.innerHTML = '';
+    prijsRegels(b, km).forEach(function (r) {
+      var d = maak('div', 'uitslag__regel' + (r.som ? ' uitslag__regel--som' : ''));
+      d.appendChild(maak('span', '', r.label));
+      d.appendChild(maak('span', '', euroCent.format(r.bedrag)));
+      vak.appendChild(d);
+    });
+
+    el('prijs-noot').textContent = C.ritten[pSoort].buitenland
+      ? 'Internationaal gaat altijd op offerte: dit is een richtprijs, geen aanbod.'
+      : 'Prijsindicatie op een geschatte rijafstand. Er wordt gefactureerd op ' +
+        'de werkelijk gereden kilometers.';
+  }
+
+  /* De opbouw van het bedrag, in dezelfde volgorde als de calculator op de
+     site en als de factuur. Dat is geen sier: als je aan de telefoon een
+     bedrag noemt, wil je de regel erbij kunnen noemen waar het vandaan komt. */
+  function prijsRegels(b, km) {
+    var C = window.SL.CONFIG;
+    var rijen = [
+      { label: 'Starttarief', bedrag: b.tarief.start },
+      { label: km + ' km × ' + euroCent.format(b.tarief.km), bedrag: b.kmSom }
+    ];
+    if (b.correctie > 0) {
+      rijen.push({ label: 'Aanvulling tot minimumtarief', bedrag: b.correctie });
+    }
+    if (b.tijdSom > 0) { rijen.push({ label: b.tijdstip.naam, bedrag: b.tijdSom }); }
+    if (b.stopSom > 0) {
+      rijen.push({
+        label: b.stops + (b.stops === 1 ? ' extra stop' : ' extra stops') +
+               ' × ' + euroCent.format(C.stoptoeslag),
+        bedrag: b.stopSom
+      });
+    }
+    rijen.push({ label: 'Totaal excl. btw', bedrag: b.totaalExcl, som: true });
+    rijen.push({ label: 'Btw 21%', bedrag: b.btw });
+    rijen.push({ label: 'Totaal incl. btw', bedrag: b.totaalIncl });
+    return rijen;
+  }
+
+  /* Wat er in het appje of de mail komt. Met de route en de kilometers erbij,
+     want een bedrag zonder waar het over ging is over een week onleesbaar —
+     ook voor de klant, die er misschien drie heeft liggen. */
+  function prijsTekst() {
+    var C = window.SL.CONFIG;
+    var km = Math.round(Number(el('prijs-km').value)) || 0;
+    var b = window.SL.bereken(pSoort, km, pTijd, pStops);
+    var van = el('prijs-van').value.trim();
+    var naar = el('prijs-naar').value.trim();
+
+    var regels = ['Prijsopgave Schaap Logistics'];
+    regels.push(b.tarief.naam + (van && naar ? ', ' + van + ' naar ' + naar : ''));
+    regels.push('Circa ' + km + ' km' + (pTijd === 'dag' ? '' : ', ' + b.tijdstip.naam));
+    regels.push('');
+    prijsRegels(b, km).forEach(function (r) {
+      regels.push(r.label + ': ' + euroCent.format(r.bedrag));
+    });
+    regels.push('');
+    regels.push(C.ritten[pSoort].buitenland
+      ? 'Internationaal gaat op offerte; dit is een richtprijs.'
+      : 'De afstand is een schatting. Er wordt gefactureerd op de werkelijk ' +
+        'gereden kilometers.');
+    return regels.join('\n');
   }
 
   /* --------------------------------------------------------- klantblad */

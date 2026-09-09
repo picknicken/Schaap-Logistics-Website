@@ -12,21 +12,43 @@
    service worker niet aan. Wat er van de laatste dag bewaard wordt regelt het
    portaal zelf, met de tijd erbij op het scherm.
 
-   Onderscheppen kan alleen binnen de eigen map. Daarom staat portaal.js naast
-   deze pagina en niet in assets/ — anders zou je zonder bereik een pagina
-   krijgen zonder script, en dat is een leeg scherm met een titel.
+   Wat hij bedient volgt uit zijn bereik: de map waar hij zelf in staat. Alles
+   wat zo'n pagina daarna opvraagt loopt langs hem, ook als dat bestand ergens
+   anders staat — vandaar dat assets/site.js hieronder gewoon meekan. Het
+   script van het portaal staat er wel naast, omdat pagina, script en service
+   worker bij elkaar horen te blijven.
 
    Wordt geregistreerd zodra het portaal opent, niet pas bij meldingen.
    ========================================================================= */
 
 /* Hoog dit op als er iets aan de cachestrategie verandert; bij het activeren
    wordt alles wat een andere naam heeft weggegooid. */
-var CACHE = 'schaap-portaal-1';
+var CACHE = 'schaap-portaal-2';
 
 /* Wat er meteen bij het installeren in moet, zodat het portaal ook opengaat
    als de eerste keer dat je geen bereik hebt tegelijk de eerste keer is dat je
-   hem opent. De rest komt vanzelf in de cache bij gebruik. */
-var KERN = ['./', './portaal.js?v=20260908', './manifest.webmanifest'];
+   hem opent. De rest komt vanzelf in de cache bij gebruik.
+
+   Het versienummer achter een bestand hoort gelijk te lopen met wat er in
+   portaal/index.html staat: staat hier een oud nummer, dan wordt er iets
+   voorgevuld wat de pagina nooit opvraagt en blijft de echte versie leeg. */
+var KERN = [
+  './',
+  './portaal.js?v=20260909',
+  './manifest.webmanifest',
+  '../assets/site.js?v=20260909'
+];
+
+/* Bestanden buiten deze map die er toch bij horen. site.js is de rekenmachine
+   met de tarieven erin, gedeeld met de website — één plek waar ze staan, zodat
+   een prijs aan de telefoon niet kan afwijken van de prijs op het scherm van
+   de klant. Dat het buiten /portaal/ staat is geen bezwaar: het bereik van een
+   service worker bepaalt welke pagina's hij bedient, niet waar de bestanden
+   staan die zo'n pagina opvraagt. Ze staan hier met versienummer en al, zodat
+   er nooit per ongeluk een ander bestand uit assets/ meelift. */
+var BUITEN = ['../assets/site.js?v=20260909'].map(function (pad) {
+  return new URL(pad, self.location.href).href;
+});
 
 /* Hoe lang we op het netwerk wachten voordat we teruggrijpen op de cache.
    Helemaal geen bereik merkt de browser zelf meteen; één streepje is erger,
@@ -64,13 +86,15 @@ self.addEventListener('activate', function (e) {
    meteen op staat en niemand op een cache zit te wachten die vanzelf verloopt.
    Zonder bereik krijg je wat er de laatste keer stond.
 
-   Alleen GET binnen de eigen map. De tussenlaag draait op een ander adres en
-   praat via POST; daar blijven we vanaf. */
+   Alleen GET binnen de eigen map, plus de handvol bestanden in BUITEN. De
+   tussenlaag draait op een ander adres en praat via POST; daar blijven we
+   vanaf. */
 self.addEventListener('fetch', function (e) {
   if (e.request.method !== 'GET') { return; }
   var adres = new URL(e.request.url);
   if (adres.origin !== self.location.origin) { return; }
-  if (adres.pathname.indexOf(new URL('./', self.location.href).pathname) !== 0) { return; }
+  if (adres.pathname.indexOf(new URL('./', self.location.href).pathname) !== 0 &&
+      BUITEN.indexOf(adres.href) < 0) { return; }
 
   e.respondWith(
     haalMetGeduld(e.request)

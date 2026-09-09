@@ -753,6 +753,51 @@ input{font:inherit}
   background:var(--paper);color:var(--heading);
 }
 
+/* ------------------------------------------------------- prijsopgave */
+/* Een rij knoppen waaruit je er precies een kiest. Groter dan een keuzelijst
+   en dat is de bedoeling: dit wordt bediend met een duim, staand naast een
+   bus, terwijl er iemand aan de lijn is. */
+.keuze{display:grid;gap:8px;margin:14px 0}
+.keuze__kop{
+  font-size:.75rem;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--muted);
+}
+.keuze__rij{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.keuze__rij--drie{grid-template-columns:repeat(3,1fr)}
+.keuze__rij--vier{grid-template-columns:repeat(4,1fr)}
+.keuze__knop{
+  text-align:left;padding:11px 13px;border:1.5px solid var(--line);border-radius:11px;
+  background:var(--paper);display:grid;gap:2px;align-content:start;
+}
+.keuze__knop b{font-size:.9rem;font-weight:700;color:var(--heading);line-height:1.25}
+.keuze__knop small{font-size:.74rem;color:var(--muted);line-height:1.35}
+.keuze__knop[aria-pressed="true"]{border-color:var(--navy);background:var(--navy)}
+.keuze__knop[aria-pressed="true"] b{color:#fff}
+.keuze__knop[aria-pressed="true"] small{color:#b9c6db}
+.keuze__rij--drie .keuze__knop,
+.keuze__rij--vier .keuze__knop{text-align:center;justify-items:center}
+
+.uitslag{
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--r);
+  box-shadow:var(--shadow);padding:16px;display:grid;gap:14px;margin-top:4px;
+}
+.uitslag__bedrag b{
+  display:block;font-size:2rem;line-height:1.1;color:var(--heading);
+  letter-spacing:-.02em;font-variant-numeric:tabular-nums;
+}
+.uitslag__bedrag span{display:block;font-size:.85rem;color:var(--muted);margin-top:2px}
+.uitslag__regels{display:grid;gap:7px;border-top:1px solid var(--line);padding-top:13px}
+.uitslag__regel{display:flex;justify-content:space-between;gap:12px;font-size:.87rem}
+.uitslag__regel span:last-child{
+  color:var(--heading);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+.uitslag__regel--som{border-top:1px solid var(--line);padding-top:9px;margin-top:3px}
+.uitslag__regel--som span{font-weight:700}
+.uitslag__noot{font-size:.78rem;color:var(--muted);line-height:1.45}
+.uitslag__knoppen{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.uitslag__knoppen .knop{width:100%}
+.uitslag__knoppen .knop[data-klaar]{background:var(--ok-vlak);border-color:var(--ok);color:#11603c}
+
 /* ---------------------------------------------------------- tekenblad */
 .doek{
   position:fixed;inset:0;z-index:40;background:rgba(11,21,38,.6);
@@ -853,6 +898,9 @@ input{font:inherit}
     </button>
     <button class="tab" id="tab-aanvragen" role="tab" aria-selected="false" type="button">
       Aanvragen <span class="tab__badge" id="badge-aanvragen" hidden>0</span>
+    </button>
+    <button class="tab" id="tab-prijs" role="tab" aria-selected="false" type="button">
+      Prijs
     </button>
     <button class="tab" id="tab-planning" role="tab" aria-selected="false" type="button">
       Planning <span class="tab__badge" id="badge-planning" hidden>0</span>
@@ -981,6 +1029,71 @@ input{font:inherit}
 
   <div id="paneel-aanvragen" class="wrap" hidden>
     <div id="lijst-aanvragen" class="lijst"></div>
+  </div>
+
+  <!-- Aan de telefoon: "wat kost spoed van Rotterdam naar Venlo?" Dit rekent
+       met exact dezelfde som als de website — hetzelfde bestand, dezelfde
+       tarieven — zodat het bedrag dat je noemt hetzelfde is als het bedrag dat
+       de klant zelf uitrekent. Onderaan een knop om het als appje of mailtje
+       te versturen, want een prijs die je alleen uitspreekt is een prijs waar
+       niemand later nog iets aan heeft. -->
+  <div id="paneel-prijs" class="wrap" hidden>
+    <div id="prijs-uit" class="melding" hidden>
+      De rekenmachine is nu niet geladen. Open het portaal een keer met bereik;
+      daarna werkt dit tabblad ook zonder.
+    </div>
+
+    <div id="prijs-vak" hidden>
+      <div class="keuze">
+        <span class="keuze__kop">Soort rit</span>
+        <div class="keuze__rij" id="prijs-soort" role="group" aria-label="Soort rit"></div>
+      </div>
+
+      <div class="velrij">
+        <label class="veld" style="margin-bottom:0">
+          <span>Van</span>
+          <input id="prijs-van" type="text" autocomplete="off" inputmode="text"
+                 placeholder="postcode of plaats">
+        </label>
+        <label class="veld" style="margin-bottom:0">
+          <span>Naar</span>
+          <input id="prijs-naar" type="text" autocomplete="off" inputmode="text"
+                 placeholder="postcode of plaats">
+        </label>
+      </div>
+
+      <label class="veld" style="margin-top:14px">
+        <span>Kilometers</span>
+        <input id="prijs-km" type="number" inputmode="numeric" min="1" step="1"
+               placeholder="afstand enkele reis">
+        <small id="prijs-kmnoot">Vul twee postcodes in, dan reken ik de afstand zelf.</small>
+      </label>
+
+      <div class="keuze">
+        <span class="keuze__kop">Wanneer</span>
+        <div class="keuze__rij keuze__rij--drie" id="prijs-tijd"
+             role="group" aria-label="Tijdvak"></div>
+      </div>
+
+      <div class="keuze">
+        <span class="keuze__kop">Extra stops onderweg</span>
+        <div class="keuze__rij keuze__rij--vier" id="prijs-stops"
+             role="group" aria-label="Extra stops"></div>
+      </div>
+
+      <div class="uitslag" id="prijs-uitslag" hidden>
+        <div class="uitslag__bedrag">
+          <b id="prijs-groot">&ndash;</b>
+          <span id="prijs-klein"></span>
+        </div>
+        <div class="uitslag__regels" id="prijs-regels"></div>
+        <p class="uitslag__noot" id="prijs-noot"></p>
+        <div class="uitslag__knoppen">
+          <button class="knop knop--donker" id="prijs-deel" type="button">Versturen</button>
+          <button class="knop knop--rand" id="prijs-kopie" type="button">Kopieer</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div id="paneel-planning" class="wrap" hidden>
@@ -1232,16 +1345,24 @@ input{font:inherit}
   });
 }());
 </script>
-<!-- Het script staat naast deze pagina en niet in assets/, en dat is met
-     opzet: een service worker mag alleen bestanden onderscheppen die binnen
-     zijn eigen map vallen. Vanuit /portaal/ komt hij niet bij /assets/, en dan
-     zou het portaal zonder bereik een lege huls zijn — pagina wel, script
-     niet. Zo horen ze bij elkaar.
+<!-- Dit is dezelfde rekenmachine als op de website: één plek waar de
+     tarieven staan, zodat een prijs aan de telefoon niet kan afwijken van
+     de prijs die de klant zelf op de site uitrekent. Het bestand staat
+     buiten deze map en wordt door de service worker apart bewaard; zie de
+     lijst KERN in sw.js. Ontbreekt het toch, dan valt het tabblad Prijs
+     netjes uit en werkt de rest van het portaal gewoon door. -->
+<script src="../assets/site.js?v=20260909"></script>
 
-     Het versienummer erachter is er ook niet voor de sier. Een telefoon
-     bewaart pagina en script apart; komt er een nieuwe pagina bij een oud
-     script, dan zoekt dat script knoppen die er nog niet zijn. Verander je
+<!-- Het script van het portaal staat naast deze pagina en niet in assets/.
+     Dat hoeft niet — een service worker onderschept alles wat een pagina
+     binnen zijn bereik opvraagt, waar dat bestand ook staat — maar het houdt
+     bij elkaar wat bij elkaar hoort: pagina, script en service worker in één
+     map.
+
+     Het versienummer erachter is er niet voor de sier. Een telefoon bewaart
+     pagina en script apart; komt er een nieuwe pagina bij een oud script,
+     dan zoekt dat script knoppen die er nog niet zijn. Verander je
      portaal/portaal.js, hoog dit dan op. -->
-<script src="portaal.js?v=20260908"></script>
+<script src="portaal.js?v=20260909"></script>
 </body>
 </html>
