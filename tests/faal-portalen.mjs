@@ -282,6 +282,87 @@ console.log('\nhet geheugen van de telefoon vol rommel');
   await ctx.close();
 }
 
+/* =========================================================================
+   Welke knoppen er op een ritkaart horen te staan.
+
+   Dit blok bestaat omdat er drie dingen doorheen zijn geglipt die niemand zag:
+   de knop 'Ik rijd hem' bleef bij de eigenaar staan waar 'Onderweg' hoorde te
+   komen (naarRit gaf het veld chauffeur niet mee, dus leek elke rit vrij), en
+   het tijdvak toonde een toeslag van 15 euro terwijl de regel allang een
+   percentage was.
+
+   Kijken of het portaal openblijft is daarvoor niet genoeg. Je moet kijken
+   welke knoppen er staan.
+   ========================================================================= */
+console.log('\n=== de knoppen op een ritkaart ===');
+{
+  const knoppenVan = async (p) => p.$$eval('#lijst .rit button, #lijst .rit a',
+    (l) => l.map((k) => (k.textContent || '').trim()));
+
+  /* Als eigenaar hoort een geplande rit gewoon op Onderweg te kunnen. */
+  {
+    const { ctx, p } = await opent({ ok: true, dag,
+      ik: { rol: 'Eigenaar', naam: 'Eigenaar' },
+      ritten: [{ id: 'recAAAAAAAAAAAAAA', naam: 'R', datum: dag, status: 'Gepland',
+        km: 55, klant: 'K', ophaal: 'A', aflever: 'B' }],
+      aanvragen: [], opdrachten: [], klanten: [] });
+    const k = await knoppenVan(p);
+    keur('de eigenaar kan een geplande rit op Onderweg zetten',
+      k.some((t) => t === 'Onderweg'), k.join(' | '));
+    keur('en krijgt geen knop Ik rijd hem — hij heeft zijn planknoppen',
+      !k.some((t) => /Ik rijd hem/.test(t)), k.join(' | '));
+    await ctx.close();
+  }
+
+  /* Een chauffeur wél, bij een rit die nog vrij ligt. */
+  {
+    const { ctx, p } = await opent({ ok: true, dag,
+      ik: { rol: 'Chauffeur', naam: 'Piet' },
+      ritten: [{ id: 'recAAAAAAAAAAAAAA', naam: 'vrij', datum: dag,
+        status: 'Gepland', km: 20 }],
+      aanvragen: [], opdrachten: [], klanten: [] });
+    const k = await knoppenVan(p);
+    keur('een chauffeur kan een vrije rit oppakken',
+      k.some((t) => /Ik rijd hem/.test(t)), k.join(' | '));
+    keur('en kan er nog niet mee vertrekken',
+      !k.some((t) => t === 'Onderweg'), k.join(' | '));
+    await ctx.close();
+  }
+
+  /* Staat de rit op zijn naam, dan is oppakken klaar en mag hij weg. */
+  {
+    const { ctx, p } = await opent({ ok: true, dag,
+      ik: { rol: 'Chauffeur', naam: 'Piet' },
+      ritten: [{ id: 'recAAAAAAAAAAAAAA', naam: 'mijn', datum: dag,
+        status: 'Gepland', km: 20, chauffeur: 'Piet' }],
+      aanvragen: [], opdrachten: [], klanten: [] });
+    const k = await knoppenVan(p);
+    keur('een rit op zijn eigen naam kan wel op Onderweg',
+      k.some((t) => t === 'Onderweg'), k.join(' | '));
+    keur('en kan hij weer loslaten',
+      k.some((t) => /Toch niet rijden/.test(t)), k.join(' | '));
+    await ctx.close();
+  }
+
+  /* En het tijdvak: het label hoort de werkelijke toeslag te noemen. Stond er
+     een vast bedrag ingetikt, dan gaat het bij de eerste tariefwijziging liegen
+     en ga je een rekenfout zoeken die er niet is. */
+  {
+    const { ctx, p } = await opent({ ok: true, dag,
+      ik: { rol: 'Eigenaar', naam: 'Eigenaar' },
+      ritten: [{ id: 'recAAAAAAAAAAAAAA', naam: 'R', datum: dag, status: 'Gepland',
+        km: 55, klant: 'K', tijdvak: 'Avondrit (18:00-23:00)' }],
+      aanvragen: [], opdrachten: [], klanten: [] });
+    const opties = await p.$$eval('#lijst .rit select option',
+      (l) => l.map((o) => (o.textContent || '').trim()));
+    const avond = opties.find((t) => /Avond/.test(t)) || '';
+    keur('het tijdvak noemt een percentage en geen vast bedrag',
+      /%/.test(avond) && !/\+ € 15\b/.test(avond), avond);
+    keur('met de ondergrens erbij', /min\. € 25/.test(avond), avond);
+    await ctx.close();
+  }
+}
+
 console.log('\n=== het klantportaal met vijandige gegevens ===');
 {
   const { ctx, p, stuk, geraakt, popup } = await opent({

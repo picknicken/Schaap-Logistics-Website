@@ -3255,6 +3255,10 @@ function naarRit(record) {
   return {
     id:         record.id,
     naam:       f[R.rit] || '',
+    /* Wie hem rijdt. Zonder dit veld weet het portaal niet of een rit al
+       vergeven is, en bleef de knop 'Ik rijd hem' staan waar 'Onderweg' hoorde
+       te komen — de eigenaar kreeg dit veld namelijk niet mee. */
+    chauffeur:  String(f[R.chauffeur] || '').trim(),
     /* Wat de klant zelf heeft doorgegeven, en waar het staat. Alleen voor jou
        en niet voor de chauffeur: naarRitVoorChauffeur laat dit weg, want het
        gaat over de prijsafspraak en niet over het rijden. */

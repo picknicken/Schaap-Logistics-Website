@@ -2029,18 +2029,37 @@
     'Internationaal transport'
   ];
 
-  var TIJDVAKKEN = [
-    ['Overdag', 'Overdag — geen toeslag'],
-    ['Avondrit (18:00-23:00)', 'Avond 18:00-23:00 — + € 15'],
-    ['Nacht- of weekendrit', 'Nacht of weekend — + € 35']
-  ];
+  /* De tijdvakken met hun toeslag erachter. Die tekst stond hier ingetikt als
+     "+ € 15" en "+ € 35", en dat was een oud tarief: de toeslag is allang een
+     percentage met een bodem. Het bedrag klopte wel — dat rekent Airtable — maar
+     het label loog, en dan ga je zoeken naar een fout die er niet is.
+
+     Daarom nu afgeleid uit window.SL.CONFIG, dezelfde bron als de rekenmachine
+     en het tabblad Prijs. Verhoog je een toeslag, dan verandert dit mee. */
+  function tijdvakLabels() {
+    var t = window.SL && window.SL.CONFIG && window.SL.CONFIG.tijden;
+    if (!t) {
+      /* site.js niet geladen: dan liever geen bedrag dan een verzonnen bedrag. */
+      return [['Overdag', 'Overdag'],
+              ['Avondrit (18:00-23:00)', 'Avond 18:00-23:00'],
+              ['Nacht- of weekendrit', 'Nacht of weekend']];
+    }
+    var pct = function (r) {
+      return Math.round(r.deel * 100) + '% (min. € ' + r.bodem + ')';
+    };
+    return [
+      ['Overdag', 'Overdag — geen toeslag'],
+      ['Avondrit (18:00-23:00)', 'Avond 18:00-23:00 — + ' + pct(t.avond)],
+      ['Nacht- of weekendrit', 'Nacht of weekend — + ' + pct(t.nacht)]
+    ];
+  }
 
   function tijdvakVeld(gekozen) {
     var veld = maak('label', 'veld');
     veld.style.margin = '0';
     veld.appendChild(maak('span', '', 'Tijdvak'));
     var keuze = document.createElement('select');
-    TIJDVAKKEN.forEach(function (t) {
+    tijdvakLabels().forEach(function (t) {
       var optie = document.createElement('option');
       optie.value = t[0];
       optie.textContent = t[1];
@@ -2049,6 +2068,39 @@
     keuze.value = gekozen || 'Overdag';
     veld.appendChild(keuze);
     veld.invoer = keuze;
+
+    /* Een hint als de ophaaltijd iets anders zegt dan wat er gekozen staat.
+       Niet zelf omzetten: je kunt met een klant een dagtarief hebben afgesproken
+       voor een rit die om zeven uur vertrekt, en dan is stilletjes je prijs
+       verhogen erger dan een tijdvak dat niet klopt. Dus: melden, met een knop.
+
+       Zaterdag en zondag tellen als weekend, ongeacht het uur — dat zit al in
+       tijdvakUit in site.js, en die gebruiken we hier in plaats van hem na te
+       bouwen. */
+    var hint = maak('div', 'terzijde');
+    hint.hidden = true;
+    veld.appendChild(hint);
+    veld.toetsTijd = function (datum, tijd) {
+      hint.hidden = true;
+      hint.innerHTML = '';
+      if (!window.SL || !window.SL.tijdvakUit || !window.SL.CONFIG) { return; }
+      var sleutel = window.SL.tijdvakUit(datum, tijd);
+      var hoort = (window.SL.CONFIG.tijden[sleutel] || {}).naam;
+      if (!hoort || hoort === keuze.value) { return; }
+
+      hint.hidden = false;
+      hint.appendChild(document.createTextNode(
+        (tijd ? 'Ophaaltijd ' + tijd : 'Deze datum') +
+        ' valt onder \u201c' + hoort + '\u201d. '));
+      var knop = maak('button', 'knop knop--rand', 'Overnemen');
+      knop.type = 'button';
+      knop.style.marginTop = '6px';
+      knop.addEventListener('click', function () {
+        keuze.value = hoort;
+        hint.hidden = true;
+      });
+      hint.appendChild(knop);
+    };
     return veld;
   }
 
@@ -2274,6 +2326,8 @@
 
       var tvVeldRit = tijdvakVeld(rit.tijdvak);
       lijf.appendChild(tvVeldRit);
+      /* Meteen kijken of de ophaaltijd iets anders zegt dan wat er staat. */
+      tvVeldRit.toetsTijd(rit.datum, rit.tijd);
 
       /* Wachttijd en doorberekende kosten: wat er onderweg werkelijk gebeurd
          is en wat de klant daarvoor betaalt. Beide gaan de factuur op. */
@@ -2407,7 +2461,12 @@
       String(rit.chauffeur).trim().toLowerCase() ===
       String(wieIkBen.naam || '').trim().toLowerCase();
 
-    if (vrij) {
+    /* 'Ik rijd hem' is er voor een chauffeur die zelf een rit oppakt. Voor jou
+       als eigenaar is het een tussenstap die niets oplost: jij bent bij een
+       eenmanszaak toch degene die rijdt, en je wilt gewoon op Onderweg kunnen
+       drukken. */
+    var benChauffeur = !!wieIkBen && wieIkBen.rol !== 'Eigenaar';
+    if (vrij && benChauffeur) {
       var pak = maak('button', 'knop knop--groen', 'Ik rijd hem');
       pak.type = 'button';
       pak.addEventListener('click', function () {
@@ -2437,7 +2496,7 @@
       knoppen.appendChild(los);
     }
 
-    if (rit.status === 'Gepland' && !vrij) {
+    if (rit.status === 'Gepland' && !(vrij && benChauffeur)) {
       var vertrek = maak('button', 'knop knop--blauw', 'Onderweg');
       vertrek.type = 'button';
       vertrek.addEventListener('click', function () {
@@ -3395,7 +3454,7 @@
 
     var tv = el('nieuwrit-tijdvak');
     tv.innerHTML = '';
-    TIJDVAKKEN.forEach(function (paar) {
+    tijdvakLabels().forEach(function (paar) {
       var o = maak('option', '', paar[1]);
       o.value = paar[0];
       tv.appendChild(o);
@@ -3777,7 +3836,7 @@
     blok.open = false;
 
     var kop = maak('summary', 'vouw__kop');
-    kop.appendChild(maak('span', '', 'Kosten van deze rit'));
+    kop.appendChild(maak('span', '', 'Jouw kosten van deze rit'));
     kop.appendChild(maak('b', '', rit.kosten
       ? euroCent.format(rit.kosten)
       : 'nog niet ingevuld'));
@@ -3785,9 +3844,20 @@
 
     var lijf = maak('div', 'vouw__lijf');
 
+    /* Wat hier staat gaat NIET naar de klant. Dat was niet duidelijk genoeg:
+       je ziet een veld Brandstof en denkt dat je het doorberekent, terwijl
+       brandstof al in het kilometertarief zit. Deze regel staat er daarom
+       boven en niet eronder. */
+    lijf.appendChild(maak('div', 'terzijde',
+      'Dit is wat de rit jóú kost, voor je eigen boekhouding en om je winst te ' +
+      'zien. Het komt niet op de factuur. Brandstof zit al in het ' +
+      'kilometertarief — zet je hem hier én op de factuur, dan betaalt de klant ' +
+      'twee keer voor dezelfde liters. Wat de klant je terugbetaalt zet je ' +
+      'hierboven onder Doorberekenen.'));
+
     var rij1 = maak('div', 'velrij');
-    var brandstof = euroVeld('Brandstof', rit.brandstof);
-    var tol = euroVeld('Tol en parkeren', rit.tol);
+    var brandstof = euroVeld('Brandstof (jouw kosten)', rit.brandstof);
+    var tol = euroVeld('Tol en parkeren (jouw kosten)', rit.tol);
     rij1.appendChild(brandstof);
     rij1.appendChild(tol);
     lijf.appendChild(rij1);
@@ -3913,6 +3983,7 @@
     var stopVeld = getalVeld('Extra stops', o.stops);
     stopRij.appendChild(stopVeld);
     var tvVeld = tijdvakVeld(o.tijdvak);
+    tvVeld.toetsTijd(o.datum, o.tijd);
     stopRij.appendChild(tvVeld);
     lijf.appendChild(stopRij);
     lijf.appendChild(maak('div', 'terzijde',
