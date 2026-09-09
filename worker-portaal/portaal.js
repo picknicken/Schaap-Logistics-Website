@@ -642,6 +642,9 @@ async function schakel(env, body, origin, wie) {
     case 'uitnodiging':  return await stuurUitnodiging(env, body, origin);
     case 'klantsoort':   return await zetKlantsoort(env, body, origin);
     case 'chauffeurs':   return await haalChauffeurs(env, body, origin);
+    case 'nieuwechauffeur': return await nieuweChauffeur(env, body, origin);
+    case 'chauffeurbij':    return await werkChauffeurBij(env, body, origin);
+    case 'chauffeurcode':   return await haalChauffeurcode(env, body, origin);
     case 'klantnotitie': return await zetKlantnotitie(env, body, origin);
     case 'klantzelf':    return await zetZelfbediening(env, body, origin);
     case 'toegangweg':   return await trekToegangIn(env, body, origin);
@@ -3631,11 +3634,15 @@ async function leesBericht(env, body, origin) {
    De code gaat een Airtable-formule in, dus hij wordt eerst langs dezelfde
    tekencontrole gehaald als een klantcode. */
 const MW = {
-  naam:   'Chauffeur',
-  code:   'Toegangscode',
-  rol:    'Rol',
-  actief: 'Actief',
-  gezien: 'Laatst ingelogd'
+  naam:     'Chauffeur',
+  code:     'Toegangscode',
+  rol:      'Rol',
+  actief:   'Actief',
+  gezien:   'Laatst ingelogd',
+  email:    'E-mail',
+  telefoon: 'Telefoon',
+  kenteken: 'Kenteken',
+  notitie:  'Notitie'
 };
 
 /* De lijst met chauffeurs, voor het tabblad in je portaal. Met het oog op
@@ -3654,16 +3661,127 @@ async function haalChauffeurs(env, body, origin) {
   const chauffeurs = (data.records || []).map((r) => {
     const f = r.fields || {};
     return {
-      id:     r.id,
-      naam:   f[MW.naam] || '',
-      rol:    keuze(f[MW.rol]) || 'Chauffeur',
-      actief: f[MW.actief] !== false,
-      gezien: f[MW.gezien] || '',
-      /* Of er een code is, niet welke. */
+      id:       r.id,
+      naam:     f[MW.naam] || '',
+      rol:      keuze(f[MW.rol]) || 'Chauffeur',
+      actief:   f[MW.actief] !== false,
+      gezien:   f[MW.gezien] || '',
+      email:    f[MW.email] || '',
+      telefoon: f[MW.telefoon] || '',
+      kenteken: f[MW.kenteken] || '',
+      notitie:  f[MW.notitie] || '',
+      /* Of er een code is, niet welke. De code zelf komt alleen langs als je
+         er in het portaal om vraagt — zie haalChauffeurcode. */
       heeftCode: !!String(f[MW.code] || '').trim()
     };
   });
   return antwoord(200, { ok: true, chauffeurs }, origin, true);
+}
+
+/* Een nieuwe chauffeur, met meteen een toegangscode. Die code krijg je in het
+   antwoord terug — dit is het enige moment waarop dat vanzelf gebeurt, want je
+   hebt hem nodig om hem door te geven. Daarna moet je erom vragen. */
+async function nieuweChauffeur(env, body, origin) {
+  const naam = String(body.naam || '').trim().slice(0, 120);
+  if (naam.length < 2) {
+    return antwoord(400, { fout: 'Vul een naam in' }, origin, true);
+  }
+
+  /* Twee mensen met dezelfde naam laat zoekMedewerker niet toe: die weigert
+     bij meer dan één treffer op de code, maar de rittenzeef werkt op naam. Twee
+     keer Piet betekent dat ze elkaars ritten zien. Daar waarschuwen we voor in
+     plaats van het te laten gebeuren. */
+  const zoek = new URLSearchParams();
+  zoek.set('pageSize', '100');
+  const bestaand = await airtable(env, `${env.AIRTABLE_CHAUFFEURS}?${zoek}`);
+  const zelfdeNaam = (bestaand.records || []).some(
+    (r) => String((r.fields || {})[MW.naam] || '').trim().toLowerCase() === naam.toLowerCase());
+  if (zelfdeNaam) {
+    return antwoord(409, {
+      fout: 'Er staat al iemand met deze naam. Ritten worden op naam verdeeld, ' +
+            'dus twee keer dezelfde naam betekent dat ze elkaars ritten zien. ' +
+            'Zet er iets achter, bijvoorbeeld de achternaam.'
+    }, origin, true);
+  }
+
+  const code = verzinCode();
+  const velden = {
+    [MW.naam]:   naam,
+    [MW.code]:   code,
+    [MW.rol]:    body.rol === 'Eigenaar' ? 'Eigenaar' : 'Chauffeur',
+    [MW.actief]: true
+  };
+  const tel = String(body.telefoon || '').trim().slice(0, 40);
+  const mail = String(body.email || '').trim().slice(0, 120);
+  const kent = String(body.kenteken || '').trim().toUpperCase().slice(0, 20);
+  if (tel) { velden[MW.telefoon] = tel; }
+  if (mail) { velden[MW.email] = mail; }
+  if (kent) { velden[MW.kenteken] = kent; }
+
+  const record = await maak(env, env.AIRTABLE_CHAUFFEURS, velden);
+  return antwoord(200, { ok: true, id: record.id, naam, code }, origin, true);
+}
+
+/* Telefoon, kenteken, notitie, actief en rol bijwerken. De naam niet: die
+   staat op elke rit die deze persoon rijdt, en hem hier wijzigen zou die
+   ritten losmaken van hun chauffeur. Naam veranderen doe je in Airtable, en
+   dan ook op de ritten. */
+async function werkChauffeurBij(env, body, origin) {
+  const id = recordId(body.id);
+  if (!id) { return antwoord(400, { fout: 'Ongeldig chauffeur-id' }, origin, true); }
+
+  const velden = {};
+  if (body.telefoon !== undefined) {
+    velden[MW.telefoon] = String(body.telefoon).trim().slice(0, 40);
+  }
+  if (body.email !== undefined) {
+    velden[MW.email] = String(body.email).trim().slice(0, 120);
+  }
+  if (body.kenteken !== undefined) {
+    velden[MW.kenteken] = String(body.kenteken).trim().toUpperCase().slice(0, 20);
+  }
+  if (body.notitie !== undefined) {
+    velden[MW.notitie] = String(body.notitie).slice(0, 2000).trim();
+  }
+  if (typeof body.actief === 'boolean') { velden[MW.actief] = body.actief; }
+  if (body.rol === 'Eigenaar' || body.rol === 'Chauffeur') { velden[MW.rol] = body.rol; }
+
+  if (!Object.keys(velden).length) {
+    return antwoord(400, { fout: 'Er viel niets bij te werken' }, origin, true);
+  }
+
+  await patch(env, env.AIRTABLE_CHAUFFEURS, id, velden);
+  return antwoord(200, { ok: true }, origin, true);
+}
+
+/* De toegangscode van één chauffeur, of een nieuwe.
+
+   Waarom dit een eigen actie is en de code niet gewoon in de lijst staat:
+   dezelfde reden als bij de portaallink van een klant. Het overzicht wordt bij
+   elk bezoek opgehaald en belandt in het geheugen van de telefoon; een code
+   die daarin meelift ligt daar dan ook. Vraag je er hier om, dan komt hij één
+   keer langs en verder niet.
+
+   nieuw: true maakt een nieuwe en gooit de oude weg. Dat is wat je doet als een
+   code is rondgestuurd; bij vergeten is de oude opvragen genoeg. */
+async function haalChauffeurcode(env, body, origin) {
+  const id = recordId(body.id);
+  if (!id) { return antwoord(400, { fout: 'Ongeldig chauffeur-id' }, origin, true); }
+
+  let record = await airtable(env, `${env.AIRTABLE_CHAUFFEURS}/${id}`);
+  let code = String((record.fields || {})[MW.code] || '').trim();
+
+  if (body.nieuw === true || !code) {
+    code = verzinCode();
+    record = await patch(env, env.AIRTABLE_CHAUFFEURS, id, { [MW.code]: code });
+  }
+
+  return antwoord(200, {
+    ok: true,
+    code,
+    naam: String((record.fields || {})[MW.naam] || ''),
+    nieuw: body.nieuw === true
+  }, origin, true);
 }
 
 async function zoekMedewerker(env, ruweCode) {

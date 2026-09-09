@@ -653,6 +653,35 @@ input{font:inherit}
 .bewijs--wacht{background:#fff8e6;border-color:#f0dfae;color:#7a5a00}
 .bewijs--wacht b{color:#5c4300}
 
+/* De code van een chauffeur, als hij is opgevraagd. Ruim en in een vast
+   lettertype: dit wordt overgetikt of voorgelezen door de telefoon. */
+.codevak{
+  margin-top:12px;padding:12px 14px;border-radius:10px;
+  background:var(--paper-2);border:1px solid var(--line);
+}
+.codevak b{display:block;font-size:.86rem;margin-bottom:6px}
+.codevak p{margin:8px 0;font-size:.82rem;color:var(--muted)}
+.codevak__code{
+  font:16px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  word-break:break-all;user-select:all;padding:8px 10px;border-radius:8px;
+  background:var(--paper);border:1px solid var(--line);
+}
+
+/* Het vouwvak om iets nieuws aan te maken. Dicht by default: je voegt niet
+   elke dag een chauffeur toe. */
+.nieuwvak{
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--r);
+  margin-bottom:14px;
+}
+.nieuwvak > summary{padding:13px 16px;font-weight:700;cursor:pointer;font-size:.92rem}
+.nieuwvak__lijf{padding:0 16px 16px;display:grid;gap:6px}
+.nieuwvak__lijf label{font-size:.8rem;font-weight:700;margin-top:6px}
+.nieuwvak__lijf input{
+  font:inherit;font-size:.95rem;padding:10px 12px;border:1px solid var(--line);
+  border-radius:9px;background:var(--paper-2);
+}
+.nieuwvak__uitleg{margin:10px 0 0;font-size:.82rem;color:var(--muted)}
+
 /* Weggooien. Rood genoeg om op te vallen, niet zo rood dat het de kaart
    overheerst — het staat onderaan en je gebruikt het bijna nooit. */
 .knop--weg{
@@ -1196,6 +1225,26 @@ input{font:inherit}
        hoeft te bouwen. Toegangscodes staan er met opzet niet in: die horen in
        Airtable en niet in het geheugen van een telefoon. -->
   <div id="paneel-chauffeurs" class="wrap" hidden>
+    <details class="nieuwvak">
+      <summary>Chauffeur toevoegen</summary>
+      <div class="nieuwvak__lijf">
+        <label for="ch-naam">Naam</label>
+        <input id="ch-naam" type="text" maxlength="120" autocomplete="off"
+               placeholder="Piet Jansen">
+        <label for="ch-tel">Telefoon</label>
+        <input id="ch-tel" type="tel" maxlength="40" autocomplete="off"
+               placeholder="06 12345678">
+        <label for="ch-mail">E-mail</label>
+        <input id="ch-mail" type="email" maxlength="120" autocomplete="off">
+        <label for="ch-kenteken">Kenteken</label>
+        <input id="ch-kenteken" type="text" maxlength="20" autocomplete="off"
+               placeholder="XX-123-Y">
+        <button class="knop" id="ch-maak" type="button">Aanmaken</button>
+        <p class="nieuwvak__uitleg">Hij krijgt meteen een toegangscode. Die
+           verschijnt hier één keer; geef hem door en hij kan in dit portaal
+           zijn eigen ritten oppakken.</p>
+      </div>
+    </details>
     <div id="lijst-chauffeurs" class="lijst"></div>
   </div>
 

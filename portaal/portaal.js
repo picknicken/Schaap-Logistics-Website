@@ -1062,29 +1062,209 @@
       return;
     }
 
-    chauffeurs.forEach(function (c) {
-      var kaart = maak('div', 'klantkaart');
-      var kop = maak('div', 'klantkaart__kop');
-      var titel = maak('div');
-      titel.appendChild(maak('div', 'klantkaart__naam', c.naam || 'Naamloos'));
-      var onder = [c.rol];
-      if (!c.heeftCode) { onder.push('nog geen toegangscode'); }
-      if (c.gezien) { onder.push('laatst gezien ' + datumKort(String(c.gezien).slice(0, 10))); }
-      titel.appendChild(maak('div', 'klantkaart__sub', onder.join(' \u00b7 ')));
-      kop.appendChild(titel);
+    chauffeurs.forEach(function (c) { lijst.appendChild(tekenChauffeur(c)); });
+  }
 
-      var merk = maak('span', 'klantkaart__soort', c.actief ? 'Actief' : 'Uit');
-      if (c.actief) { merk.setAttribute('data-vast', ''); }
-      kop.appendChild(merk);
-      kaart.appendChild(kop);
-
-      if (!c.heeftCode) {
-        kaart.appendChild(maak('div', 'klantkaart__open',
-          'Zonder toegangscode kan deze persoon nergens in. Zet er een in ' +
-          'Airtable bij de chauffeur.'));
+  if (el('ch-maak')) {
+    el('ch-maak').addEventListener('click', function () {
+      var knop = el('ch-maak');
+      var naam = el('ch-naam').value.trim();
+      if (naam.length < 2) {
+        meldApp('Vul een naam in.');
+        el('ch-naam').focus();
+        return;
       }
-      lijst.appendChild(kaart);
+      bezig(knop, 'Bezig…', function (klaar) {
+        meldApp('');
+        verstuur('nieuwechauffeur', {
+          naam: naam,
+          telefoon: el('ch-tel').value,
+          email: el('ch-mail').value,
+          kenteken: el('ch-kenteken').value
+        })
+          .then(function (data) {
+            ['ch-naam', 'ch-tel', 'ch-mail', 'ch-kenteken'].forEach(function (id) {
+              el(id).value = '';
+            });
+            chauffeurs = [];
+            haalChauffeurs();
+            /* De code één keer laten zien, boven de lijst. Verder wordt hij
+               nergens bewaard; vraag je hem later nog eens, dan haal je hem op
+               met Code tonen. */
+            var lijst = el('lijst-chauffeurs');
+            var vak = maak('div', 'codevak');
+            vak.appendChild(maak('b', '', 'Toegangscode voor ' + data.naam));
+            vak.appendChild(maak('div', 'codevak__code', data.code));
+            vak.appendChild(maak('p', '', 'Geef deze aan hem door. Hij vult hem ' +
+              'in op het inlogscherm van dit portaal.'));
+            var kop = maak('button', 'knop knop--rand', 'Kopiëren');
+            kop.type = 'button';
+            kop.addEventListener('click', function () { kopieer(data.code, kop); });
+            vak.appendChild(kop);
+            lijst.insertBefore(vak, lijst.firstChild);
+            klaar(true);
+          })
+          .catch(function (fout) { meldApp(fout.message); klaar(false); });
+      });
     });
+  }
+
+  function tekenChauffeur(c) {
+    var kaart = maak('div', 'klantkaart');
+    var kop = maak('div', 'klantkaart__kop');
+    var titel = maak('div');
+    titel.appendChild(maak('div', 'klantkaart__naam', c.naam || 'Naamloos'));
+    var onder = [c.rol];
+    if (c.kenteken) { onder.push(c.kenteken); }
+    if (c.gezien) { onder.push('laatst gezien ' + datumKort(String(c.gezien).slice(0, 10))); }
+    titel.appendChild(maak('div', 'klantkaart__sub', onder.join(' \u00b7 ')));
+    kop.appendChild(titel);
+
+    var merk = maak('span', 'klantkaart__soort', c.actief ? 'Actief' : 'Uit');
+    if (c.actief) { merk.setAttribute('data-vast', ''); }
+    kop.appendChild(merk);
+    kaart.appendChild(kop);
+
+    kaart.appendChild(chauffeurNotitie(c));
+
+    var regels = maak('div', 'regels');
+    [regel('Telefoon', c.telefoon, true),
+     regel('E-mail', c.email, true),
+     regel('Kenteken', c.kenteken, true)
+    ].forEach(function (r) { if (r) { regels.appendChild(r); } });
+    if (regels.childNodes.length) { kaart.appendChild(regels); }
+
+    var knoppen = maak('div', 'klantkaart__knoppen');
+    if (c.telefoon) {
+      var bel = maak('a', 'knop knop--rand', 'Bellen');
+      bel.href = 'tel:' + String(c.telefoon).replace(/\s/g, '');
+      knoppen.appendChild(bel);
+    }
+
+    /* De code komt pas langs als je erop drukt. Zie haalChauffeurcode in de
+       tussenlaag: in het overzicht zit hij bewust niet, want dat overzicht
+       belandt in het geheugen van je telefoon. */
+    var toon = maak('button', 'knop knop--rand',
+      c.heeftCode ? 'Code tonen' : 'Code aanmaken');
+    toon.type = 'button';
+    toon.addEventListener('click', function () {
+      bezig(toon, 'Ophalen…', function (klaar) {
+        meldApp('');
+        verstuur('chauffeurcode', { id: c.id })
+          .then(function (data) { toonCode(kaart, data, c); klaar(true); })
+          .catch(function (fout) { meldApp(fout.message); klaar(false); });
+      });
+    });
+    knoppen.appendChild(toon);
+
+    if (c.heeftCode) {
+      var nieuw = maak('button', 'knop knop--weg', 'Nieuwe code');
+      nieuw.type = 'button';
+      var zeker = false;
+      nieuw.addEventListener('click', function () {
+        if (!zeker) {
+          zeker = true;
+          nieuw.textContent = 'Zeker? De oude werkt dan niet meer';
+          setTimeout(function () {
+            if (zeker) { zeker = false; nieuw.textContent = 'Nieuwe code'; }
+          }, 5000);
+          return;
+        }
+        zeker = false;
+        bezig(nieuw, 'Bezig…', function (klaar) {
+          meldApp('');
+          verstuur('chauffeurcode', { id: c.id, nieuw: true })
+            .then(function (data) { toonCode(kaart, data, c); klaar(true); })
+            .catch(function (fout) { meldApp(fout.message); klaar(false); });
+        });
+      });
+      knoppen.appendChild(nieuw);
+    }
+
+    var uit = maak('button', 'knop knop--rand', c.actief ? 'Op non-actief' : 'Weer actief');
+    uit.type = 'button';
+    uit.addEventListener('click', function () {
+      bezig(uit, 'Bezig…', function (klaar) {
+        meldApp('');
+        verstuur('chauffeurbij', { id: c.id, actief: !c.actief })
+          .then(function () { chauffeurs = []; haalChauffeurs(); })
+          .catch(function (fout) { meldApp(fout.message); klaar(false); });
+      });
+    });
+    knoppen.appendChild(uit);
+    kaart.appendChild(knoppen);
+    return kaart;
+  }
+
+  /* De code op het scherm, met een knop om hem te kopiëren. Hij blijft staan
+     tot je het tabblad verlaat en wordt nergens bewaard. */
+  function toonCode(kaart, data, c) {
+    var oud = kaart.querySelector('.codevak');
+    if (oud) { oud.remove(); }
+
+    var vak = maak('div', 'codevak');
+    vak.appendChild(maak('b', '', data.nieuw
+      ? 'Nieuwe code voor ' + (data.naam || c.naam)
+      : 'Code van ' + (data.naam || c.naam)));
+    var code = maak('div', 'codevak__code', data.code);
+    vak.appendChild(code);
+    vak.appendChild(maak('p', '', data.nieuw
+      ? 'De oude code werkt niet meer. Geef deze door; hij logt daarmee opnieuw in.'
+      : 'Geef deze door als hij hem kwijt is. Is hij rondgestuurd, maak dan ' +
+        'liever een nieuwe.'));
+
+    var kop = maak('button', 'knop knop--rand', 'Kopiëren');
+    kop.type = 'button';
+    kop.addEventListener('click', function () { kopieer(data.code, kop); });
+    vak.appendChild(kop);
+    kaart.appendChild(vak);
+    c.heeftCode = true;
+  }
+
+  function chauffeurNotitie(c) {
+    var vak = maak('div', 'notitie');
+    var tekst = String(c.notitie || '');
+    var toon = maak('button', 'notitie__toon', tekst || 'Notitie toevoegen…');
+    toon.type = 'button';
+    if (tekst) { vak.setAttribute('data-vol', ''); }
+
+    var bewerk = maak('div', 'notitie__bewerk');
+    bewerk.hidden = true;
+    var veld = document.createElement('textarea');
+    veld.rows = 3;
+    veld.maxLength = 2000;
+    veld.value = tekst;
+    veld.placeholder = 'Rijbewijs verloopt in maart. Werkt dinsdag en donderdag.';
+    veld.setAttribute('aria-label', 'Notitie bij ' + (c.naam || 'deze chauffeur'));
+    bewerk.appendChild(veld);
+
+    var rij = maak('div', 'knoppen knoppen--twee');
+    var op = maak('button', 'knop', 'Opslaan');
+    op.type = 'button';
+    var af = maak('button', 'knop knop--rand', 'Annuleren');
+    af.type = 'button';
+    rij.appendChild(op);
+    rij.appendChild(af);
+    bewerk.appendChild(rij);
+
+    toon.addEventListener('click', function () {
+      toon.hidden = true; bewerk.hidden = false; veld.focus();
+    });
+    af.addEventListener('click', function () {
+      veld.value = tekst; bewerk.hidden = true; toon.hidden = false;
+    });
+    op.addEventListener('click', function () {
+      bezig(op, 'Bezig…', function (klaar) {
+        meldApp('');
+        verstuur('chauffeurbij', { id: c.id, notitie: veld.value })
+          .then(function () { chauffeurs = []; haalChauffeurs(); })
+          .catch(function (fout) { meldApp(fout.message); klaar(false); });
+      });
+    });
+
+    vak.appendChild(toon);
+    vak.appendChild(bewerk);
+    return vak;
   }
 
   TABBLADEN.forEach(function (t) {

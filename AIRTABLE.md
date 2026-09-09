@@ -347,6 +347,25 @@ schadelijk is het niet, maar het staat slordig.
 Hetzelfde geldt in het klantportaal: daar komt de factuur binnen via
 `zonderBeheer`, en die functie is de enige plek waar dat gebeurt.
 
+### De tabel Chauffeurs
+
+Naast `Chauffeur`, `Toegangscode`, `Rol`, `Actief` en `Laatst ingelogd` staan er
+nu `E-mail`, `Telefoon`, `Kenteken` en `Notitie`. Je beheert ze in het portaal,
+tabblad **Chauffeurs**; Airtable hoef je er niet meer voor te openen.
+
+`Kenteken` is de bus waar deze chauffeur in rijdt — handig bij een boete, een
+schade of een tankpas. `Notitie` is voor jou en komt nergens buiten je portaal.
+
+**Twee mensen met dezelfde naam kan niet.** Ritten worden op naam verdeeld
+(`ritIsVan` vergelijkt het veld `Chauffeur` op de rit met de naam van de
+ingelogde persoon), dus twee keer *Piet* betekent dat ze elkaars ritten zien en
+kunnen aftekenen. Het portaal weigert een dubbele naam bij het aanmaken; zet er
+een achternaam achter.
+
+**De naam wijzig je niet zomaar.** Hij staat als tekst op elke rit die deze
+persoon gereden heeft. Verander je hem alleen hier, dan zijn die ritten van
+niemand meer. Doe het in Airtable én op de ritten, of laat het.
+
 ### Het toegangslog
 
 De tabel `Toegangslog` (`tblieegCnsk3Pjd4i`) houdt bij wie er bij het portaal

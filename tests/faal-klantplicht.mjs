@@ -905,5 +905,145 @@ console.log('\n=== een chauffeur pakt zelf een rit op ===\n');
   globalThis.fetch = echt;
 }
 
+console.log('\n=== chauffeurs beheren ===\n');
+{
+  let mensen = {};
+  const echt = globalThis.fetch;
+  globalThis.fetch = async (url, opties = {}) => {
+    const u = String(url);
+    const m = opties.method || 'GET';
+    if (u.includes('/tblC')) {
+      const id = (u.split('?')[0].match(/\/(rec[A-Za-z0-9]{14})$/) || [])[1];
+      if (id && m === 'PATCH') {
+        Object.assign(mensen[id].fields, JSON.parse(opties.body).fields);
+        return new Response(JSON.stringify(mensen[id]), { status: 200 });
+      }
+      if (id) { return new Response(JSON.stringify(mensen[id] || { id, fields: {} }), { status: 200 }); }
+      if (m === 'POST') {
+        const uit = [];
+        for (const r of (JSON.parse(opties.body).records || [])) {
+          const nid = 'recChauf' + String(Object.keys(mensen).length + 1).padStart(9, '0');
+          mensen[nid] = { id: nid, fields: r.fields };
+          uit.push(mensen[nid]);
+        }
+        return new Response(JSON.stringify({ records: uit }), { status: 200 });
+      }
+      /* zoekMedewerker zoekt op {Toegangscode} = '...' en laat niemand binnen
+         bij meer dan één treffer. Geeft deze nabootsing altijd iedereen terug,
+         dan komt geen enkele chauffeur binnen en meet de proef het verkeerde:
+         een 401 op de deur in plaats van een 403 op de actie. */
+      const q = decodeURIComponent(u.replace(/\+/g, ' '));
+      const gezocht = (q.match(/\{Toegangscode\} = '([^']*)'/) || [])[1];
+      const uit = gezocht === undefined
+        ? Object.values(mensen)
+        : Object.values(mensen).filter(
+            (r) => String(r.fields.Toegangscode || '') === gezocht);
+      return new Response(JSON.stringify({ records: uit }), { status: 200 });
+    }
+    return echt(url, opties);
+  };
+
+  zetKlaar();
+  mensen = {};
+  let res = await doe({ actie: 'nieuwechauffeur', naam: 'Piet Jansen',
+    telefoon: '06 12345678', kenteken: 'xx-123-y' });
+  let data = await res.json();
+  keur('een chauffeur aanmaken lukt', res.status === 200, res.status);
+  keur('en hij krijgt meteen een code', (data.code || '').length >= 12, data.code && data.code.length);
+  keur('het kenteken gaat in hoofdletters',
+    Object.values(mensen)[0].fields.Kenteken === 'XX-123-Y',
+    Object.values(mensen)[0].fields.Kenteken);
+  keur('hij staat op Actief', Object.values(mensen)[0].fields.Actief === true);
+  keur('en op de rol Chauffeur',
+    Object.values(mensen)[0].fields.Rol === 'Chauffeur');
+
+  const eersteId = Object.keys(mensen)[0];
+  const eersteCode = data.code;
+
+  /* Twee keer dezelfde naam is geen kleinigheid: ritten worden op naam
+     verdeeld, dus dan zien ze elkaars ritten. */
+  res = await doe({ actie: 'nieuwechauffeur', naam: 'piet jansen' });
+  keur('dezelfde naam nog eens wordt geweigerd', res.status === 409, res.status);
+  let t = await res.text();
+  keur('met uitleg waarom dat misgaat', /naam/i.test(t) && /ritten/i.test(t),
+    t.slice(0, 160));
+
+  res = await doe({ actie: 'nieuwechauffeur', naam: 'X' });
+  keur('een naam van één letter ook', res.status === 400, res.status);
+
+  console.log('\nde code komt niet zomaar langs');
+  const lijst = await (await doe({ actie: 'chauffeurs' })).json();
+  const rauw = JSON.stringify(lijst);
+  keur('het overzicht noemt de chauffeur', /Piet Jansen/.test(rauw));
+  keur('maar de toegangscode staat er NIET in', !rauw.includes(eersteCode),
+    rauw.slice(0, 200));
+  keur('wel dát hij er een heeft',
+    lijst.chauffeurs[0].heeftCode === true, lijst.chauffeurs[0].heeftCode);
+  keur('en het kenteken en telefoonnummer',
+    lijst.chauffeurs[0].kenteken === 'XX-123-Y' &&
+    /12345678/.test(lijst.chauffeurs[0].telefoon || ''),
+    JSON.stringify(lijst.chauffeurs[0]));
+
+  console.log('\nmaar wel als je erom vraagt');
+  res = await doe({ actie: 'chauffeurcode', id: eersteId });
+  data = await res.json();
+  keur('de code opvragen lukt', res.status === 200, res.status);
+  keur('en het is dezelfde als bij het aanmaken', data.code === eersteCode,
+    data.code === eersteCode ? '' : 'anders');
+  keur('hij is niet stiekem vervangen',
+    mensen[eersteId].fields.Toegangscode === eersteCode);
+
+  res = await doe({ actie: 'chauffeurcode', id: eersteId, nieuw: true });
+  data = await res.json();
+  keur('een nieuwe code vragen geeft een andere', data.code !== eersteCode);
+  keur('en de oude is werkelijk vervangen',
+    mensen[eersteId].fields.Toegangscode === data.code &&
+    mensen[eersteId].fields.Toegangscode !== eersteCode);
+  keur('de nieuwe is lang genoeg om niet te raden',
+    (data.code || '').length >= 12, (data.code || '').length);
+
+  console.log('\nbijwerken');
+  res = await doe({ actie: 'chauffeurbij', id: eersteId,
+    notitie: '  Rijbewijs verloopt in maart.  ', kenteken: 'ab-99-cd' });
+  keur('notitie en kenteken bijwerken lukt', res.status === 200, res.status);
+  keur('de witruimte gaat eraf',
+    mensen[eersteId].fields.Notitie === 'Rijbewijs verloopt in maart.',
+    JSON.stringify(mensen[eersteId].fields.Notitie));
+  keur('en het kenteken staat in hoofdletters',
+    mensen[eersteId].fields.Kenteken === 'AB-99-CD');
+
+  res = await doe({ actie: 'chauffeurbij', id: eersteId, actief: false });
+  keur('op non-actief zetten lukt', res.status === 200, res.status);
+  keur('en dat staat er', mensen[eersteId].fields.Actief === false);
+
+  /* De naam blijft met opzet buiten bereik: die staat op elke rit die deze
+     persoon rijdt, en hem hier wijzigen maakt die ritten los van hun
+     chauffeur. */
+  await doe({ actie: 'chauffeurbij', id: eersteId, naam: 'Iemand anders' });
+  keur('de naam is hier niet te wijzigen',
+    mensen[eersteId].fields.Chauffeur === 'Piet Jansen',
+    mensen[eersteId].fields.Chauffeur);
+
+  res = await doe({ actie: 'chauffeurbij', id: eersteId });
+  keur('een leeg verzoek wordt geweigerd', res.status === 400, res.status);
+
+  console.log('\nen een chauffeur komt hier niet bij');
+  const CH = 'chauffeurscode-wxyz';
+  mensen.recChauf000000009 = { id: 'recChauf000000009', fields: {
+    Chauffeur: 'Klaas', Rol: 'Chauffeur', Toegangscode: CH, Actief: true } };
+  const alsKlaas = (lading) => worker.fetch(new Request('https://p.dev/', {
+    method: 'POST',
+    headers: { Origin: 'https://schaaplogistics.nl', 'Content-Type': 'application/json',
+               'X-Portaal-Code': CH, 'CF-Connecting-IP': '10.0.4.' + (1 + Math.floor(Math.random() * 200)) },
+    body: JSON.stringify(lading)
+  }), env);
+  for (const actie of ['chauffeurs', 'nieuwechauffeur', 'chauffeurbij', 'chauffeurcode']) {
+    const r = await alsKlaas({ actie, id: eersteId, naam: 'Nieuw' });
+    keur('Klaas komt niet bij ' + actie, r.status === 403, r.status);
+  }
+
+  globalThis.fetch = echt;
+}
+
 console.log(fouten ? '\n' + fouten + ' fout(en)\n' : '\nalles goed\n');
 process.exit(fouten ? 1 : 0);

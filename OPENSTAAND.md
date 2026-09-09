@@ -384,12 +384,31 @@ inlogscherm.
 
 ### Tabblad Chauffeurs
 
-Wie er voor je rijdt, met rol, of ze actief zijn en wanneer ze voor het laatst
-binnenkwamen. Nu ben jij de enige; het staat er met het oog op uitbreiding,
-zodat je bij de eerste chauffeur niet eerst iets hoeft te bouwen.
+Wie er voor je rijdt. Je kunt er iemand aanmaken, zijn gegevens bijhouden en
+zijn toegangscode opvragen.
 
-Toegangscodes staan er met opzet niet in. Die horen in Airtable; wie zijn code
-kwijt is krijgt een nieuwe, en dat is veiliger dan hem kunnen opzoeken.
+**Aanmaken.** Naam, telefoon, e-mail en kenteken. Hij krijgt meteen een code te
+zien; geef die door en hij kan in het portaal zijn eigen ritten oppakken.
+Dezelfde naam twee keer wordt geweigerd — ritten worden op naam verdeeld, dus
+twee keer Piet betekent dat ze elkaars ritten zien.
+
+**Per chauffeur** staat er telefoon, e-mail, kenteken en een notitie voor jou.
+Dat laatste is hetzelfde idee als bij een klant: *rijbewijs verloopt in maart*,
+*werkt dinsdag en donderdag*. Er is ook een knop om iemand op non-actief te
+zetten; dan werkt zijn code niet meer zonder dat je hem hoeft weg te gooien.
+
+**De code opvragen.** Twee knoppen: *Code tonen* geeft de bestaande — dat is wat
+je nodig hebt als iemand hem kwijt is. *Nieuwe code* maakt een andere en gooit
+de oude weg; dat doe je als een code is rondgestuurd.
+
+Die code komt **niet** mee in het gewone overzicht, alleen als je erop drukt.
+Dat is dezelfde afspraak als bij de portaallink van een klant, en om dezelfde
+reden: het overzicht wordt bij elk bezoek opgehaald en belandt in het geheugen
+van je telefoon. Een code die daarin meelift ligt daar dan ook.
+
+**De naam kun je hier niet wijzigen.** Die staat op elke rit die deze persoon
+rijdt; hem hier veranderen zou die ritten losmaken van hun chauffeur. Moet het
+toch, doe het dan in Airtable en pas de ritten aan.
 
 ### De deur van het portaal
 
