@@ -31,7 +31,7 @@ AIRTABLE_PUSH = "tbl7Nt9Q4MUysnbAN"
 # om zich aan te melden. De private helft is een secret:
 #   wrangler secret put VAPID_PRIVE
 # Allebei maak je ze met scripts/pushsleutels.html, in je eigen browser.
-VAPID_PUBLIEK = ""
+VAPID_PUBLIEK = "BIn5p0Z2yy20cJX-NgKUOfcx5mRbIO2qpGUuAAEGha_aMYUyD58IOaq7Pz8NuFzdpIFzKpXahcdaJzBiflDELdY"
 VAPID_CONTACT = "mailto:info@schaaplogistics.nl"
 # Meerdere adressen mogen, gescheiden door een komma. Het oude
 # github.io-adres blijft er voorlopig bij staan: dat leidt naar het
