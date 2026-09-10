@@ -487,14 +487,19 @@ console.log('\nde versienummers van het portaal');
      Het staat in de code als opmerking en dat is niet genoeg: een opmerking
      valt niet om als iemand er eentje vergeet. */
   const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+  /* Vanaf dit bestand rekenen en niet vanaf de werkmap: de CI draait deze
+     proef vanuit tests/ en jij meestal vanuit de hoofdmap. */
+  const wortel = join(dirname(fileURLToPath(import.meta.url)), '..');
   const nummers = (tekst) => {
     const uit = {};
     for (const [, bestand, nr] of
          tekst.matchAll(/([a-z-]+\.js)\?v=(\d{8})/g)) { uit[bestand] = nr; }
     return uit;
   };
-  const pagina = nummers(readFileSync('portaal/index.html', 'utf8'));
-  const werker = nummers(readFileSync('portaal/sw.js', 'utf8'));
+  const pagina = nummers(readFileSync(join(wortel, 'portaal/index.html'), 'utf8'));
+  const werker = nummers(readFileSync(join(wortel, 'portaal/sw.js'), 'utf8'));
 
   keur('de pagina vraagt bestanden met een versienummer op',
     Object.keys(pagina).length >= 2, JSON.stringify(pagina));
