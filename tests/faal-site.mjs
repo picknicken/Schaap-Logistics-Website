@@ -185,6 +185,56 @@ console.log('\nhet factuurnummer en waar de klant het moet vermelden');
     !(await p.isVisible('#v-betaalzin')));
 }
 
+console.log('\neen vervallen factuur via een oude link');
+{
+  /* Iemand kan een oude link hebben — uit een mail, uit zijn geschiedenis. Dan
+     mag deze pagina niet doen alsof er nog iets te betalen valt. */
+  await p.goto(BASIS + '/factuur/?nr=SL-0042&vervallen=1&km=100&kmtarief=1.5&start=75',
+    { waitUntil: 'networkidle' });
+  keur('de kop zegt dat hij vervallen is',
+    (await p.textContent('#v-titel')).trim() === 'Vervallen factuur',
+    await p.textContent('#v-titel'));
+  keur('er staat een balk boven', await p.isVisible('#vervallenbalk'));
+  const balk = (await p.textContent('#vervallenbalk')).replace(/\s+/g, ' ');
+  keur('en die zegt dat er niets betaald hoeft te worden',
+    /niet meer geldig/i.test(balk) && /niets betaald/i.test(balk), balk.slice(0, 200));
+
+  keur('er wordt niet om betaling gevraagd', !(await p.isVisible('#v-betaalzin')));
+  keur('en er staan geen betaalgegevens', !(await p.isVisible('#v-betaalblok')));
+  /* innerText en niet textContent: die tweede leest ook wat verborgen is, en
+     dan slaagt deze proef nooit — de conceptbalk staat er altijd, alleen
+     onzichtbaar. Wat we willen weten is wat er op het scherm staat. */
+  const vel = (await p.evaluate(() => document.body.innerText)).replace(/\s+/g, ' ');
+  keur('geen IBAN op het vel', !/IBAN/i.test(vel), vel.slice(0, 200));
+  keur('en geen betaaltermijn', !/binnen \d+ dagen/i.test(vel), vel.slice(0, 200));
+
+  /* Het bedrag blijft wél staan: je wilt kunnen zien waar het over ging. */
+  keur('het nummer staat er nog', (await p.textContent('#v-nr')).trim() === 'SL-0042',
+    await p.textContent('#v-nr'));
+  keur('en het bedrag ook, maar niet als "te betalen"',
+    /Was/.test(await p.textContent('#v-totaallabel')),
+    await p.textContent('#v-totaallabel'));
+
+  /* Vervallen wint van alles. Draagt de adresregel ook nog concept of offerte,
+     dan blijft de mededeling die ertoe doet staan. */
+  await p.goto(BASIS + '/factuur/?nr=SL-0042&vervallen=1&concept=1&offerte=1' +
+    '&km=100&kmtarief=1.5&start=75', { waitUntil: 'networkidle' });
+  keur('vervallen wint van concept en offerte',
+    (await p.textContent('#v-titel')).trim() === 'Vervallen factuur',
+    await p.textContent('#v-titel'));
+  keur('en de conceptbalk staat er dan niet bij',
+    !(await p.isVisible('#conceptbalk')));
+  keur('de offertebalk ook niet', !(await p.isVisible('#offertebalk')));
+  keur('en de vervallenbalk wel', await p.isVisible('#vervallenbalk'));
+
+  /* Zonder de vlag verandert er niets aan een gewone factuur. */
+  await p.goto(BASIS + '/factuur/?nr=SL-0042&km=100&kmtarief=1.5&start=75',
+    { waitUntil: 'networkidle' });
+  keur('een gewone factuur toont geen vervallenbalk',
+    !(await p.isVisible('#vervallenbalk')));
+  keur('en vraagt gewoon om betaling', await p.isVisible('#v-betaalzin'));
+}
+
 console.log('\nde offerte en het concept door elkaar');
 {
   await p.goto(BASIS + '/factuur/?offerte=1&credit=1&concept=1&km=10&kmtarief=2&start=75' +

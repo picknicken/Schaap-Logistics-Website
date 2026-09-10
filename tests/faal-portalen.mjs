@@ -646,6 +646,103 @@ console.log('\n=== de marge op de kilometers ===');
    week: net na een aanrijding, op straat, met een tegenpartij ernaast. Dan
    moet het formulier eenvoudig zijn en moet er niets verloren gaan.
    ========================================================================= */
+/* =========================================================================
+   Een factuur van tafel halen, op het scherm.
+
+   De knop heette Concept verwijderen en gooide werkelijk weg. Dat mag niet
+   meer: een factuurnummer wordt nooit vrijgegeven. Wat er nu staat is
+   Vervallen verklaren, met een reden erbij — en die knop hoort alleen te
+   verschijnen bij een factuur waar nog niets aan verstuurd is.
+   ========================================================================= */
+console.log('\n=== een factuur vervallen verklaren ===');
+{
+  const metFactuur = (stand, extra) => opent({ ok: true, dag,
+    ik: { rol: 'Eigenaar', naam: 'Shane' },
+    ritten: [], aanvragen: [], opdrachten: [],
+    klanten: [{ id: 'recKKKKKKKKKKKKKK', naam: 'Klant BV', nummer: 1,
+      soort: 'Vaste klant', ritten: 3 }],
+    facturen: [Object.assign({ id: 'recFactuur0000001', nummer: 'SL-0042',
+      datum: dag, vervalt: dag, totaal: 100, betaald: 0, openstaand: 100,
+      status: stand, subtotaal: 82.64, btw: 17.36 }, extra || {})] });
+
+  const naarFacturen = async (p) => {
+    await p.click('#tabmenu-knop');
+    await p.click('#tabmenu button:has-text("Klanten")');
+    await p.click('.klantkaart__meer:has-text("Facturen tonen")');
+    await p.waitForSelector('.factuur', { timeout: 5000 }).catch(() => {});
+  };
+
+  /* Bij een concept staat de knop er, en de oude weggooiknop niet meer. */
+  {
+    const { ctx, p } = await metFactuur('Concept');
+    await naarFacturen(p);
+    const tekst = (await p.textContent('#paneel-klanten')).replace(/\s+/g, ' ');
+    keur('de factuur staat op het scherm', /SL-0042/.test(tekst), tekst.slice(0, 200));
+    keur('er staat geen verwijderknop meer',
+      !/verwijderen/i.test(tekst), tekst.slice(0, 300));
+    keur('maar wel vervallen verklaren',
+      /Vervallen verklaren/.test(tekst), tekst.slice(0, 300));
+
+    /* De keuzelijst met redenen, en de toelichting die alleen bij Anders
+       verschijnt. */
+    await p.click('summary:has-text("Vervallen verklaren")');
+
+    /* Precies dit vouwblok en geen ander. In het tabblad Klanten staan meer
+       selects en meer textareas — de notitie bij een klant, het tariefblok — en
+       die zijn allemaal verborgen. Een losse selector pakt de eerste de beste
+       en dan meet je iets anders dan je denkt. */
+    const vervalblok = p.locator('.vouw:has(summary:has-text("Vervallen verklaren"))');
+    const redenen = await vervalblok.locator('select option').allTextContents();
+    ['Foutieve factuur', 'Dubbele factuur', 'Test', 'Rit geannuleerd', 'Anders']
+      .forEach((r) => {
+        keur('  reden ' + r + ' staat erin', redenen.map((t) => t.trim()).includes(r),
+          redenen.join(' | '));
+      });
+    keur('de toelichting staat er niet bij een vaste reden',
+      !(await vervalblok.locator('textarea').isVisible()));
+    await vervalblok.locator('select').selectOption('Anders');
+    await p.waitForTimeout(120);
+    keur('en verschijnt zodra je Anders kiest',
+      await vervalblok.locator('textarea').isVisible());
+    await ctx.close();
+  }
+
+  /* Goedgekeurd mag ook. */
+  {
+    const { ctx, p } = await metFactuur('Goedgekeurd');
+    await naarFacturen(p);
+    const tekst = (await p.textContent('#paneel-klanten')).replace(/\s+/g, ' ');
+    keur('bij Goedgekeurd staat de knop er ook',
+      /Vervallen verklaren/.test(tekst), tekst.slice(0, 300));
+    await ctx.close();
+  }
+
+  /* Wat de deur uit is niet: dat gaat via een creditnota. */
+  for (const stand of ['Verzonden', 'Betaald', 'Te laat', 'Gecrediteerd']) {
+    const { ctx, p } = await metFactuur(stand);
+    await naarFacturen(p);
+    const tekst = (await p.textContent('#paneel-klanten')).replace(/\s+/g, ' ');
+    keur('bij ' + stand + ' staat de knop er niet',
+      !/Vervallen verklaren/.test(tekst), tekst.slice(0, 300));
+    await ctx.close();
+  }
+
+  /* En een factuur die al vervallen is zegt waarom. */
+  {
+    const { ctx, p } = await metFactuur('Vervallen', {
+      vervalreden: 'Dubbele factuur', vervallenOp: dag, openstaand: 0 });
+    await naarFacturen(p);
+    const tekst = (await p.textContent('#paneel-klanten')).replace(/\s+/g, ' ');
+    keur('een vervallen factuur noemt de reden',
+      /dubbele factuur/i.test(tekst), tekst.slice(0, 300));
+    keur('en zegt dat het nummer verbruikt blijft',
+      /nummer blijft verbruikt/i.test(tekst), tekst.slice(0, 300));
+    keur('er staat geen knop meer om hem nog eens te laten vervallen',
+      !/Vervallen verklaren/.test(tekst), tekst.slice(0, 300));
+    await ctx.close();
+  }
+}
+
 console.log('\n=== schade vastleggen in het portaal ===');
 {
   const { ctx, p } = await opent({ ok: true, dag,

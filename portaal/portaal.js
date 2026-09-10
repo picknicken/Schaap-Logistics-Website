@@ -3429,15 +3429,28 @@
         'Creditnota; draait factuur ' + f.creditVan + ' terug.'));
     }
 
-    /* Alleen een concept mag weg. Een verstuurde factuur draai je terug met een
-       creditnota: je nummering hoort aaneensluitend te zijn, en een gat erin is
-       precies wat bij een controle opvalt. De tussenlaag weigert het ook, maar
-       een knop die je aanbiedt en dan weigert is een knop die niet hoort te
-       staan. */
-    if (f.status === 'Concept' && wieIkBen && wieIkBen.rol === 'Eigenaar') {
-      var weg = weggooiKnop('Concept verwijderen', 'factuurweg', f.id);
-      weg.classList.add('factuur__weg');
-      vak.appendChild(weg);
+    /* Een vervallen factuur zegt waarom hij van tafel is. Zonder die regel is
+       het een factuur met een raar bedrag en geen uitleg — precies wat je over
+       een half jaar niet meer weet. */
+    if (f.status === 'Vervallen') {
+      vak.appendChild(maak('p', 'factuur__uitleg',
+        'Vervallen' + (f.vervalreden ? ' \u2014 ' + f.vervalreden.toLowerCase() : '') +
+        (f.vervallenOp ? ' op ' + datumKort(String(f.vervallenOp).slice(0, 10)) : '') +
+        '. Het nummer blijft verbruikt.' +
+        (f.vervaltoelichting ? ' ' + f.vervaltoelichting : '')));
+    }
+
+    /* Van tafel halen kan zolang er niets verstuurd is. Daarna is het de
+       creditnota-route: een factuur die de klant al heeft draai je terug, je
+       gooit hem niet weg.
+
+       En weggooien doen we niet meer. Airtable geeft een volgnummer nooit
+       opnieuw uit, dus een verwijderde conceptfactuur liet een gat achter in
+       een reeks die aaneengesloten hoort te zijn — en bij een controle is een
+       gat een vraag die je niet meer kunt beantwoorden. */
+    if ((f.status === 'Concept' || f.status === 'Goedgekeurd') &&
+        wieIkBen && wieIkBen.rol === 'Eigenaar') {
+      vak.appendChild(vervalBlok(f));
     }
     if (f.gecrediteerd) {
       vak.appendChild(maak('p', 'factuur__uitleg',
@@ -4373,6 +4386,77 @@
   /* Eén knop voor het weggooien van een rit of een conceptfactuur. Twee keer
      drukken, want dit komt niet terug. De tussenlaag beslist of het mag; deze
      knop vraagt het alleen. */
+  var VERVALREDENEN = ['Foutieve factuur', 'Dubbele factuur', 'Test',
+                      'Rit geannuleerd', 'Anders'];
+
+  /* Een factuur vervallen verklaren: een reden kiezen en bevestigen.
+
+     Het staat achter een vouwblok en niet achter een losse knop, want er hoort
+     een keuze bij. Een knop die meteen iets van tafel haalt zonder te vragen
+     waarom levert over een half jaar een factuur op waarvan niemand meer weet
+     wat eraan mankeerde.
+
+     De toelichting is bij "Anders" verplicht. Dat wordt hier getoond maar in de
+     tussenlaag afgedwongen — dit vak is een gemak, geen slot. */
+  function vervalBlok(f) {
+    var vouw = maak('details', 'vouw');
+    var kop = maak('summary', 'vouw__kop');
+    kop.appendChild(maak('span', '', 'Vervallen verklaren'));
+    vouw.appendChild(kop);
+
+    var lijf = maak('div', 'vouw__lijf');
+    lijf.appendChild(maak('p', 'terzijde',
+      'De factuur blijft staan met de stand Vervallen, en het nummer blijft ' +
+      'verbruikt. Zo is er geen gat in je nummering maar een verklaring. De rit ' +
+      'zelf verandert er niet van.'));
+
+    var kies = document.createElement('select');
+    VERVALREDENEN.forEach(function (r) {
+      var o = document.createElement('option');
+      o.value = r; o.textContent = r;
+      kies.appendChild(o);
+    });
+    lijf.appendChild(kies);
+
+    var toelichting = document.createElement('textarea');
+    toelichting.rows = 2;
+    toelichting.maxLength = 2000;
+    toelichting.placeholder = 'Wat was er aan de hand?';
+    toelichting.hidden = true;
+    lijf.appendChild(toelichting);
+
+    kies.addEventListener('change', function () {
+      toelichting.hidden = kies.value !== 'Anders';
+    });
+
+    var knop = maak('button', 'knop knop--weg', 'Vervallen verklaren');
+    knop.type = 'button';
+    var zeker = false;
+    knop.addEventListener('click', function () {
+      if (!zeker) {
+        zeker = true;
+        knop.textContent = 'Zeker weten? Nog een keer';
+        setTimeout(function () {
+          if (zeker) { zeker = false; knop.textContent = 'Vervallen verklaren'; }
+        }, 5000);
+        return;
+      }
+      zeker = false;
+      bezig(knop, 'Bezig\u2026', function (klaar) {
+        meldApp('');
+        verstuur('factuurvervalt', {
+          id: f.id, reden: kies.value, toelichting: toelichting.value
+        })
+          .then(function () { haalDag(); })
+          .catch(function (fout) { meldApp(fout.message); klaar(false); });
+      });
+    });
+    lijf.appendChild(knop);
+
+    vouw.appendChild(lijf);
+    return vouw;
+  }
+
   function weggooiKnop(tekst, actie, id) {
     var knop = maak('button', 'knop knop--weg', tekst);
     knop.type = 'button';

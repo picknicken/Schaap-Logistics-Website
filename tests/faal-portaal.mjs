@@ -23,7 +23,7 @@ const BAAS = 'eigen-code-van-de-baas-5678';
 const KLANT = 'klantcode-abcdefgh';
 
 let gesprek = [];
-let rit, klant, medewerkers, schade;
+let rit, klant, medewerkers, schade, facturen;
 
 function zetKlaar() {
   rit = { id: 'recAAAAAAAAAAAAAA', fields: {
@@ -39,6 +39,7 @@ function zetKlaar() {
     Klantnaam: 'Klant BV', Portaalcode: KLANT, 'Soort klant': 'Vaste klant',
     Ritten: [rit.id], Facturen: []
   } };
+  facturen = {};
   schade = { id: 'recSCHADE00000001', fields: {
     Schade: 'Spiegel geraakt', Datum: '2026-09-03', Soort: 'Eigen voertuig',
     Status: 'Open', Kenteken: '12-AB-34'
@@ -85,6 +86,26 @@ globalThis.fetch = async (url, opties = {}) => {
         records: klant.fields.Portaalcode === m[1] ? [klant] : [] }), { status: 200 });
     }
     return new Response(JSON.stringify({ records: [klant] }), { status: 200 });
+  }
+  if (u.includes('/tblF')) {
+    const fid = (u.split('?')[0].match(/\/(rec[A-Za-z0-9]{14})$/) || [])[1];
+    if (fid && (opties.method || 'GET') === 'GET') {
+      return new Response(JSON.stringify(facturen[fid] || { id: fid, fields: {} }),
+        { status: 200 });
+    }
+    if (fid && opties.method === 'PATCH') {
+      if (!facturen[fid]) { facturen[fid] = { id: fid, fields: {} }; }
+      Object.assign(facturen[fid].fields, JSON.parse(opties.body).fields || {});
+      return new Response(JSON.stringify(facturen[fid]), { status: 200 });
+    }
+    if (opties.method === 'POST') {
+      const v = JSON.parse(opties.body).records[0].fields;
+      const id = 'recNIEUWEFACTUUR1';
+      facturen[id] = { id, fields: v };
+      return new Response(JSON.stringify({ records: [facturen[id]] }), { status: 200 });
+    }
+    return new Response(JSON.stringify({ records: Object.values(facturen) }),
+      { status: 200 });
   }
   if (u.includes('/tblSCH')) {
     if (opties.method === 'POST') {
@@ -540,7 +561,14 @@ console.log('\nde afgesproken afstand blijft staan');
 
   /* En de klant krijgt hem niet: die ziet wat er gefactureerd wordt, niet de
      rekenslag daarachter. */
-  const klantKant = await doe({ actie: 'zendingen' }, { code: KLANT });
+  const klantKant = await doe({ actie: 'klantoverzicht' }, { code: KLANT });
+  /* Eerst of hij überhaupt binnenkwam. Deze proef stond op de actienaam
+     'zendingen', die niet bestaat — dan komt er een 401 terug, en daar staat
+     'kmGeschat' natuurlijk ook niet in. Hij slaagde dus zonder iets te toetsen. */
+  keur('de klant komt binnen', klantKant.res.status === 200,
+    klantKant.res.status + ' ' + klantKant.tekst.slice(0, 120));
+  keur('en krijgt zijn zendingen', Array.isArray(klantKant.data.ritten),
+    klantKant.tekst.slice(0, 120));
   keur('de klant ziet de geschatte afstand niet',
     !klantKant.tekst.includes('kmGeschat') &&
     !klantKant.tekst.includes('Geschatte kilometers'),
@@ -740,6 +768,86 @@ console.log('\nde systeemcheck');
    nemen — wel moet de verliezer de waarheid te horen krijgen in plaats van een
    groene knop en een rit die hij niet rijdt.
    ========================================================================= */
+/* =========================================================================
+   Opnieuw factureren nadat de vorige van tafel is.
+
+   Dit is het geval waarvoor vervallen verklaren bestaat: verkeerde factuur
+   eraf, goede erop. Telt een vervallen factuur nog mee als "deze rit heeft er
+   al een", dan kun je die rit na één vergissing nooit meer factureren.
+   ========================================================================= */
+console.log('\nopnieuw factureren');
+{
+  zetKlaar();
+  rit.fields.Klant = [{ id: klant.id }];
+
+  /* Een rit met een geldige factuur: geen tweede erbij. */
+  rit.fields.Facturen = [{ id: 'recFactuur0000001' }];
+  facturen.recFactuur0000001 = { id: 'recFactuur0000001',
+    fields: { Factuur: 'F-1', Status: 'Concept' } };
+  let r = await doe({ actie: 'factuuropnieuw', id: rit.id });
+  keur('een rit met een geldige factuur wordt niet opnieuw gefactureerd',
+    r.res.status === 409, r.res.status + ' ' + r.tekst.slice(0, 120));
+
+  /* En met een verstuurde factuur al helemaal niet. */
+  facturen.recFactuur0000001.fields.Status = 'Verzonden';
+  r = await doe({ actie: 'factuuropnieuw', id: rit.id });
+  keur('met een verstuurde factuur ook niet', r.res.status === 409, r.res.status);
+
+  /* Is hij vervallen, dan mag het wel. */
+  facturen.recFactuur0000001.fields.Status = 'Vervallen';
+  r = await doe({ actie: 'factuuropnieuw', id: rit.id });
+  keur('een rit met alleen vervallen facturen mag opnieuw',
+    r.res.status === 200, r.res.status + ' ' + r.tekst.slice(0, 160));
+  keur('en er staat een nieuwe factuur',
+    !!facturen.recNIEUWEFACTUUR1, Object.keys(facturen).join(' | '));
+  keur('die op Concept begint',
+    (facturen.recNIEUWEFACTUUR1 || { fields: {} }).fields.Status === 'Concept',
+    JSON.stringify((facturen.recNIEUWEFACTUUR1 || {}).fields));
+
+  /* Zonder klant blijft de rem staan die er al was. */
+  zetKlaar();
+  rit.fields.Klant = [];
+  rit.fields.Facturen = [];
+  r = await doe({ actie: 'factuuropnieuw', id: rit.id });
+  keur('zonder klant wordt er niets gefactureerd', r.res.status === 409,
+    r.res.status);
+
+  /* Een chauffeur heeft hier niets te zoeken. */
+  zetKlaar();
+  r = await doe({ actie: 'factuuropnieuw', id: rit.id }, { code: CHAUF });
+  keur('een chauffeur mag niet factureren', r.res.status === 403, r.res.status);
+  r = await doe({ actie: 'factuurvervalt', id: 'recFactuur0000001',
+    reden: 'Test' }, { code: CHAUF });
+  keur('en ook niets vervallen verklaren', r.res.status === 403, r.res.status);
+}
+
+console.log('\nwat de klant van zijn facturen ziet');
+{
+  zetKlaar();
+  /* Elke stand één keer. De klant hoort alleen te zien wat de deur uit is. */
+  const standen = ['Concept', 'Goedgekeurd', 'Verzonden', 'Betaald', 'Te laat',
+                   'Gecrediteerd', 'Vervallen'];
+  klant.fields.Facturen = [];
+  standen.forEach((stand, nr) => {
+    const id = 'recKlantFac' + String(nr).padStart(6, '0');
+    facturen[id] = { id, fields: { Factuur: stand, Status: stand,
+      Factuurnummer: 'SL-' + String(100 + nr), Factuurdatum: '2026-09-0' + (nr + 1),
+      Totaal: 100 } };
+    klant.fields.Facturen.push({ id });
+  });
+
+  const r = await doe({ actie: 'klantoverzicht' }, { code: KLANT });
+  keur('het klantportaal geeft antwoord', r.res.status === 200, r.res.status);
+  const gezien = (r.data.facturen || []).map((f) => f.status).sort();
+  keur('de klant ziet alleen wat de deur uit is',
+    gezien.join(',') === 'Betaald,Gecrediteerd,Te laat,Verzonden',
+    gezien.join(','));
+  keur('geen conceptfactuur', !gezien.includes('Concept'), gezien.join(','));
+  keur('geen goedgekeurde die nog niet weg is',
+    !gezien.includes('Goedgekeurd'), gezien.join(','));
+  keur('en geen vervallen factuur', !gezien.includes('Vervallen'), gezien.join(','));
+}
+
 console.log('\ntwee chauffeurs op dezelfde rit');
 {
   zetKlaar();

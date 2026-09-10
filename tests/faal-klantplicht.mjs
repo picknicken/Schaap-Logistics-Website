@@ -150,6 +150,17 @@ globalThis.fetch = async (url, opties = {}) => {
       return new Response(JSON.stringify({ records: uit }), { status: 200 });
     }
     if (m === 'PATCH') {
+      /* Airtable kent twee vormen: een batch op de tabel ({records:[...]}) en
+         één record op /tblF/recXXX ({fields}). De Worker gebruikt die tweede —
+         zie patch() — en die stond hier niet. Daardoor kwam er niets in de
+         nagebootste tabel terecht en gaf de PATCH een leeg antwoord terug,
+         waar naarFactuurVoorMij op struikelt. Dan valt een proef om, of erger:
+         hij slaagt terwijl er niets is gebeurd. */
+      if (fid) {
+        if (!facturen[fid]) { facturen[fid] = { id: fid, fields: {} }; }
+        Object.assign(facturen[fid].fields, (lees() || {}).fields || {});
+        return new Response(JSON.stringify(facturen[fid]), { status: 200 });
+      }
       for (const r of (lees().records || [])) {
         if (facturen[r.id]) { Object.assign(facturen[r.id].fields, r.fields); }
       }
@@ -795,33 +806,142 @@ let verwijderd = [];
   t = await res.text();
   keur('en verwijst naar de creditnota', /creditnota/i.test(t), t.slice(0, 160));
 
-  /* Met alleen een concept eraan mag het wel. */
+  /* Ook een conceptfactuur houdt de rit tegen.
+
+     Dat was eerst andersom: de rit ging weg en de conceptfactuur bleef staan —
+     losgekoppeld, met een factuurnummer eraan en niets meer om op terug te
+     vallen. Een weesfactuur dus. Nu haal je eerst de factuur van tafel; dan
+     blijft het nummer verantwoord staan en kan de rit daarna weg. */
   zetKlaar();
   verwijderd = [];
   ritten.recGeplandGeen001.fields.Facturen = [{ id: 'recFactuur0000001' }];
   facturen.recFactuur0000001 = { id: 'recFactuur0000001',
     fields: { Factuur: 'F-1', Status: 'Concept' } };
   res = await doe({ actie: 'ritweg', id: 'recGeplandGeen001' });
-  keur('met alleen een conceptfactuur eraan mag het wel', res.status === 200, res.status);
+  keur('ook een conceptfactuur houdt de rit tegen', res.status === 409, res.status);
+  t = await res.text();
+  keur('en wijst de weg naar vervallen verklaren',
+    /vervallen/i.test(t), t.slice(0, 200));
+  keur('  de rit blijft staan', verwijderd.length === 0, verwijderd.length);
 
-  console.log('\nen facturen');
+  /* Is die factuur eenmaal vervallen, dan staat er niets meer in de weg. */
+  zetKlaar();
+  verwijderd = [];
+  ritten.recGeplandGeen001.fields.Facturen = [{ id: 'recFactuur0000001' }];
+  facturen.recFactuur0000001 = { id: 'recFactuur0000001',
+    fields: { Factuur: 'F-1', Status: 'Vervallen' } };
+  res = await doe({ actie: 'ritweg', id: 'recGeplandGeen001' });
+  keur('met een vervallen factuur eraan mag de rit wel weg',
+    res.status === 200, res.status);
+  keur('  en dan is hij ook echt weg', verwijderd.length === 1, verwijderd.length);
+
+  console.log('\nen facturen gaan nooit meer weg');
+  /* Een factuurnummer wordt nooit vrijgegeven. Een ongewenste factuur wordt
+     vervallen verklaard en blijft staan; verwijderen bestaat niet meer. */
   zetKlaar();
   verwijderd = [];
   facturen.recFactuur0000001 = { id: 'recFactuur0000001',
     fields: { Factuur: 'F-1', Status: 'Concept' } };
   res = await doe({ actie: 'factuurweg', id: 'recFactuur0000001' });
-  keur('een conceptfactuur mag weg', res.status === 200, res.status);
-  keur('en is weg', verwijderd.length === 1, verwijderd.length);
+  keur('de oude verwijderactie bestaat niet meer', res.status === 400, res.status);
+  keur('  en er is niets weggegooid', verwijderd.length === 0, verwijderd.length);
 
-  for (const stand of ['Verstuurd', 'Te laat', 'Betaald']) {
+  for (const stand of ['Concept', 'Goedgekeurd']) {
     zetKlaar();
     verwijderd = [];
     facturen.recFactuur0000001 = { id: 'recFactuur0000001',
       fields: { Factuur: 'F-1', Status: stand } };
-    res = await doe({ actie: 'factuurweg', id: 'recFactuur0000001' });
-    keur('een factuur op ' + stand + ' mag NIET weg', res.status === 409, res.status);
-    keur('  en blijft staan', verwijderd.length === 0, verwijderd.length);
+    res = await doe({ actie: 'factuurvervalt', id: 'recFactuur0000001',
+      reden: 'Foutieve factuur' });
+    keur('een factuur op ' + stand + ' mag vervallen', res.status === 200, res.status);
+    keur('  en wordt niet weggegooid', verwijderd.length === 0, verwijderd.length);
+    const f = facturen.recFactuur0000001.fields;
+    keur('  hij staat op Vervallen', f.Status === 'Vervallen', f.Status);
+    keur('  met de reden erbij', f.Vervalreden === 'Foutieve factuur', f.Vervalreden);
+    keur('  en een datum', !!f['Vervallen op'], f['Vervallen op']);
   }
+
+  for (const stand of ['Verzonden', 'Te laat', 'Betaald', 'Gecrediteerd']) {
+    zetKlaar();
+    verwijderd = [];
+    facturen.recFactuur0000001 = { id: 'recFactuur0000001',
+      fields: { Factuur: 'F-1', Status: stand } };
+    res = await doe({ actie: 'factuurvervalt', id: 'recFactuur0000001',
+      reden: 'Foutieve factuur' });
+    keur('een factuur op ' + stand + ' mag NIET vervallen', res.status === 409, res.status);
+    keur('  en blijft staan zoals hij stond',
+      facturen.recFactuur0000001.fields.Status === stand,
+      facturen.recFactuur0000001.fields.Status);
+  }
+
+  /* Twee keer van tafel halen kan niet. */
+  zetKlaar();
+  facturen.recFactuur0000001 = { id: 'recFactuur0000001',
+    fields: { Factuur: 'F-1', Status: 'Vervallen' } };
+  res = await doe({ actie: 'factuurvervalt', id: 'recFactuur0000001',
+    reden: 'Test' });
+  keur('een al vervallen factuur nog eens vervallen verklaren kan niet',
+    res.status === 409, res.status);
+
+  console.log('\nde reden en de toelichting');
+  /* Server-side afgedwongen, niet in het portaal: daar kun je omheen. */
+  zetKlaar();
+  facturen.recFactuur0000001 = { id: 'recFactuur0000001',
+    fields: { Factuur: 'F-1', Status: 'Concept' } };
+  res = await doe({ actie: 'factuurvervalt', id: 'recFactuur0000001' });
+  keur('zonder reden gaat het niet', res.status === 400, res.status);
+
+  res = await doe({ actie: 'factuurvervalt', id: 'recFactuur0000001',
+    reden: 'Zomaar' });
+  keur('en met een verzonnen reden ook niet', res.status === 400, res.status);
+
+  res = await doe({ actie: 'factuurvervalt', id: 'recFactuur0000001',
+    reden: 'Anders' });
+  keur('bij Anders is een toelichting verplicht', res.status === 400, res.status);
+
+  res = await doe({ actie: 'factuurvervalt', id: 'recFactuur0000001',
+    reden: 'Anders', toelichting: '   ' });
+  keur('en spaties tellen niet als toelichting', res.status === 400, res.status);
+
+  zetKlaar();
+  facturen.recFactuur0000001 = { id: 'recFactuur0000001',
+    fields: { Factuur: 'F-1', Status: 'Concept' } };
+  res = await doe({ actie: 'factuurvervalt', id: 'recFactuur0000001',
+    reden: 'Anders', toelichting: 'Verkeerde klant eraan gekoppeld.' });
+  keur('met toelichting mag het wel', res.status === 200, res.status);
+  keur('  en die wordt bewaard',
+    facturen.recFactuur0000001.fields.Vervaltoelichting ===
+      'Verkeerde klant eraan gekoppeld.',
+    facturen.recFactuur0000001.fields.Vervaltoelichting);
+
+  /* Bij een andere reden wordt de toelichting juist leeggemaakt: die zou dan
+     bij een vorige poging horen en iets anders beweren dan de reden. */
+  zetKlaar();
+  facturen.recFactuur0000001 = { id: 'recFactuur0000001',
+    fields: { Factuur: 'F-1', Status: 'Concept',
+              Vervaltoelichting: 'oude tekst van een vorige poging' } };
+  res = await doe({ actie: 'factuurvervalt', id: 'recFactuur0000001',
+    reden: 'Dubbele factuur', toelichting: 'wordt genegeerd' });
+  keur('bij een vaste reden wordt de toelichting leeggemaakt',
+    facturen.recFactuur0000001.fields.Vervaltoelichting === '',
+    JSON.stringify(facturen.recFactuur0000001.fields.Vervaltoelichting));
+
+  console.log('\nvervallen verklaren raakt de rit niet aan');
+  zetKlaar();
+  facturen.recFactuur0000001 = { id: 'recFactuur0000001',
+    fields: { Factuur: 'F-1', Status: 'Concept' } };
+  /* De reden "Rit geannuleerd" is een verklaring en geen handeling. Een
+     vervallen factuur en een geannuleerde rit zijn twee losse gebeurtenissen;
+     zou dit de rit omzetten, dan zou je met één druk twee dingen doen. */
+  const ritVoor = JSON.stringify(ritten.recMetKlant000001.fields);
+  await doe({ actie: 'factuurvervalt', id: 'recFactuur0000001',
+    reden: 'Rit geannuleerd' });
+  keur('de rit blijft precies zoals hij stond',
+    JSON.stringify(ritten.recMetKlant000001.fields) === ritVoor,
+    ritten.recMetKlant000001.fields.Status);
+  keur('en er is geen enkele rit aangeraakt',
+    Object.values(ritten).every((r) => r.fields.Status !== 'Geannuleerd'),
+    JSON.stringify(Object.values(ritten).map((r) => r.fields.Status)));
 
   globalThis.fetch = echt;
 }

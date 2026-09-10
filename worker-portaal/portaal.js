@@ -202,7 +202,10 @@ const FL = {
   referentie: 'Uw referentie',
   opdracht:   'Opdracht omschrijving',
   creditVan:  'Crediteert nummer',
-  gecrediteerd:'Gecrediteerd nummer'
+  gecrediteerd:'Gecrediteerd nummer',
+  vervalreden: 'Vervalreden',
+  vervaltoelichting: 'Vervaltoelichting',
+  vervallenOp: 'Vervallen op'
 };
 
 /* De facturen. Alleen de velden die het portaal zelf schrijft bij het maken van
@@ -217,8 +220,28 @@ const FA = {
   btw:       'BTW',
   totaal:    'Totaal',
   status:    'Status',
-  telaat:    'Dagen te laat'
+  telaat:    'Dagen te laat',
+  /* Een factuur die van tafel is maar wel blijft staan. Het nummer blijft
+     verbruikt — dat is het hele punt — maar hij is nu verantwoord in plaats van
+     verdwenen. Zie verklaarVervallen. */
+  vervalreden: 'Vervalreden',
+  vervaltoelichting: 'Vervaltoelichting',
+  vervallenOp: 'Vervallen op'
 };
+
+/* Welke standen van tafel gehaald mogen worden, en waarom niet meer dan deze.
+
+   Concept en Goedgekeurd zijn nog binnenshuis: er is niets verstuurd, dus er is
+   niets terug te draaien. Alles daarna is de deur uit en gaat via een
+   creditnota — dat is geen omslachtigheid maar de enige manier waarop je
+   administratie klopt als de klant het papier al heeft.
+
+   Gecrediteerd staat er met opzet niet bij: die is al teruggedraaid. Twee keer
+   van tafel halen kan niet. */
+const MAG_VERVALLEN = new Set(['Concept', 'Goedgekeurd']);
+
+const VERVALREDENEN = ['Foutieve factuur', 'Dubbele factuur', 'Test',
+                       'Rit geannuleerd', 'Anders'];
 
 /* De dagstaat: de kilometerteller aan het begin en het eind van de dag. Wat
    je optelt uit de ritten is iets anders — zie de uitleg bij dagstaatLezen. */
@@ -671,7 +694,8 @@ async function schakel(env, body, origin, wie) {
     case 'koppelklant':  return await koppelKlant(env, body, origin);
     case 'wijzigbesluit':return await wijzigBesluit(env, body, origin);
     case 'ritweg':       return await verwijderRit(env, body, origin);
-    case 'factuurweg':   return await verwijderFactuur(env, body, origin);
+    case 'factuurvervalt': return await verklaarVervallen(env, body, origin);
+    case 'factuuropnieuw': return await maakFactuurOpnieuw(env, body, origin);
     case 'nieuweklant':  return await nieuweKlant(env, body, origin);
     case 'uitnodiging':  return await stuurUitnodiging(env, body, origin);
     case 'klantsoort':   return await zetKlantsoort(env, body, origin);
@@ -1433,22 +1457,33 @@ async function verwijderRit(env, body, origin) {
     }, origin, true);
   }
 
-  /* Hangt er een factuur aan die al de deur uit is, dan is de rit het bewijs
-     eronder. Die twee horen bij elkaar te blijven. */
+  /* Hangt er een factuur aan, dan gaat de rit niet weg.
+
+     Dit stond eerst anders: een conceptfactuur mocht blijven staan en de rit
+     ging weg. Dan hield je een factuur zonder rit over — met een nummer eraan,
+     zonder iets om op terug te vallen. Nu moet je eerst de factuur van tafel
+     halen, en dat kan: verklaar hem vervallen. Daarna staat er niets meer in
+     de weg.
+
+     Een vervallen factuur houdt de rit niet tegen. Die is al van tafel, en de
+     rit die eronder lag mag dan ook weg. */
   const facturen = koppelIds(f[R.facturen]);
   if (facturen.length) {
-    for (const fid of facturen) {
-      try {
-        const fac = await airtable(env, `${env.AIRTABLE_FACTUREN}/${fid}`);
-        if (keuze((fac.fields || {})[FA.status]) !== 'Concept') {
-          return antwoord(409, {
-            fout: 'Er hangt een verstuurde factuur aan deze rit. Draai die ' +
-                  'eerst terug met een creditnota.'
-          }, origin, true);
-        }
-      } catch (fout) {
-        return antwoord(502, { fout: fout.message }, origin, true);
-      }
+    let levend;
+    try {
+      levend = await levendeFacturen(env, facturen);
+    } catch (fout) {
+      return antwoord(502, { fout: fout.message }, origin, true);
+    }
+    if (levend.length) {
+      const stand = keuze((levend[0].fields || {})[FA.status]) || '';
+      return antwoord(409, {
+        fout: MAG_VERVALLEN.has(stand)
+          ? 'Er hangt nog een factuur aan deze rit. Verklaar die eerst ' +
+            'vervallen; dan blijft het factuurnummer verantwoord staan.'
+          : 'Er hangt een verstuurde factuur aan deze rit. Draai die eerst ' +
+            'terug met een creditnota.'
+      }, origin, true);
     }
   }
 
@@ -1457,22 +1492,127 @@ async function verwijderRit(env, body, origin) {
   return antwoord(200, { ok: true, verwijderd: id }, origin, true);
 }
 
-async function verwijderFactuur(env, body, origin) {
+/* Een factuur van tafel halen zonder hem weg te gooien.
+
+   Hier stond eerst een echte DELETE. Dat werkte, maar het volgnummer ging mee:
+   Airtable geeft een autoNumber nooit opnieuw uit, dus elke weggegooide
+   conceptfactuur liet een gat achter in een reeks die aaneengesloten hoort te
+   zijn. Bij een controle is een gat een vraag die je niet meer kunt
+   beantwoorden — het record bestaat immers niet meer.
+
+   Nu blijft het record staan met de stand Vervallen en een reden erbij. Het
+   nummer blijft verbruikt, maar het is nu verantwoord in plaats van verdwenen:
+
+       SL-0041   Verzonden
+       SL-0042   Vervallen — dubbele factuur
+       SL-0043   Betaald
+
+   Wat dit NIET doet: iets aan de rit veranderen. Een vervallen factuur en een
+   geannuleerde rit zijn twee losse gebeurtenissen. De reden "Rit geannuleerd"
+   is hier een verklaring — waaróm deze factuur van tafel gaat — en geen
+   handeling op de rit. Andersom evenmin: een rit annuleren laat zijn factuur
+   staan, want een geannuleerde rit mag je doorbelasten. */
+async function verklaarVervallen(env, body, origin) {
   const id = recordId(body.id);
   if (!id) { return antwoord(400, { fout: 'Ongeldig factuur-id' }, origin, true); }
 
-  const record = await airtable(env, `${env.AIRTABLE_FACTUREN}/${id}`);
-  const status = keuze((record.fields || {})[FA.status]) || '';
-  if (status !== 'Concept') {
-    return antwoord(409, {
-      fout: 'Alleen een conceptfactuur mag weg. Deze is al verstuurd; draai ' +
-            'hem terug met een creditnota, dan blijft je nummering kloppen.'
+  const reden = String(body.reden || '').trim();
+  if (VERVALREDENEN.indexOf(reden) < 0) {
+    return antwoord(400, {
+      fout: 'Kies een reden: ' + VERVALREDENEN.join(', ') + '.'
     }, origin, true);
   }
 
-  await airtable(env, `${env.AIRTABLE_FACTUREN}/${id}`, { method: 'DELETE' });
-  console.log(`Conceptfactuur ${id} verwijderd.`);
-  return antwoord(200, { ok: true, verwijderd: id }, origin, true);
+  /* Bij "Anders" is de toelichting verplicht, en dat wordt hier afgedwongen en
+     niet in het portaal. Een keuzelijst met een vak "Anders" waar niets bij
+     staat is over drie maanden precies zo nietszeggend als een gat. */
+  let toelichting = String(body.toelichting || '').trim().slice(0, 2000);
+  if (reden === 'Anders' && !toelichting) {
+    return antwoord(400, {
+      fout: 'Bij "Anders" hoort een toelichting. Schrijf op wat er aan de hand was.'
+    }, origin, true);
+  }
+  /* En bij de andere redenen laten we hem leeg: de reden zegt het al, en een
+     toelichting die bij een vorige poging is blijven staan zou nu bij een
+     andere reden horen. */
+  if (reden !== 'Anders') { toelichting = ''; }
+
+  const record = await airtable(env, `${env.AIRTABLE_FACTUREN}/${id}`);
+  const status = keuze((record.fields || {})[FA.status]) || '';
+
+  if (status === 'Vervallen') {
+    return antwoord(409, {
+      fout: 'Deze factuur is al vervallen verklaard.'
+    }, origin, true);
+  }
+  if (!MAG_VERVALLEN.has(status)) {
+    return antwoord(409, {
+      fout: status === 'Gecrediteerd'
+        ? 'Deze factuur is al teruggedraaid met een creditnota.'
+        : 'Deze factuur is de deur uit (' + (status || 'onbekend') + '). Draai ' +
+          'hem terug met een creditnota; vervallen verklaren kan alleen zolang ' +
+          'er niets verstuurd is.'
+    }, origin, true);
+  }
+
+  const factuur = naarFactuurVoorMij(
+    await patch(env, env.AIRTABLE_FACTUREN, id, {
+      [FA.status]:            'Vervallen',
+      [FA.vervalreden]:       reden,
+      [FA.vervaltoelichting]: toelichting,
+      [FA.vervallenOp]:       vandaagInNederland()
+    }));
+
+  console.log(`Factuur ${id} vervallen verklaard (${reden}).`);
+  return antwoord(200, { ok: true, factuur }, origin, true);
+}
+
+/* Opnieuw factureren nadat je de vorige van tafel hebt gehaald.
+
+   zorgVoorFactuur maakt geen tweede factuur bij een rit die er al een heeft,
+   en dat hoort zo. Maar een vervallen factuur telt daarbij niet mee — anders
+   zou je die rit na één vergissing nooit meer kunnen factureren, en dat is
+   precies het geval waarvoor vervallen verklaren bestaat. */
+async function maakFactuurOpnieuw(env, body, origin) {
+  const id = recordId(body.id);
+  if (!id) { return antwoord(400, { fout: 'Ongeldig rit-id' }, origin, true); }
+
+  const rit = await airtable(env, `${env.AIRTABLE_RITTEN}/${id}`);
+  const f = rit.fields || {};
+  if (!koppelIds(f[R.klantlink]).length) {
+    return antwoord(409, {
+      fout: 'Deze rit hangt aan geen enkele klant. Koppel eerst een klant.',
+      geenKlant: true
+    }, origin, true);
+  }
+
+  const levend = await levendeFacturen(env, koppelIds(f[R.facturen]));
+  if (levend.length) {
+    return antwoord(409, {
+      fout: 'Er hangt al een geldige factuur aan deze rit. Verklaar die eerst ' +
+            'vervallen, of draai hem terug met een creditnota.'
+    }, origin, true);
+  }
+
+  const gemaakt = await zorgVoorFactuur(env, id);
+  if (!gemaakt) {
+    return antwoord(502, {
+      fout: 'De factuur kon niet gemaakt worden. Kijk in de systeemcheck.'
+    }, origin, true);
+  }
+  return antwoord(200, { ok: true, factuur: naarFactuurVoorMij(gemaakt) },
+                  origin, true);
+}
+
+/* Welke van deze facturen nog meetellen. Een vervallen factuur is van tafel en
+   staat een nieuwe niet in de weg; alle andere standen wel. */
+async function levendeFacturen(env, ids) {
+  const uit = [];
+  for (const fid of ids) {
+    const fac = await airtable(env, `${env.AIRTABLE_FACTUREN}/${fid}`);
+    if (keuze((fac.fields || {})[FA.status]) !== 'Vervallen') { uit.push(fac); }
+  }
+  return uit;
 }
 
 /* Een wijzigverzoek van een klant afhandelen: inwilligen of afwijzen.
@@ -1754,6 +1894,9 @@ function naarFactuurVoorMij(record) {
     openstaand: f[FL.openstaand] || 0,
     telaat:     f[FL.telaat] || 0,
     status:     keuze(f[FL.status]) || 'Concept',
+    vervalreden: keuze(f[FL.vervalreden]) || '',
+    vervaltoelichting: f[FL.vervaltoelichting] || '',
+    vervallenOp: f[FL.vervallenOp] || '',
     verzonden:  f[FL.verzonden] || '',
     herinnerd:  f[FL.herinnerd] || '',
     klant:      eerste(f[FL.klantnaam]) || '',
@@ -2662,7 +2805,13 @@ async function zorgVoorFactuur(env, ritId) {
   try {
     const rit = await airtable(env, `${env.AIRTABLE_RITTEN}/${ritId}`);
     const f = rit.fields || {};
-    if (koppelIds(f[R.facturen]).length) { return null; }
+    /* Er hangt al een factuur — dan niet nog een. Een vervallen factuur telt
+       daarbij niet mee: die is van tafel, en anders zou een rit na één
+       vergissing nooit meer te factureren zijn. */
+    const hangend = koppelIds(f[R.facturen]);
+    if (hangend.length && (await levendeFacturen(env, hangend)).length) {
+      return null;
+    }
 
     /* Geen klant, geen factuur. Naam, adres, btw-nummer en debiteurnummer op
        de factuur komen alle vier via de koppeling uit Klanten; zonder klant
@@ -3142,8 +3291,21 @@ function ritSleutel(id) {
   return a.toString(16).padStart(8, '0') + b.toString(16).padStart(8, '0');
 }
 
-function klantFacturen(env, klantId) {
-  return klantRecords(env, klantId, 'Facturen', env.AIRTABLE_FACTUREN, naarKlantFactuur);
+/* Wat een klant van zijn facturen ziet.
+
+   Alleen wat de deur uit is. Een conceptfactuur is een stuk dat jij nog moet
+   nakijken — die hoort een klant niet te zien, en dat was hier een gat: er werd
+   op niets gefilterd en elke gekoppelde factuur ging mee, concepten inbegrepen.
+   Een vervallen factuur al helemaal niet: die bestaat niet meer voor hem. */
+const KLANT_ZIET = new Set(['Verzonden', 'Betaald', 'Te laat', 'Gecrediteerd']);
+
+async function klantFacturen(env, klantId) {
+  const alles = await klantRecords(env, klantId, 'Facturen',
+    env.AIRTABLE_FACTUREN, (r) => r);
+  return alles
+    .filter((r) => KLANT_ZIET.has(keuze((r.fields || {})[FA.status]) || ''))
+    .map(naarKlantFactuur)
+    .sort((a, b) => String(b.datum).localeCompare(String(a.datum)));
 }
 
 function inBrokken(lijst, maat) {

@@ -846,6 +846,71 @@ met Twilio voor nodig — een betaalde dienst, ongeveer negen cent per bericht p
 een paar euro per maand voor een nummer. Zodra die koppeling er is, kan er een
 sms-onderdeel naast de mail.
 
+### Een factuur gaat nooit meer weg
+
+Er stond een knop *Concept verwijderen* die werkelijk verwijderde. Dat werkte,
+maar het volgnummer ging mee: Airtable geeft een autoNumber nooit opnieuw uit,
+dus elke weggegooide conceptfactuur liet een gat achter in een reeks die
+aaneengesloten hoort te zijn. Bij een controle is zo'n gat een vraag die je niet
+meer kunt beantwoorden — het record bestaat immers niet meer.
+
+Nu blijft het record staan met de stand **Vervallen**:
+
+| | |
+| --- | --- |
+| SL-0041 | Verzonden |
+| SL-0042 | Vervallen — dubbele factuur |
+| SL-0043 | Betaald |
+
+Vier velden op `Facturen` horen erbij: de keuze `Vervallen` in `Status`, plus
+`Vervalreden` (foutieve factuur / dubbele factuur / test / rit geannuleerd /
+anders), `Vervaltoelichting` en `Vervallen op`.
+
+**Wanneer het mag.** Alleen bij *Concept* en *Goedgekeurd* — dan is er nog
+niets de deur uit. Alles daarna gaat via een creditnota; een factuur die de
+klant al heeft draai je terug, je haalt hem niet van tafel. Een al gecrediteerde
+factuur kan ook niet meer vervallen: die is al teruggedraaid.
+
+**De toelichting is verplicht bij *anders*,** en dat wordt in de tussenlaag
+afgedwongen en niet in het portaal — daar kun je omheen. Bij de vaste redenen
+wordt hij juist leeggemaakt: een toelichting die van een vorige poging is
+blijven staan zou iets anders beweren dan de reden.
+
+**`Openstaand` telt een vervallen factuur als nul.** Dat is niet alleen netjes:
+`Dagen te laat` rekent erop, en daarop draaien de maandagochtendklussen
+*Facturen te laat markeren* en *Betalingsherinnering sturen*. Stond hier het
+volle bedrag, dan kreeg je klant een aanmaning voor een factuur die niet meer
+bestaat. Door dit in de formule te repareren hoefde geen van beide
+automatiseringen aangeraakt te worden.
+
+**`Factuurlink` draagt `&vervallen=1`** zodra de status Vervallen is. Wie nog
+een oude link heeft ziet dan een duidelijke melding en geen betaalverzoek.
+
+**De klant ziet hem niet.** `klantFacturen` laat alleen *Verzonden, Betaald,
+Te laat* en *Gecrediteerd* door. Daar zat trouwens al een gat: er werd op niets
+gefilterd, dus een klant zag ook je conceptfacturen voordat jij ze had
+nagekeken. Dat is hiermee dicht.
+
+**Opnieuw factureren kan.** Een vervallen factuur telt niet mee bij de vraag "heeft
+deze rit al een factuur", dus na een vergissing kun je een nieuwe maken — met de
+knop in het portaal, die `factuuropnieuw` aanroept. De twee Airtable-automatiseringen
+die ook facturen maken kijken naar `Facturen is leeg` en vuren dus niet opnieuw;
+dat is veilig, want zij zijn het vangnet en niet de hoofdweg.
+
+**Een vervallen factuur en een geannuleerde rit zijn twee losse gebeurtenissen.**
+Vervallen verklaren raakt de rit niet aan, en een rit annuleren laat zijn factuur
+staan — een geannuleerde rit mag je immers doorbelasten. De reden *"rit
+geannuleerd"* op een factuur is een verklaring, geen handeling.
+
+**Een rit met een levende factuur gaat niet meer weg.** Dat kon eerst wel zolang
+de factuur een concept was, en dan hield je een factuur zonder rit over. Nu
+verklaar je die eerst vervallen; daarna staat er niets meer in de weg.
+
+**De gaten 1 tot en met 7** blijven onverklaard. Dat waren je eerste
+testfacturen, verwijderd voordat deze regel bestond. Achteraf zijn ze niet meer
+te verantwoorden en dat hoeft ook niet — vanaf hier geldt: een factuurnummer
+wordt nooit meer vrijgegeven.
+
 ### Geschatte kilometers naast Kilometers
 
 `Kilometers` op `Ritten` is wat er werkelijk gereden is en wat de factuur

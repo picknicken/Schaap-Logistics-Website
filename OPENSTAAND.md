@@ -398,6 +398,71 @@ portaal vanaf je beginscherm draait: daar is geen adresbalk en geen terugknop,
 en zou je jezelf op de marketingpagina opsluiten. Dan blijft het bij het
 inlogscherm.
 
+### Een factuur gooi je niet meer weg, je verklaart hem vervallen
+
+De knop *Concept verwijderen* is weg. Wat ervoor in de plaats komt is
+**Vervallen verklaren**, met een reden erbij. Het record blijft staan, het
+nummer blijft verbruikt, en je administratie leest als:
+
+| | |
+| --- | --- |
+| SL-0041 | Verzonden |
+| SL-0042 | Vervallen — dubbele factuur |
+| SL-0043 | Betaald |
+
+Nooit meer *"waarom ontbreekt 0042?"*. Je ziet het gewoon staan.
+
+**Wanneer het mag:** alleen bij *Concept* en *Goedgekeurd*. Alles wat de deur
+uit is gaat via een creditnota. Dat is geen nieuwe grens — het is dezelfde die
+bij verwijderen gold; alleen het mechanisme is anders.
+
+**De redenen** zijn vast: foutieve factuur, dubbele factuur, test, rit
+geannuleerd, anders. Bij *anders* is een toelichting verplicht, en dat dwingt de
+tussenlaag af — niet het portaal, want daar kun je omheen. Bij de andere redenen
+wordt de toelichting juist leeggemaakt: een tekst van een vorige poging zou
+straks iets anders beweren dan de reden.
+
+**Drie dingen die het onderzoek boven water haalde en die we anders pas na
+livegang hadden gemerkt:**
+
+*Je klant zou een aanmaning krijgen voor een vervallen factuur.* `Openstaand`
+telde alleen een gecrediteerde factuur als nul. Een vervallen factuur toonde
+zijn volle bedrag, `Dagen te laat` liep op, de maandagochtendklus zette hem op
+*Te laat* en de klus een half uur later mailde de klant. Dat is nu gerepareerd
+in de formule — waardoor geen van beide automatiseringen aangeraakt hoefde te
+worden.
+
+*Je klant zag je conceptfacturen.* Dat was al zo, los van deze wijziging: er
+werd op niets gefilterd, dus elke factuur die aan een klant hing kwam in zijn
+portaal — ook de concepten die jij nog moest nakijken. Nu ziet hij alleen
+*Verzonden, Betaald, Te laat* en *Gecrediteerd*.
+
+*Een rit weggooien liet een weesfactuur achter.* Dat mocht zolang de factuur een
+concept was: de rit ging weg, de factuur bleef staan — losgekoppeld, met een
+nummer eraan en niets meer om op terug te vallen. Nu verklaar je die eerst
+vervallen; daarna staat er niets in de weg.
+
+**Opnieuw factureren kan.** Een vervallen factuur telt niet mee bij de vraag of
+een rit al een factuur heeft, dus na een vergissing maak je gewoon een nieuwe.
+Anders zou je die rit na één misser nooit meer kunnen factureren — precies het
+geval waarvoor vervallen verklaren bestaat.
+
+**Een oude link blijft werken maar liegt niet.** Wie een link naar SL-0042 heeft
+en die factuur is vervallen, krijgt *"Deze factuur is vervallen en niet meer
+geldig"* en geen betaalverzoek, geen IBAN, geen termijn. Het bedrag blijft wel
+staan — je wilt kunnen zien waar het over ging.
+
+**Een vervallen factuur en een geannuleerde rit blijven losstaan.** Vervallen
+verklaren raakt de rit niet aan, en een rit annuleren laat zijn factuur staan —
+een geannuleerde rit mag je immers doorbelasten. De reden *"rit geannuleerd"* is
+een verklaring, geen handeling. Er is bewust geen koppeling tussen die twee
+gebouwd.
+
+**De gaten 1 tot en met 7** blijven onverklaard. Dat waren je eerste
+testfacturen, weggegooid voordat deze regel bestond. Achteraf zijn ze niet meer
+te verantwoorden en dat hoeft ook niet. Vanaf hier geldt: **een factuurnummer
+wordt nooit meer vrijgegeven.**
+
 ### Het factuurnummer zit nu voorgoed aan één factuur vast
 
 Het nummer was `SL-` plus het jaar uit `Factuurdatum` plus het volgnummer. Dat
@@ -951,9 +1016,9 @@ netjes van h1 naar h2 zonder gaten, en de foutpagina werkt weer — die verwees 
 de domeinverhuizing nog naar het oude adres en kwam daardoor zonder opmaak en met
 dode links binnen.
 
-**887 controles draaien groen**, verdeeld over tien faaltests: 268 in een echte
-browser (`faal-portalen` 175, `faal-site` 93), 487 tegen de portaal-Worker
-(`faal-portaal` 207, `faal-klantplicht` 195, `faal-toegang` 31, `faal-push` 54),
+**961 controles draaien groen**, verdeeld over tien faaltests: 301 in een echte
+browser (`faal-portalen` 193, `faal-site` 108), 528 tegen de portaal-Worker
+(`faal-portaal` 222, `faal-klantplicht` 221, `faal-toegang` 31, `faal-push` 54),
 79 tegen de aanvraag-Worker, 38 op de prijsberekening en 15 op het
 factuurnummer. Daaronder zitten
 controles dat de prijzen op de site kloppen met de calculator, dat een klant
