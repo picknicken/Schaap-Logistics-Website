@@ -230,6 +230,34 @@ vijf minuten naast.
 
 Zodat je niet twee keer naar hetzelfde kijkt.
 
+### Je pushmeldingen kwamen onder twee namen binnen
+
+Gevonden bij een controle van de hele boel, en het is het soort ding dat je
+anders 's nachts had ontdekt.
+
+Een telefoon staat in `Pushmeldingen` onder een naam in het veld `Voor`. Die van
+jou meldde zich aan op 9 september om 15:23, een paar uur voordat
+`EIGENAAR_NAAM = "Shane"` bestond, en staat dus als **Eigenaar** geregistreerd.
+Sinds die instelling er is zoekt de proefmelding naar **Shane** — en die vond hij
+niet. De knop *Proefmelding* zei dus "kwam niet aan" terwijl je telefoon prima
+aanstond.
+
+Draai je het om — en dat gebeurt vanzelf zodra je het portaal opnieuw installeert
+of een nieuwe telefoon neemt — dan staat er *Shane* en zoeken de vijf echte
+meldingen naar *Eigenaar*: een nieuwe aanvraag, een afzegging door de klant, een
+wijzigverzoek, facturen die te lang openstaan en je dagoverzicht. Dan werkt de
+proefmelding wél en komt er nooit meer een echte melding. Dat is de vervelendste
+kant van de twee: de knop die het moet bewijzen bewijst dan het verkeerde.
+
+Beide spellingen horen bij dezelfde telefoon van dezelfde man, en zo staat het er
+nu ook in. Vier proeven bewaken het, en die vallen om zodra iemand die koppeling
+weghaalt.
+
+**Wat jij moet doen: druk één keer op Proefmelding** zodra deze versie
+uitgerold is. Die knop was hierdoor stuk en is nu het enige wat kan aantonen dat
+er werkelijk een melding op je scherm verschijnt — geen enkele proef hier kan dat
+voor je doen.
+
 **De keten klopt van begin tot eind.** Prijs op de site = prijs in Airtable =
 prijs op de factuur, inclusief stops, tijdvak, wachttijd, doorberekende kosten en
 korting. Starttarieven €75 / €100 / €125, kilometerprijzen €1,00 / €1,50 / €2,00,

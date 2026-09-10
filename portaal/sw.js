@@ -34,9 +34,9 @@ var CACHE = 'schaap-portaal-2';
    voorgevuld wat de pagina nooit opvraagt en blijft de echte versie leeg. */
 var KERN = [
   './',
-  './portaal.js?v=20260909',
+  './portaal.js?v=20260910',
   './manifest.webmanifest',
-  '../assets/site.js?v=20260909'
+  '../assets/site.js?v=20260910'
 ];
 
 /* Bestanden buiten deze map die er toch bij horen. site.js is de rekenmachine
@@ -46,7 +46,7 @@ var KERN = [
    service worker bepaalt welke pagina's hij bedient, niet waar de bestanden
    staan die zo'n pagina opvraagt. Ze staan hier met versienummer en al, zodat
    er nooit per ongeluk een ander bestand uit assets/ meelift. */
-var BUITEN = ['../assets/site.js?v=20260909'].map(function (pad) {
+var BUITEN = ['../assets/site.js?v=20260910'].map(function (pad) {
   return new URL(pad, self.location.href).href;
 });
 

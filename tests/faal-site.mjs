@@ -476,6 +476,35 @@ console.log('\n=== pagina’s die er niet zijn ===');
     res.status() === 404 || (await p.title()).length > 0, res.status());
 }
 
+console.log('\nde versienummers van het portaal');
+{
+  /* De service worker vult zijn cache voor met een lijst adressen. Staat daar
+     een ander versienummer in dan de pagina opvraagt, dan wordt er iets
+     bewaard wat niemand ophaalt en blijft het echte bestand ongecached. Je
+     merkt dat pas als je een keer geen bereik hebt — en dat is precies het
+     moment waarop het portaal moest werken.
+
+     Het staat in de code als opmerking en dat is niet genoeg: een opmerking
+     valt niet om als iemand er eentje vergeet. */
+  const { readFileSync } = await import('node:fs');
+  const nummers = (tekst) => {
+    const uit = {};
+    for (const [, bestand, nr] of
+         tekst.matchAll(/([a-z-]+\.js)\?v=(\d{8})/g)) { uit[bestand] = nr; }
+    return uit;
+  };
+  const pagina = nummers(readFileSync('portaal/index.html', 'utf8'));
+  const werker = nummers(readFileSync('portaal/sw.js', 'utf8'));
+
+  keur('de pagina vraagt bestanden met een versienummer op',
+    Object.keys(pagina).length >= 2, JSON.stringify(pagina));
+  for (const bestand of Object.keys(werker)) {
+    keur('sw.js en index.html zijn het eens over ' + bestand,
+      pagina[bestand] === werker[bestand],
+      'pagina ' + pagina[bestand] + ', sw ' + werker[bestand]);
+  }
+}
+
 console.log(fouten ? '\n' + fouten + ' fout(en)\n' : '\nalles goed\n');
 await b.close();
 process.exit(fouten ? 1 : 0);

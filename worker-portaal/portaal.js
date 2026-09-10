@@ -2300,8 +2300,26 @@ async function apparatenVoor(env, namen) {
   const data = await airtable(env, `${env.AIRTABLE_PUSH}?${zoek}`);
   /* Op de naam zeven doen we hier en niet in de formule: die naam is vrije
      tekst en hoort niet in een formule geplakt te worden. */
+  const goed = mag(env, namen);
   return (data.records || []).filter(
-    (r) => namen.indexOf(String((r.fields || {})[PU.voor] || '')) >= 0);
+    (r) => goed.has(String((r.fields || {})[PU.voor] || '')));
+}
+
+/* Onder welke namen een apparaat mag staan om deze melding te krijgen.
+
+   Jij staat er onder twee spellingen in en dat is geen slordigheid maar
+   geschiedenis: een telefoon die zich aanmeldde voordat EIGENAAR_NAAM bestond
+   staat als 'Eigenaar' geregistreerd, een die zich daarna aanmeldde onder je
+   echte naam. Vraagt de code om de een, dan hoort de ander er ook bij — het is
+   dezelfde telefoon van dezelfde man. Zonder dit stopte je spoedmelding zodra
+   je je telefoon opnieuw instelde, en dan zei de proefmelding nog steeds dat
+   alles werkte. */
+function mag(env, namen) {
+  const uit = new Set(namen);
+  const eigen = String((env && env.EIGENAAR_NAAM) || '').trim();
+  if (uit.has('Eigenaar') && eigen) { uit.add(eigen); }
+  if (eigen && uit.has(eigen)) { uit.add('Eigenaar'); }
+  return uit;
 }
 
 async function stuurPush(env, namen, bericht) {

@@ -461,6 +461,63 @@ for (const [naam, waarde] of [
   keur('met goede sleutels komt hij wel aan', goed.status === 200, goed.status);
 }
 
+/* Onder welke naam jouw telefoon in de apparatenlijst staat.
+
+   Hier zat een val die je pas 's nachts had gemerkt. Je telefoon meldde zich
+   aan voordat EIGENAAR_NAAM bestond en staat als 'Eigenaar' geregistreerd; de
+   proefmelding zoekt sindsdien naar 'Shane'. Meld je hem opnieuw aan, dan staat
+   er 'Shane' en zoeken de vijf echte meldingen — een nieuwe aanvraag, een
+   afzegging, een wijzigverzoek, te late facturen, je dagoverzicht — naar
+   'Eigenaar'. Welke kant je het ook opdraait: één van de twee komt niet aan, en
+   de proefmelding vertelt je de verkeerde helft van het verhaal.
+
+   Allebei de spellingen horen bij dezelfde telefoon van dezelfde man. Deze
+   proef zet de val expres open door EIGENAAR_NAAM te vullen, wat de proeven
+   hierboven geen van alle doen. */
+console.log('\njouw telefoon, onder welke naam hij ook staat');
+{
+  const metNaam = { ...metSleutels, EIGENAAR_NAAM: 'Shane' };
+
+  /* Aangemeld als 'Eigenaar', jij heet 'Shane'. */
+  zetKlaar();
+  verstuurd = [];
+  await ronde(metNaam);
+  keur('een oude aanmelding krijgt de echte meldingen nog steeds',
+    verstuurd.length === 4, verstuurd.length + ' verstuurd');
+
+  zetKlaar();
+  verstuurd = [];
+  const proefOud = await worker.fetch(new Request('https://p.dev/', {
+    method: 'POST',
+    headers: { Origin: 'https://schaaplogistics.nl', 'Content-Type': 'application/json',
+               'X-Portaal-Code': 'hoofdsleutel-1234', 'CF-Connecting-IP': '10.0.0.9' },
+    body: JSON.stringify({ actie: 'pushtest' })
+  }), metNaam);
+  keur('en de proefmelding vindt hem ook', proefOud.status === 200,
+    proefOud.status + ', ' + verstuurd.length + ' verstuurd');
+
+  /* En andersom: aangemeld onder je echte naam, zoals dat gaat zodra je je
+     telefoon opnieuw instelt. */
+  zetKlaar();
+  apparaten.forEach((a) => { a.fields.Voor = 'Shane'; });
+  verstuurd = [];
+  await worker.scheduled({ cron: '* * * * *' }, metNaam,
+    { waitUntil: (pr) => wachtjes.push(pr) });
+  await Promise.all(wachtjes);
+  keur('een nieuwe aanmelding krijgt ze ook', verstuurd.length === 4,
+    verstuurd.length + ' verstuurd');
+
+  /* Maar een chauffeur is geen eigenaar. Die grens mag niet meeschuiven. */
+  zetKlaar();
+  apparaten.forEach((a) => { a.fields.Voor = 'Piet'; });
+  verstuurd = [];
+  await worker.scheduled({ cron: '* * * * *' }, metNaam,
+    { waitUntil: (pr) => wachtjes.push(pr) });
+  await Promise.all(wachtjes);
+  keur('maar de telefoon van een chauffeur krijgt jouw meldingen niet',
+    verstuurd.length === 0, verstuurd.length + ' verstuurd');
+}
+
 console.log('\nzonder sleutels blijft alles keurig dicht');
 {
   const zonder = { ...metSleutels, VAPID_PUBLIEK: '', VAPID_PRIVE: '' };
