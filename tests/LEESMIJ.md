@@ -22,6 +22,7 @@ node faal-aanvragen.mjs      # het openbare aanvraagadres
 node faal-portaal.mjs        # het portaal: rollen, grenzen, lekken
 node faal-zelfde-som.mjs     # rekent de prijs op de server na tegen de browser
 node faal-zelfde-som-airtable.mjs   # en tegen de formule in Airtable
+node faal-factuurnummer.mjs  # het factuurnummer verandert nooit meer
 node faal-klantplicht.mjs    # geen factuur zonder klant, en de dagmeldingen
 node faal-toegang.mjs        # de rem op raden en het logboek erachter
 ```
@@ -87,6 +88,30 @@ Dan haalt hij de werkelijke formule uit de base en controleert of de bedragen
 die site.js noemt er letterlijk in staan. Draai dat na elke tariefwijziging. De
 sleutel hoort in je terminal en nergens anders — niet in dit bestand, niet in de
 workflow, niet in een appje.
+
+**`faal-factuurnummer.mjs`** — één factuur, één nummer, en dat nummer verandert
+nooit meer. Dat was niet zo: de formule nam het jaartal uit `Factuurdatum`, en
+dat veld blijft bewerkbaar. Corrigeerde je in januari de datum van een factuur
+die je in december verstuurde, dan werd `SL-2026-0043` stilzwijgend
+`SL-2027-0043` — op een papier dat al bij de klant lag.
+
+Deze proef bestaat vooral voor later. De beslissing om het jaartal eruit te
+laten spreekt over een jaar niet meer voor zichzelf, en iemand kan de formule
+"verbeteren" door hem terug te zetten. Dan valt dit om.
+
+Ook twee lagen. Zonder sleutel toetst hij de overgeschreven formule: hetzelfde
+volgnummer met zeven verschillende datums moet zeven keer hetzelfde nummer
+geven, de opvulling tot vier cijfers mag boven 9999 niet afkappen, en
+twaalfduizend facturen moeten twaalfduizend verschillende nummers opleveren. Met
+sleutel kijkt hij wat er wérkelijk in de base staat — of het nummer van elke
+bestaande factuur klopt met zijn volgnummer, en of er geen datumfunctie in de
+formule is teruggeslopen:
+
+```sh
+AIRTABLE_TOKEN=pat... node tests/faal-factuurnummer.mjs
+```
+
+Draai die tweede laag na elke wijziging aan de formule `Factuurnummer`.
 
 **`faal-portaal.mjs`** — drie soorten bezoekers en de vraag wat elk van de drie
 te zien of te doen krijgt dat niet voor hem is. Formule-injectie in de codes,

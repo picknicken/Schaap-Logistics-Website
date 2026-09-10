@@ -190,7 +190,7 @@ om te printen of als PDF op te slaan. De pagina heeft geen database: alles komt
 uit de adresregel.
 
 ```
-/factuur/?nr=SL-2026-0001&datum=2026-09-15&klant=Voorbeeld%20BV&km=109&kmtarief=2&start=75&toeslag=35
+/factuur/?nr=SL-0001&datum=2026-09-15&klant=Voorbeeld%20BV&km=109&kmtarief=2&start=75&toeslag=35
 ```
 
 Zonder gegevens in de adresregel toont hij een voorbeeldfactuur, zodat je meteen

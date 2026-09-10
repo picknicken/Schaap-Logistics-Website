@@ -872,14 +872,35 @@ overschrijft.
 
 ### Het factuurnummer
 
-`Factuurnummer` op `Facturen` is een formule: het jaar uit de factuurdatum plus
-`Volgnummer`, aangevuld tot vier cijfers — `SL-2026-0001`, net als in de mal.
-Blijft leeg zolang factuurdatum of volgnummer ontbreekt.
+`Factuurnummer` op `Facturen` is een formule: `SL-` plus `Volgnummer`, aangevuld
+tot vier cijfers — `SL-0001`. Geen jaartal, geen reset per jaar, geen hergebruik.
 
-`Volgnummer` moet type **Autonumber** zijn. Airtable vult hem dan zelf en je kunt
-nooit twee keer hetzelfde factuurnummer uitgeven — een eis van de Belastingdienst.
-Datzelfde geldt voor `Klantnummer` op `Klanten`, dat als debiteurnummer op de
-factuur komt.
+`Volgnummer` moet type **Autonumber** zijn. Airtable kent hem eenmalig toe bij
+het aanmaken van het record, hergebruikt hem nooit, en niemand kan hem wijzigen.
+Daarmee kun je nooit twee keer hetzelfde factuurnummer uitgeven — een eis van de
+Belastingdienst. Datzelfde geldt voor `Klantnummer` op `Klanten`, dat als
+debiteurnummer op de factuur komt.
+
+**Het jaartal zat er eerst wel in en is er bewust uit gehaald.** De formule nam
+het jaar uit `Factuurdatum`, en dat veld blijft bewerkbaar. Corrigeerde je in
+januari de datum van een factuur die je in december verstuurde, dan werd
+`SL-2026-0043` stilzwijgend `SL-2027-0043` — op een papier dat al bij de klant
+lag. Een factuurnummer hoort permanent aan één factuur vast te zitten; de
+boekjaarindeling hangt aan de factuurdatum, en die staat er los bij.
+
+**De factuurdatum is nog wel de poort.** Zonder datum blijft het nummer leeg,
+want een factuur zonder datum is geen factuur. Drie plekken leunen daarop:
+`Factuurlink`, de automatisering *Factuur naar de klant sturen* en
+*Creditfactuur maken* beginnen alle drie met "is er een factuurnummer?". Die
+vraag blijft dus betekenen wat hij betekende. Wist je de datum, dan verdwijnt
+het nummer tijdelijk — en komt daarna identiek terug, want `Volgnummer`
+verandert niet.
+
+**Boven volgnummer 9999** vervalt de opvulling tot vier cijfers in plaats van af
+te kappen: `RIGHT("000" & 10000; 4)` gaf anders `0000`, en vanaf dat punt kreeg
+elke factuur hetzelfde nummer.
+
+`tests/faal-factuurnummer.mjs` bewaakt dit alles.
 
 ### De factuur uitdraaien
 

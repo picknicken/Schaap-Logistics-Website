@@ -133,17 +133,17 @@ console.log('\nhet factuurnummer en waar de klant het moet vermelden');
   /* Een echte factuur: het nummer hoort op alle drie de plekken hetzelfde te
      staan. Lopen ze uiteen, dan betaalt de klant onder een ander kenmerk dan
      er in de boekhouding staat, en dan sluit de aflettering niet. */
-  await p.goto(BASIS + '/factuur/?nr=SL-2026-0042&km=100&kmtarief=1.5&start=75',
+  await p.goto(BASIS + '/factuur/?nr=SL-0042&km=100&kmtarief=1.5&start=75',
     { waitUntil: 'networkidle' });
   const boven = (await p.textContent('#v-nr')).trim();
-  keur('het factuurnummer staat bovenaan', boven === 'SL-2026-0042', boven);
+  keur('het factuurnummer staat bovenaan', boven === 'SL-0042', boven);
   keur('en het label heet Factuurnr.',
     (await p.textContent('#v-nrlabel')).trim() === 'Factuurnr.',
     await p.textContent('#v-nrlabel'));
 
   const betaalzin = (await p.textContent('#v-betaalzin')).replace(/\s+/g, ' ');
   keur('de betaalzin noemt het nummer zelf en niet alleen "het factuurnummer"',
-    betaalzin.includes('SL-2026-0042'), betaalzin);
+    betaalzin.includes('SL-0042'), betaalzin);
   keur('en vraagt om het te vermelden',
     /vermelding van factuurnummer/i.test(betaalzin), betaalzin);
 
@@ -151,8 +151,8 @@ console.log('\nhet factuurnummer en waar de klant het moet vermelden');
      hetzelfde nummer op één vel leest als twee nummers. */
   const heleVel = (await p.textContent('body')).replace(/\s+/g, ' ');
   keur('het nummer staat er niet drie keer',
-    (heleVel.match(/SL-2026-0042/g) || []).length === 2,
-    (heleVel.match(/SL-2026-0042/g) || []).length);
+    (heleVel.match(/SL-0042/g) || []).length === 2,
+    (heleVel.match(/SL-0042/g) || []).length);
 
   /* Een concept heeft geen nummer maar wel een kenmerk. Een doorlopende
      nummering mag geen gaten hebben, dus een concept dat nooit een factuur
@@ -179,7 +179,7 @@ console.log('\nhet factuurnummer en waar de klant het moet vermelden');
     await p.textContent('#v-nr'));
 
   /* Een creditnota vraagt niets, dus hoort er geen betaalverzoek op. */
-  await p.goto(BASIS + '/factuur/?credit=1&nr=SL-2026-0043&creditvan=SL-2026-0042' +
+  await p.goto(BASIS + '/factuur/?credit=1&nr=SL-0043&creditvan=SL-0042' +
     '&km=10&kmtarief=1.5&start=75', { waitUntil: 'networkidle' });
   keur('een creditnota vraagt niet om betaling',
     !(await p.isVisible('#v-betaalzin')));

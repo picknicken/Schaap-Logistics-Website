@@ -75,6 +75,14 @@ jobs:
         working-directory: tests
         run: node faal-zelfde-som-airtable.mjs
 
+      # Het factuurnummer moet permanent aan één factuur vastzitten. Ook hier
+      # twee lagen: zonder sleutel toetst hij de overgeschreven formule, met
+      # sleutel kijkt hij wat er werkelijk in de base staat. Draai die tweede
+      # laag met de hand na elke wijziging aan de formule Factuurnummer.
+      - name: Het factuurnummer verandert niet meer
+        working-directory: tests
+        run: node faal-factuurnummer.mjs
+
       # De twee proeven met een browser. Playwright wordt hier geïnstalleerd
       # en niet in het project: de site zelf heeft geen enkele afhankelijkheid
       # en dat blijft zo. --no-save zorgt dat er geen package.json ontstaat.

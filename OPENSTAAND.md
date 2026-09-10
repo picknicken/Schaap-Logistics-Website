@@ -398,6 +398,46 @@ portaal vanaf je beginscherm draait: daar is geen adresbalk en geen terugknop,
 en zou je jezelf op de marketingpagina opsluiten. Dan blijft het bij het
 inlogscherm.
 
+### Het factuurnummer zit nu voorgoed aan één factuur vast
+
+Het nummer was `SL-` plus het jaar uit `Factuurdatum` plus het volgnummer. Dat
+jaar kwam uit een veld dat bewerkbaar blijft, en daarmee kon een verstuurd
+factuurnummer achteraf veranderen: corrigeer je in januari de datum van een
+factuur uit december, dan werd `SL-2026-0043` stilzwijgend `SL-2027-0043` — op
+een papier dat al bij de klant lag.
+
+Het jaartal is eruit. Wat overblijft is **`SL-0043`**: `SL-` plus `Volgnummer`,
+en dat volgnummer is een autoNumber die Airtable eenmalig toekent, nooit
+hergebruikt en niemand kan wijzigen. Geen reset per jaar, geen eigen teller,
+geen extra infrastructuur. Het boekjaar hangt aan de factuurdatum, en die staat
+er los bij.
+
+**De factuurdatum is nog wel de poort.** Zonder datum blijft het nummer leeg,
+want een factuur zonder datum is geen factuur. Dat was belangrijker dan het
+leek: `Factuurlink` en de automatiseringen *Factuur naar de klant sturen* en
+*Creditfactuur maken* beginnen alle drie met "is er een factuurnummer?" als
+afkorting voor "is deze factuur af". Had ik de datum helemaal uit de formule
+gehaald, dan waren die drie poorten opengevallen en had je een factuur zonder
+datum kunnen versturen. Nu bepaalt de datum nog steeds *óf* er een nummer is,
+maar niet meer *welk* — en dat verschil is de hele wijziging.
+
+Wis je de datum, dan verdwijnt het nummer tijdelijk en komt het daarna identiek
+terug. Onder de oude formule kwam het anders terug.
+
+**Boven volgnummer 9999** vervalt de opvulling tot vier cijfers in plaats van af
+te kappen. `RIGHT("000" & 10000; 4)` gaf `0000`, en vanaf dat punt had elke
+factuur hetzelfde nummer gekregen. Dat zat er al in en is meteen meegenomen.
+
+**Je twee bestaande facturen** zijn hernummerd van SL-2026-0008/0009 naar
+SL-0008/0009. Allebei nog Concept, geen van beide verstuurd, geen PDF opgeslagen
+— dus er ligt niets bij een klant met een ander nummer. Na je eerste verstuurde
+factuur was dit niet meer gratis geweest.
+
+`tests/faal-factuurnummer.mjs` bewaakt het, in twee lagen, en draait mee in CI.
+Die proef bestaat vooral voor later: over een jaar spreekt deze beslissing niet
+meer voor zichzelf, en iemand kan de formule "verbeteren" door het jaartal terug
+te zetten.
+
 ### Twee chauffeurs die tegelijk dezelfde rit oppakken
 
 Uit de tweede review kwam één punt dat werkelijk een gat bleek. Tussen *"is deze
@@ -561,7 +601,7 @@ betaalzin noemde het niet: er stond "onder vermelding van het factuurnummer" en
 dan mocht de klant zelf terugbladeren.
 
 Nu staat het nummer in de betaalzin zelf: *"onder vermelding van factuurnummer
-SL-2026-0042"*. Het stond er even ook nog onder de betaalgegevens, maar twee
+SL-0042"*. Het stond er even ook nog onder de betaalgegevens, maar twee
 keer hetzelfde nummer op één vel leest als twee nummers — die is er weer af. Het
 nummer wordt één keer uit de adresregel gelezen en twee keer neergezet (bovenaan
 en in de betaalzin), zodat ze niet uit elkaar kunnen lopen.
@@ -911,10 +951,11 @@ netjes van h1 naar h2 zonder gaten, en de foutpagina werkt weer — die verwees 
 de domeinverhuizing nog naar het oude adres en kwam daardoor zonder opmaak en met
 dode links binnen.
 
-**872 controles draaien groen**, verdeeld over negen faaltests: 268 in een
-echte browser (`faal-portalen` 175, `faal-site` 93), 487 tegen de portaal-Worker
+**887 controles draaien groen**, verdeeld over tien faaltests: 268 in een echte
+browser (`faal-portalen` 175, `faal-site` 93), 487 tegen de portaal-Worker
 (`faal-portaal` 207, `faal-klantplicht` 195, `faal-toegang` 31, `faal-push` 54),
-79 tegen de aanvraag-Worker en 38 op de prijsberekening. Daaronder zitten
+79 tegen de aanvraag-Worker, 38 op de prijsberekening en 15 op het
+factuurnummer. Daaronder zitten
 controles dat de prijzen op de site kloppen met de calculator, dat een klant
 nooit een cent van jouw kosten te zien krijgt, en dat een creditnota naar de
 oorspronkelijke factuur verwijst.
