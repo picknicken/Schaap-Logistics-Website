@@ -1668,7 +1668,11 @@ async function factuurInhalen(env, ritId) {
     const rit = await airtable(env, `${env.AIRTABLE_RITTEN}/${ritId}`);
     const f = rit.fields || {};
     if (keuze(f[R.status]) !== 'Uitgevoerd') { return; }
-    if (koppelIds(f[R.facturen]).length) { return; }
+    /* Geen tweede rem hier. zorgVoorFactuur kijkt zelf of er al een factuur
+       hangt, en die telt een vervallen factuur niet mee. Stond hier een eigen
+       telling — en dat was zo — dan bleef deze weg dicht na een vergissing:
+       de rit had "een factuur" en kreeg er nooit meer een, terwijl die ene
+       vervallen was. Eén plek waar die vraag beantwoord wordt is genoeg. */
     await zorgVoorFactuur(env, ritId);
   } catch (fout) {
     console.log(`Factuur inhalen bij ${ritId} mislukt: ${fout.message}`);

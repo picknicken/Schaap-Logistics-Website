@@ -821,6 +821,40 @@ console.log('\nopnieuw factureren');
   keur('en ook niets vervallen verklaren', r.res.status === 403, r.res.status);
 }
 
+console.log('\nde inhaalfactuur na een vervallen factuur');
+{
+  /* Een rit die is afgetekend zonder klant krijgt geen factuur. Koppel je de
+     klant later alsnog, dan hoort die factuur er alsnog te komen — ook als er
+     al een vervallen factuur aan hangt. Hier zat een tweede rem die dat
+     tegenhield: de rit "had een factuur", en dan bleef die weg dicht. */
+  zetKlaar();
+  rit.fields.Status = 'Uitgevoerd';
+  rit.fields.Facturen = [{ id: 'recFactuur0000001' }];
+  facturen.recFactuur0000001 = { id: 'recFactuur0000001',
+    fields: { Factuur: 'F-1', Status: 'Vervallen' } };
+  rit.fields.Klant = [];
+
+  const r = await doe({ actie: 'koppelklant', id: rit.id,
+    klantId: klant.id, soort: 'rit' });
+  keur('de klant koppelen lukt', r.res.status === 200,
+    r.res.status + ' ' + r.tekst.slice(0, 120));
+  keur('en er komt alsnog een factuur bij een vervallen voorganger',
+    !!facturen.recNIEUWEFACTUUR1, Object.keys(facturen).join(' | '));
+
+  /* Andersom blijft de rem staan: hangt er een geldige factuur, dan komt er
+     geen tweede bij. */
+  zetKlaar();
+  rit.fields.Status = 'Uitgevoerd';
+  rit.fields.Facturen = [{ id: 'recFactuur0000001' }];
+  facturen.recFactuur0000001 = { id: 'recFactuur0000001',
+    fields: { Factuur: 'F-1', Status: 'Concept' } };
+  rit.fields.Klant = [];
+  await doe({ actie: 'koppelklant', id: rit.id, klantId: klant.id,
+    soort: 'rit' });
+  keur('bij een geldige factuur komt er geen tweede bij',
+    !facturen.recNIEUWEFACTUUR1, Object.keys(facturen).join(' | '));
+}
+
 console.log('\nwat de klant van zijn facturen ziet');
 {
   zetKlaar();

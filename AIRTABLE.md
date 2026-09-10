@@ -886,6 +886,25 @@ automatiseringen aangeraakt te worden.
 **`Factuurlink` draagt `&vervallen=1`** zodra de status Vervallen is. Wie nog
 een oude link heeft ziet dan een duidelijke melding en geen betaalverzoek.
 
+**`Factuuradres` is leeg bij Vervallen.** Dat veld is het e-mailadres waar de
+factuurmail heen gaat, en *Factuur naar de klant sturen* vuurt alleen als het
+gevuld is. Zet je het vinkje `Factuur versturen` per ongeluk aan op een
+vervallen factuur, dan gebeurt er dus niets. Ook dit is in de formule opgelost
+en niet in de automatisering: het scheelt een verbouwing aan iets wat werkt, en
+de betalingsherinnering leunt op hetzelfde veld.
+
+**Wat hier nog wél kan misgaan: crediteren.** *Creditfactuur maken* start op
+`Crediteren` = aan, `Factuurnummer` niet leeg en `Gecrediteerd door` leeg. Een
+vervallen factuur voldoet daaraan — hij houdt immers zijn nummer. Vink je dat
+vakje aan, dan komt er een creditnota voor een factuur die de klant nooit
+gekregen heeft, en gaat de stand van Vervallen naar Gecrediteerd. Er is geen
+formule die dit tegenhoudt, want er zit geen enkel berekend veld tussen het
+vinkje en de trigger. Het vraagt een bewuste handeling op een factuur waar in
+grote letters *Vervallen* op staat, dus het blijft hier staan als bekende
+grens: **crediteer geen vervallen factuur.** Moet dit ooit dicht, dan is het
+één voorwaarde erbij in de trigger van die automatisering — `Status` is niet
+Vervallen — en verder niets.
+
 **De klant ziet hem niet.** `klantFacturen` laat alleen *Verzonden, Betaald,
 Te laat* en *Gecrediteerd* door. Daar zat trouwens al een gat: er werd op niets
 gefilterd, dus een klant zag ook je conceptfacturen voordat jij ze had
@@ -896,6 +915,15 @@ deze rit al een factuur", dus na een vergissing kun je een nieuwe maken — met 
 knop in het portaal, die `factuuropnieuw` aanroept. De twee Airtable-automatiseringen
 die ook facturen maken kijken naar `Facturen is leeg` en vuren dus niet opnieuw;
 dat is veilig, want zij zijn het vangnet en niet de hoofdweg.
+
+Diezelfde vraag werd op één plek nog fout beantwoord: de inhaalfactuur. Een rit
+die is afgetekend zonder klant krijgt geen factuur, en zodra je de klant er
+later alsnog aan hangt maakt het portaal hem alsnog. Daar stond een eigen
+telling — "hangt er al een factuur?" — die een vervallen factuur gewoon
+meetelde. Gevolg: had die rit ooit een factuur gehad die je vervallen verklaarde,
+dan bleef die weg voorgoed dicht en lag er werk dat je nergens meer zag. Die
+telling is eruit; `zorgVoorFactuur` beantwoordt die vraag al, en die telt een
+vervallen factuur niet mee. Eén plek waar het antwoord vandaan komt is genoeg.
 
 **Een vervallen factuur en een geannuleerde rit zijn twee losse gebeurtenissen.**
 Vervallen verklaren raakt de rit niet aan, en een rit annuleren laat zijn factuur
