@@ -1272,6 +1272,41 @@ input{font:inherit}
        oog op uitbreiding, zodat je bij de eerste chauffeur niet eerst iets
        hoeft te bouwen. Toegangscodes staan er met opzet niet in: die horen in
        Airtable en niet in het geheugen van een telefoon. -->
+  <!-- Schade. Aan je eigen bus, aan de lading, of aan iets van een ander. Met
+       het schadeformulier en foto's erbij, zodat je bij een discussie met de
+       verzekeraar niet op je geheugen hoeft te vertrouwen. -->
+  <div id="paneel-schade" class="wrap" hidden>
+    <details class="nieuwvak">
+      <summary>Schade vastleggen</summary>
+      <div class="nieuwvak__lijf">
+        <label for="sch-wat">Wat is er gebeurd?</label>
+        <input id="sch-wat" type="text" maxlength="200" autocomplete="off"
+               placeholder="Spiegel geraakt bij inparkeren">
+        <label for="sch-datum">Datum</label>
+        <input id="sch-datum" type="date">
+        <label for="sch-soort">Soort</label>
+        <select id="sch-soort">
+          <option>Eigen voertuig</option>
+          <option>Lading van de klant</option>
+          <option>Schade aan derden</option>
+          <option>Anders</option>
+        </select>
+        <label for="sch-kenteken">Kenteken</label>
+        <input id="sch-kenteken" type="text" maxlength="20" autocomplete="off"
+               placeholder="12-AB-34">
+        <label for="sch-toedracht">Toedracht</label>
+        <textarea id="sch-toedracht" rows="4" maxlength="4000"
+                  placeholder="Wat er precies gebeurde. Schrijf dit vandaag op."></textarea>
+        <button class="knop knop--rand" id="sch-bewaar" type="button">Vastleggen</button>
+      </div>
+    </details>
+    <p class="terzijde" style="margin-top:0">
+      Leg het vast op de dag zelf. Over drie maanden weet je het niet meer, en
+      dan staat het woord van de tegenpartij tegenover niets.
+    </p>
+    <div id="lijst-schade"></div>
+  </div>
+
   <!-- De systeemcheck. Geen scherm dat je dagelijks opent, maar het scherm dat
        je opent als er iets niet werkt en je niet weet waar het zit. -->
   <div id="paneel-systeem" class="wrap" hidden>

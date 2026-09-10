@@ -27,6 +27,9 @@ AIRTABLE_FACTUREN = "tblDA2m46PWhhiFnC"
 AIRTABLE_CHAUFFEURS = "tblT2n7aVSbnSxac2"
 AIRTABLE_DAGSTATEN = "tbldVdLrOMjjCJex9"
 AIRTABLE_PUSH = "tbl7Nt9Q4MUysnbAN"
+# Schadegevallen: eigen bus, lading, of iets van een ander. Laat je dit leeg,
+# dan verdwijnt het tabblad Schade en werkt de rest gewoon door.
+AIRTABLE_SCHADES = "tbl5uGDQ2ZMQCeeyT"
 # Wie er bij het portaal aanklopte. Laat je hem leeg, dan wordt er niets
 # vastgelegd en werkt de rest gewoon door.
 AIRTABLE_TOEGANGSLOG = "tblieegCnsk3Pjd4i"

@@ -639,6 +639,96 @@ console.log('\n=== de marge op de kilometers ===');
    werken, en vooral: het mag niet groen zeggen terwijl de tussenlaag onbereikbaar
    is. Dan zoek je in de verkeerde hoek.
    ========================================================================= */
+/* =========================================================================
+   Het tabblad Schade.
+
+   Administratie die je in de regel gebruikt op het slechtste moment van je
+   week: net na een aanrijding, op straat, met een tegenpartij ernaast. Dan
+   moet het formulier eenvoudig zijn en moet er niets verloren gaan.
+   ========================================================================= */
+console.log('\n=== schade vastleggen in het portaal ===');
+{
+  const { ctx, p } = await opent({ ok: true, dag,
+    ik: { rol: 'Eigenaar', naam: 'Shane' },
+    ritten: [], aanvragen: [], opdrachten: [], klanten: [],
+    schades: [{ id: 'recSCHADE00000001', wat: 'Spiegel geraakt',
+      datum: dag, soort: 'Eigen voertuig', status: 'Open',
+      toedracht: 'Bij het inparkeren tegen een paaltje.',
+      kenteken: '12-AB-34', tegenpartij: '', bedrag: 240, eigenRisico: 150,
+      gemeld: '', notitie: '', formulier: '', fotos: [] }] });
+
+  await p.click('#tabmenu-knop');
+  await p.click('#tabmenu button:has-text("Schade")');
+  await p.waitForSelector('#lijst-schade .klantkaart', { timeout: 5000 })
+    .catch(() => {});
+
+  const tekst = (await p.textContent('#paneel-schade')).replace(/\s+/g, ' ');
+  keur('de schade staat op het scherm', /Spiegel geraakt/.test(tekst),
+    tekst.slice(0, 200));
+  keur('met de toedracht erbij', /paaltje/.test(tekst), tekst.slice(0, 300));
+  keur('en het kenteken', /12-AB-34/.test(tekst), tekst.slice(0, 300));
+  keur('de bedragen staan er als euro', /240,00/.test(tekst) && /150,00/.test(tekst),
+    tekst.slice(0, 400));
+
+  const knoppen = await p.$$eval('#lijst-schade .klantkaart__knoppen button',
+    (l) => l.map((k) => (k.textContent || '').trim()));
+  keur('er is een knop om het schadeformulier te uploaden',
+    knoppen.some((t) => /Schadeformulier uploaden/.test(t)), knoppen.join(' | '));
+  keur('en een om een foto toe te voegen',
+    knoppen.some((t) => /Foto erbij/.test(t)), knoppen.join(' | '));
+
+  /* Het uploadveld moet een pdf én een foto aannemen: een schadeformulier is
+     meestal een papier dat je fotografeert. */
+  const soorten = await p.$$eval('#lijst-schade input[type="file"]',
+    (l) => l.map((i) => i.getAttribute('accept')));
+  keur('het formulierveld neemt pdf en foto aan',
+    /application\/pdf/.test(soorten[0] || '') && /image\/jpeg/.test(soorten[0] || ''),
+    soorten.join(' | '));
+  keur('het fotoveld alleen foto',
+    !/application\/pdf/.test(soorten[1] || ''), soorten.join(' | '));
+
+  keur('de stand is te wijzigen',
+    (await p.$$('#lijst-schade select')).length === 1);
+  await ctx.close();
+}
+
+/* Een chauffeur hoort dit niet te zien: er staan bedragen en verzekeringszaken
+   in die zijn werk niet zijn. */
+{
+  const { ctx, p } = await opent({ ok: true, dag,
+    ik: { rol: 'Chauffeur', naam: 'Piet' },
+    ritten: [], aanvragen: [], opdrachten: [], klanten: [] });
+  await p.click('#tabmenu-knop');
+  const regels = await p.$$eval('#tabmenu button',
+    (l) => l.map((k) => (k.textContent || '').trim()));
+  keur('een chauffeur ziet Schade niet in zijn menu',
+    !regels.some((t) => /Schade/i.test(t)), regels.join(' | '));
+  await ctx.close();
+}
+
+/* En het contract bij een chauffeur. */
+{
+  const { ctx, p } = await opent({ ok: true, dag,
+    ik: { rol: 'Eigenaar', naam: 'Shane', id: 'recSHANEDEBAAS001' },
+    ritten: [], aanvragen: [], opdrachten: [], klanten: [],
+    chauffeurs: [{ id: 'recPIETRIJDER0001', naam: 'Piet', rol: 'Chauffeur',
+      actief: true, heeftCode: true, soort: 'ZZP / opdrachtovereenkomst',
+      sinds: '2026-01-15', contract: '' }] });
+  await p.click('#tabmenu-knop');
+  await p.click('#tabmenu button:has-text("Chauffeurs")');
+  await p.waitForSelector('#lijst-chauffeurs .klantkaart', { timeout: 5000 })
+    .catch(() => {});
+  const tekst = (await p.textContent('#paneel-chauffeurs')).replace(/\s+/g, ' ');
+  keur('de contractsoort staat op de kaart', /ZZP/.test(tekst), tekst.slice(0, 300));
+  keur('en sinds wanneer hij rijdt', /15-01-2026|15 jan/.test(tekst),
+    tekst.slice(0, 300));
+  const knoppen = await p.$$eval('#lijst-chauffeurs .klantkaart__knoppen button',
+    (l) => l.map((k) => (k.textContent || '').trim()));
+  keur('er is een knop om een contract te uploaden',
+    knoppen.some((t) => /Contract uploaden/.test(t)), knoppen.join(' | '));
+  await ctx.close();
+}
+
 console.log('\n=== de systeemcheck in het portaal ===');
 {
   const uitslag = { ok: true, dag,

@@ -398,6 +398,62 @@ portaal vanaf je beginscherm draait: daar is geen adresbalk en geen terugknop,
 en zou je jezelf op de marketingpagina opsluiten. Dan blijft het bij het
 inlogscherm.
 
+### Schade vastleggen
+
+Nieuw tabblad **Schade**, en een nieuwe tabel `Schades` in Airtable. Aan je
+eigen bus, aan de lading van een klant, of aan iets van een ander.
+
+Je legt vast wát er gebeurde, wanneer, met welk kenteken en de toedracht in je
+eigen woorden. Daarna kun je het **schadeformulier uploaden** (pdf of een foto
+van het papier) en foto's van de schade zelf toevoegen. De stand loopt van
+*Open* via *Gemeld bij verzekeraar* naar *Afgehandeld*; zet je hem op gemeld,
+dan vult de tussenlaag de meldingsdatum in — de meeste polissen eisen melding
+binnen een paar dagen en die datum wil je later kunnen aanwijzen.
+
+**Waarom dit erin zit.** Een schade die je niet vastlegt is een schade die je
+drie maanden later niet meer kunt onderbouwen. Dan staat het woord van de
+tegenpartij tegenover jouw herinnering, en dan verlies je. Foto's op de dag zelf
+en een toedracht in je eigen woorden zijn het hele verschil.
+
+Er wordt niets berekend en niets automatisch gemeld: melden doe jij bij je
+verzekeraar. Dit is de plek waar het bij elkaar blijft.
+
+Het fotoveld neemt alleen foto's aan en het formulierveld ook pdf — een pdf in
+het fotoveld zou op de kaart als gebroken plaatje verschijnen. Een chauffeur
+ziet dit tabblad niet: er staan bedragen en verzekeringszaken in.
+
+**Wat er níét in staat en wel in je voorwaarden hoort te blijven:** je
+aansprakelijkheid voor de lading is al geregeld via AVC 2002 (binnenland) en het
+CMR-verdrag (buitenland), met de kilolimieten erin. Dat staat in artikel 8 van
+je voorwaarden en dekt de belangrijkste categorie.
+
+### Contracten bij chauffeurs
+
+Bij een chauffeur kun je nu het **contract uploaden**, net als bij een klant, en
+staat erbij onder welke afspraak hij rijdt (`Contractsoort`: loondienst, zzp,
+uitzend, oproep) en sinds wanneer.
+
+**Wat hier bewust niet gebeurt is het contract opstellen.** Onder welke afspraak
+iemand voor je rijdt is een juridische vraag — schijnzelfstandigheid speelt,
+en mogelijk de cao Beroepsgoederenvervoer — en die hoort langs iemand die daar
+werkelijk in zit. Dit is de bewaarplek, niet de tekst.
+
+### De prijzen op de pagina naast de rekenmachine
+
+Er was één gat in de prijsproeven. `faal-zelfde-som` bewees dat de browser en
+de Worker hetzelfde rekenen, en `faal-zelfde-som-airtable` dat Airtable dat ook
+doet. Maar de bedragen staan óók als platte tekst op de tarievenpagina, de
+homepage en de dienstenpagina, en die tekst rekent nergens mee.
+
+Nu leest een proef die drie pagina's in een echte browser en houdt elk genoemd
+bedrag naast `SL.CONFIG`: starttarieven, kilometerprijzen, het minimum, de
+toeslagpercentages met hun ondergrens, de stoptoeslag en het wachttarief. Ik heb
+hem ook op de proef gesteld door in `site.js` één kilometerprijs te veranderen:
+alle drie de pagina's vielen meteen om.
+
+Daarmee is de laatste losse schakel in de prijsketen afgedekt: rekenmachine,
+Worker, Airtable én de tekst op de site zeggen aantoonbaar hetzelfde.
+
 ### De systeemcheck: waar zit het als er iets niet werkt
 
 Nieuw tabblad **Systeemcheck**, alleen voor jou. Eén knop, en dan loopt de
@@ -837,9 +893,9 @@ netjes van h1 naar h2 zonder gaten, en de foutpagina werkt weer — die verwees 
 de domeinverhuizing nog naar het oude adres en kwam daardoor zonder opmaak en met
 dode links binnen.
 
-**817 controles draaien groen**, verdeeld over negen faaltests: 245 in een
-echte browser (`faal-portalen` 162, `faal-site` 83), 455 tegen de portaal-Worker
-(`faal-portaal` 175, `faal-klantplicht` 195, `faal-toegang` 31, `faal-push` 54),
+**866 controles draaien groen**, verdeeld over negen faaltests: 268 in een
+echte browser (`faal-portalen` 175, `faal-site` 93), 481 tegen de portaal-Worker
+(`faal-portaal` 201, `faal-klantplicht` 195, `faal-toegang` 31, `faal-push` 54),
 79 tegen de aanvraag-Worker en 38 op de prijsberekening. Daaronder zitten
 controles dat de prijzen op de site kloppen met de calculator, dat een klant
 nooit een cent van jouw kosten te zien krijgt, en dat een creditnota naar de

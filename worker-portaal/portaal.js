@@ -684,6 +684,12 @@ async function schakel(env, body, origin, wie) {
     case 'klanttarief':  return await zetKlanttarief(env, body, origin);
     case 'klantcontract':return await zetKlantcontract(env, body, origin);
     case 'toegangweg':   return await trekToegangIn(env, body, origin);
+    case 'chauffeurcontract': return await zetChauffeurcontract(env, body, origin);
+    case 'schades':      return await haalSchades(env, body, origin);
+    case 'nieuweschade': return await nieuweSchade(env, body, origin);
+    case 'schadebij':    return await werkSchadeBij(env, body, origin);
+    case 'schadeformulier': return await zetSchadeBijlage(env, body, origin, 'formulier');
+    case 'schadefoto':   return await zetSchadeBijlage(env, body, origin, 'foto');
     case 'systeemcheck': return await systeemcheck(env, body, origin);
     case 'facturen':     return await haalFacturen(env, body, origin);
     case 'portaallink':  return await haalPortaallink(env, body, origin);
@@ -3812,6 +3818,192 @@ async function leesBericht(env, body, origin) {
   }, origin, true);
 }
 
+/* ------------------------------------------------------- het contract
+
+   Hetzelfde als bij een klant, en om dezelfde reden: bij een discussie of een
+   controle wil je het papier kunnen laten zien zonder eerst een map op je
+   laptop open te zoeken.
+
+   Wat hier NIET gebeurt is het contract opstellen. Onder welke afspraak iemand
+   voor je rijdt — loondienst, zzp, uitzend — is een juridische vraag waar
+   schijnzelfstandigheid en mogelijk de cao aan hangen, en die hoort langs
+   iemand die daar werkelijk in zit. Dit is de bewaarplek, niet de tekst. */
+async function zetChauffeurcontract(env, body, origin) {
+  const id = recordId(body.id);
+  if (!id) { return antwoord(400, { fout: 'Ongeldig chauffeur-id' }, origin, true); }
+
+  const match = /^data:(application\/pdf|image\/png|image\/jpeg);base64,(.+)$/
+    .exec(String(body.data || ''));
+  if (!match) {
+    return antwoord(400, {
+      fout: 'Stuur een pdf of een foto van het contract.'
+    }, origin, true);
+  }
+  const [, type, base64] = match;
+  if (base64.length * 0.75 > MAX_CONTRACT_MB * 1024 * 1024) {
+    return antwoord(413, {
+      fout: 'Dat bestand is te groot. Hoogstens ' + MAX_CONTRACT_MB + ' MB.'
+    }, origin, true);
+  }
+
+  const naam = schoneBestandsnaam(body.naam || 'contract') ||
+               ('contract.' + (type === 'application/pdf' ? 'pdf' : 'jpg'));
+  await uploadBijlage(env, id, MW.contract, type, base64, naam);
+  return antwoord(200, { ok: true }, origin, true);
+}
+
+/* ================================================================== schade
+
+   Schade aan je eigen bus, aan de lading van een klant, of aan iets van een
+   ander. Met het schadeformulier en de foto's erbij.
+
+   Waarom dit erin zit: een schade die je niet vastlegt is een schade die je
+   drie maanden later niet meer kunt onderbouwen. Dan staat het woord van de
+   tegenpartij tegenover jouw herinnering, en dan verlies je. Foto's op de dag
+   zelf en een toedracht in je eigen woorden zijn het hele verschil.
+
+   Het is administratie en geen automatisering: er wordt niets berekend, niets
+   doorbelast en niets gemeld. Dat doe jij bij je verzekeraar; dit is de plek
+   waar het bij elkaar blijft. */
+async function haalSchades(env, body, origin) {
+  if (!env.AIRTABLE_SCHADES) {
+    return antwoord(200, { ok: true, schades: [] }, origin, true);
+  }
+  const zoek = new URLSearchParams();
+  zoek.set('pageSize', '100');
+  zoek.append('sort[0][field]', SC.datum);
+  zoek.append('sort[0][direction]', 'desc');
+  const data = await airtable(env, `${env.AIRTABLE_SCHADES}?${zoek}`);
+  const schades = (data.records || []).map((r) => naarSchade(r));
+  return antwoord(200, { ok: true, schades }, origin, true);
+}
+
+function naarSchade(record) {
+  const f = record.fields || {};
+  return {
+    id:          record.id,
+    wat:         f[SC.wat] || '',
+    datum:       f[SC.datum] || '',
+    soort:       keuze(f[SC.soort]) || '',
+    status:      keuze(f[SC.status]) || 'Open',
+    toedracht:   f[SC.toedracht] || '',
+    kenteken:    f[SC.kenteken] || '',
+    tegenpartij: f[SC.tegenpartij] || '',
+    bedrag:      f[SC.bedrag] || 0,
+    eigenRisico: f[SC.eigenRisico] || 0,
+    gemeld:      f[SC.gemeld] || '',
+    notitie:     f[SC.notitie] || '',
+    formulier:   bijlageUrl(f[SC.formulier]),
+    fotos:       bijlagen(f[SC.fotos])
+  };
+}
+
+async function nieuweSchade(env, body, origin) {
+  if (!env.AIRTABLE_SCHADES) {
+    return antwoord(503, {
+      fout: 'De schadetabel staat niet ingesteld in de tussenlaag.'
+    }, origin, true);
+  }
+  const wat = String(body.wat || '').trim().slice(0, 200);
+  if (!wat) {
+    return antwoord(400, { fout: 'Zeg in één regel wat er gebeurd is.' }, origin, true);
+  }
+  const velden = {
+    [SC.wat]:    wat,
+    [SC.datum]:  datum(body.datum) || vandaagInNederland(),
+    [SC.status]: 'Open'
+  };
+  const soort = SCHADE_SOORTEN.indexOf(String(body.soort || '')) >= 0
+    ? String(body.soort) : 'Eigen voertuig';
+  velden[SC.soort] = soort;
+  if (body.toedracht) {
+    velden[SC.toedracht] = String(body.toedracht).slice(0, 4000).trim();
+  }
+  if (body.kenteken) {
+    velden[SC.kenteken] = String(body.kenteken).trim().toUpperCase().slice(0, 20);
+  }
+  const schade = naarSchade(await maak(env, env.AIRTABLE_SCHADES, velden));
+  console.log(`Schade vastgelegd: ${schade.id}`);
+  return antwoord(200, { ok: true, schade }, origin, true);
+}
+
+async function werkSchadeBij(env, body, origin) {
+  const id = recordId(body.id);
+  if (!id) { return antwoord(400, { fout: 'Ongeldig schade-id' }, origin, true); }
+
+  const velden = {};
+  if (body.status !== undefined) {
+    if (SCHADE_STANDEN.indexOf(String(body.status)) < 0) {
+      return antwoord(400, { fout: 'Die stand bestaat niet.' }, origin, true);
+    }
+    velden[SC.status] = String(body.status);
+    /* Zet je hem op gemeld en staat er nog geen datum, dan is dat vandaag. De
+       meeste polissen eisen melding binnen een paar dagen, dus die datum wil
+       je later kunnen aanwijzen. */
+    if (String(body.status) === 'Gemeld bij verzekeraar' && !body.gemeld) {
+      velden[SC.gemeld] = vandaagInNederland();
+    }
+  }
+  if (body.toedracht !== undefined) {
+    velden[SC.toedracht] = String(body.toedracht).slice(0, 4000).trim();
+  }
+  if (body.notitie !== undefined) {
+    velden[SC.notitie] = String(body.notitie).slice(0, 4000).trim();
+  }
+  if (body.tegenpartij !== undefined) {
+    velden[SC.tegenpartij] = String(body.tegenpartij).trim().slice(0, 200);
+  }
+  if (body.kenteken !== undefined) {
+    velden[SC.kenteken] = String(body.kenteken).trim().toUpperCase().slice(0, 20);
+  }
+  const bedrag = euroBedrag(body.bedrag);
+  if (bedrag !== null) { velden[SC.bedrag] = bedrag; }
+  const eigen = euroBedrag(body.eigenRisico);
+  if (eigen !== null) { velden[SC.eigenRisico] = eigen; }
+  const gemeld = datum(body.gemeld);
+  if (gemeld) { velden[SC.gemeld] = gemeld; }
+
+  if (!Object.keys(velden).length) {
+    return antwoord(400, { fout: 'Er viel niets bij te werken' }, origin, true);
+  }
+  const schade = naarSchade(await patch(env, env.AIRTABLE_SCHADES, id, velden));
+  return antwoord(200, { ok: true, schade }, origin, true);
+}
+
+/* Het schadeformulier of een foto erbij. Twee velden, één functie: het verschil
+   is welk veld en welke bestandssoorten er in mogen. Een schadeformulier is
+   meestal een pdf of een foto van een papier; een schadefoto is een foto. */
+async function zetSchadeBijlage(env, body, origin, welk) {
+  const id = recordId(body.id);
+  if (!id) { return antwoord(400, { fout: 'Ongeldig schade-id' }, origin, true); }
+
+  const alleenFoto = welk === 'foto';
+  const patroon = alleenFoto
+    ? /^data:(image\/png|image\/jpeg);base64,(.+)$/
+    : /^data:(application\/pdf|image\/png|image\/jpeg);base64,(.+)$/;
+  const match = patroon.exec(String(body.data || ''));
+  if (!match) {
+    return antwoord(400, {
+      fout: alleenFoto ? 'Stuur een foto (png of jpg).'
+                       : 'Stuur een pdf of een foto van het schadeformulier.'
+    }, origin, true);
+  }
+  const [, type, base64] = match;
+  if (base64.length * 0.75 > MAX_CONTRACT_MB * 1024 * 1024) {
+    return antwoord(413, {
+      fout: 'Dat bestand is te groot. Hoogstens ' + MAX_CONTRACT_MB + ' MB.'
+    }, origin, true);
+  }
+
+  const veld = alleenFoto ? SC.fotos : SC.formulier;
+  const naam = schoneBestandsnaam(body.naam || (alleenFoto ? 'schadefoto' : 'schadeformulier')) ||
+               ((alleenFoto ? 'schadefoto.' : 'schadeformulier.') +
+                (type === 'application/pdf' ? 'pdf' : 'jpg'));
+  await uploadBijlage(env, id, veld, type, base64, naam);
+  const rec = await airtable(env, `${env.AIRTABLE_SCHADES}/${id}`);
+  return antwoord(200, { ok: true, schade: naarSchade(rec) }, origin, true);
+}
+
 /* ============================================================ systeemcheck
 
    Wat je wilt weten als er iets niet werkt is niet dát er iets niet werkt —
@@ -3846,6 +4038,8 @@ function controleTabellen() {
   { env: 'AIRTABLE_CHAUFFEURS',   naam: 'Chauffeurs',        kaarten: [MW] },
   { env: 'AIRTABLE_DAGSTATEN',    naam: 'Dagstaten',         kaarten: [D] },
   { env: 'AIRTABLE_PUSH',         naam: 'Pushmeldingen',     kaarten: [PU] },
+  { env: 'AIRTABLE_SCHADES',      naam: 'Schades',           kaarten: [SC],
+    magOntbreken: true },
   { env: 'AIRTABLE_TOEGANGSLOG',  naam: 'Toegangslog',       kaarten: [TL],
     magOntbreken: true }
   ];
@@ -4143,8 +4337,42 @@ const MW = {
   email:    'E-mail',
   telefoon: 'Telefoon',
   kenteken: 'Kenteken',
-  notitie:  'Notitie'
+  notitie:  'Notitie',
+  /* Het contract. De tussenlaag doet er niets mee — geen enkele beslissing
+     hangt ervan af — maar het hoort bij de persoon en niet in een map op je
+     laptop. Bij een controle of een discussie wil je het kunnen laten zien
+     zonder eerst te zoeken. */
+  contract: 'Contract',
+  soort:    'Contractsoort',
+  sinds:    'Rijdt sinds'
 };
+
+/* De schadetabel. Aan je eigen bus, aan de lading, of aan iets van een ander;
+   met het formulier en de foto's erbij.
+
+   Waarom dit een eigen tabel is en geen veld op de rit: schade hoort niet altijd
+   bij een rit. Een deuk op de oprit, een steenslag onderweg naar huis — die
+   horen er net zo goed in, en die hebben geen rit om aan te hangen. */
+const SC = {
+  wat:        'Schade',
+  datum:      'Datum',
+  soort:      'Soort',
+  status:     'Status',
+  toedracht:  'Toedracht',
+  formulier:  'Schadeformulier',
+  fotos:      "Foto's",
+  kenteken:   'Kenteken',
+  tegenpartij:'Tegenpartij',
+  bedrag:     'Geschat bedrag',
+  eigenRisico:'Eigen risico',
+  gemeld:     'Gemeld op',
+  notitie:    'Notitie'
+};
+
+const SCHADE_SOORTEN = ['Eigen voertuig', 'Lading van de klant',
+                        'Schade aan derden', 'Anders'];
+const SCHADE_STANDEN = ['Open', 'Gemeld bij verzekeraar', 'In behandeling',
+                        'Afgehandeld'];
 
 /* De lijst met chauffeurs, voor het tabblad in je portaal. Met het oog op
    uitbreiding: nu ben jij de enige, straks staan er meer.
@@ -4171,6 +4399,12 @@ async function haalChauffeurs(env, body, origin) {
       telefoon: f[MW.telefoon] || '',
       kenteken: f[MW.kenteken] || '',
       notitie:  f[MW.notitie] || '',
+      soort:    keuze(f[MW.soort]) || '',
+      sinds:    f[MW.sinds] || '',
+      /* Of er een contract hangt en hoe je erbij komt. De bijlage zelf gaat
+         niet mee: dat zijn megabytes per chauffeur op een lijst die je bij elk
+         bezoek ophaalt. */
+      contract: bijlageUrl(f[MW.contract]),
       /* Of er een code is, niet welke. De code zelf komt alleen langs als je
          er in het portaal om vraagt — zie haalChauffeurcode. */
       heeftCode: !!String(f[MW.code] || '').trim()

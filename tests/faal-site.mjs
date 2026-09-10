@@ -299,6 +299,74 @@ console.log('\n=== het aanvraagformulier ===');
   keur('er zijn knoppen om mee verder te gaan', knoppen > 0);
 }
 
+/* =========================================================================
+   Staan de tarieven op de site gelijk aan de tarieven in de rekenmachine?
+
+   Dit is het gat dat de andere prijsproeven niet dekten. faal-zelfde-som
+   bewijst dat de browser en de Worker hetzelfde rekenen, en
+   faal-zelfde-som-airtable dat Airtable dat ook doet. Maar de bedragen staan
+   óók als platte tekst op de tarievenpagina, de homepage en de dienstenpagina,
+   en die tekst rekent nergens mee. Verandert er een tarief in site.js en
+   vergeet je de pagina, dan noem je de klant een ander bedrag dan je hem
+   factureert — en dat merk je pas als hij belt.
+   ========================================================================= */
+console.log('\n=== de prijzen op de pagina naast de rekenmachine ===');
+{
+  for (const pad of ['/tarieven/', '/', '/diensten/']) {
+    await p.goto(BASIS + pad, { waitUntil: 'networkidle' });
+    const uit = await p.evaluate(() => {
+      const C = window.SL && window.SL.CONFIG;
+      if (!C) { return { fout: 'site.js is niet geladen' }; }
+      const tekst = document.body.textContent.replace(/\s+/g, ' ');
+      const mist = [];
+      Object.keys(C.ritten).forEach((k) => {
+        const r = C.ritten[k];
+        /* Alleen kijken naar de diensten die op deze pagina genoemd worden.
+           De homepage noemt niet alle vier de tarieven, en dat hoeft ook niet. */
+        if (tekst.indexOf(r.naam) < 0) { return; }
+        const start = '\u20ac' + '\u00a0?' + r.start;
+        if (!new RegExp(start.replace('\u20ac', '\u20ac\\s*')).test(tekst) &&
+            tekst.indexOf(String(r.start)) < 0) {
+          mist.push(r.naam + ' starttarief ' + r.start);
+        }
+        const km = r.km.toFixed(2).replace('.', ',');
+        if (tekst.indexOf(km) < 0) { mist.push(r.naam + ' km-tarief ' + km); }
+      });
+      /* En het minimumtarief, waar het genoemd wordt. */
+      if (/minimum/i.test(tekst) && tekst.indexOf(String(C.minimum)) < 0) {
+        mist.push('minimumtarief ' + C.minimum);
+      }
+      return { mist, genoemd: Object.keys(C.ritten)
+        .filter((k) => tekst.indexOf(C.ritten[k].naam) >= 0).length };
+    });
+    keur(pad + ' laadt de rekenmachine', !uit.fout, uit.fout);
+    keur(pad + ' noemt minstens één dienst', (uit.genoemd || 0) > 0, uit.genoemd);
+    keur(pad + ' noemt overal dezelfde bedragen als de rekenmachine',
+      (uit.mist || []).length === 0, (uit.mist || []).join(' | '));
+  }
+
+  /* En de toeslagen: die stonden eerder als vast bedrag op de pagina terwijl
+     de rekenmachine met percentages werkt. */
+  await p.goto(BASIS + '/tarieven/', { waitUntil: 'networkidle' });
+  const toeslag = await p.evaluate(() => {
+    const C = window.SL.CONFIG;
+    const tekst = document.body.textContent.replace(/\s+/g, ' ');
+    const mist = [];
+    Object.keys(C.tijden).forEach((k) => {
+      const t = C.tijden[k];
+      if (!t.deel) { return; }
+      const pct = Math.round(t.deel * 100) + '%';
+      if (tekst.indexOf(pct) < 0) { mist.push(k + ' ' + pct); }
+      if (tekst.indexOf(String(t.bodem)) < 0) { mist.push(k + ' bodem ' + t.bodem); }
+    });
+    if (tekst.indexOf(String(C.stoptoeslag)) < 0) { mist.push('stoptoeslag'); }
+    if (tekst.indexOf(String(C.wachttijd.tarief)) < 0) { mist.push('wachttarief'); }
+    return mist;
+  });
+  keur('de toeslagen op de pagina kloppen met de rekenmachine',
+    toeslag.length === 0, toeslag.join(' | '));
+}
+
 console.log('\n=== de tijdvakken en wanneer je iemand aan de lijn krijgt ===');
 {
   await p.goto(BASIS + '/aanvragen/', { waitUntil: 'networkidle' });

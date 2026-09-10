@@ -907,7 +907,8 @@
     /* Meldingen gaan over aanvragen, klanten en facturen — jouw bedrijfsvoering.
        Een chauffeur heeft daar niets te zoeken, dus dat tabblad gaat mee weg. */
     verborgen = alleenRitten
-      ? ['aanvragen', 'planning', 'meldingen', 'klanten', 'chauffeurs', 'systeem']
+      ? ['aanvragen', 'planning', 'meldingen', 'klanten', 'chauffeurs', 'schade',
+         'systeem']
       : [];
     if (alleenRitten && tabblad !== 'ritten') { kiesTab('ritten'); }
     regelMenuknop();
@@ -1024,12 +1025,12 @@
      passen is het punt: wat om aandacht vraagt hoort in beeld te staan. De
      rekenmachine stond daar eerst, en die pak je er juist af en toe bij. */
   var TABBLADEN = ['ritten', 'aanvragen', 'meldingen', 'planning',
-                   'klanten', 'chauffeurs', 'prijs', 'systeem'];
+                   'klanten', 'chauffeurs', 'schade', 'prijs', 'systeem'];
 
   var TABNAAM = {
     ritten: 'Ritten', aanvragen: 'Aanvragen', meldingen: 'Meldingen',
     planning: 'Planning', klanten: 'Klanten', chauffeurs: 'Chauffeurs',
-    prijs: 'Prijs', systeem: 'Systeemcheck'
+    schade: 'Schade', prijs: 'Prijs', systeem: 'Systeemcheck'
   };
 
   /* Welke tabbladen deze persoon niet mag zien. Stond eerst als hidden op de
@@ -1058,6 +1059,7 @@
     if (naam === 'klanten') { tekenKlanten(); }
     if (naam === 'prijs') { toonPrijs(); }
     if (naam === 'chauffeurs') { haalChauffeurs(); }
+    if (naam === 'schade') { haalSchades(); }
   }
 
   /* ------------------------------------------------------------ chauffeurs
@@ -1173,7 +1175,9 @@
     var regels = maak('div', 'regels');
     [regel('Telefoon', c.telefoon, true),
      regel('E-mail', c.email, true),
-     regel('Kenteken', c.kenteken, true)
+     regel('Kenteken', c.kenteken, true),
+     regel('Contract', c.soort || '', false),
+     regel('Rijdt sinds', c.sinds ? datumKort(String(c.sinds).slice(0, 10)) : '', false)
     ].forEach(function (r) { if (r) { regels.appendChild(r); } });
     if (regels.childNodes.length) { kaart.appendChild(regels); }
 
@@ -1183,6 +1187,50 @@
       bel.href = 'tel:' + String(c.telefoon).replace(/\s/g, '');
       knoppen.appendChild(bel);
     }
+
+    /* Het contract. Hetzelfde als bij een klant en om dezelfde reden: bij een
+       controle of een discussie wil je het papier kunnen laten zien zonder
+       eerst een map op je laptop open te zoeken.
+
+       Wat hier niet gebeurt is het contract opstellen. Onder welke afspraak
+       iemand voor je rijdt is een juridische vraag; dit is de bewaarplek. */
+    if (c.contract) {
+      var conLink = maak('a', 'knop knop--rand', 'Contract bekijken');
+      conLink.href = veiligAdres(c.contract);
+      conLink.target = '_blank';
+      conLink.rel = 'noopener';
+      knoppen.appendChild(conLink);
+    }
+    var conKies = document.createElement('input');
+    conKies.type = 'file';
+    conKies.accept = 'application/pdf,image/png,image/jpeg';
+    conKies.hidden = true;
+    var conKnop = maak('button', 'knop knop--rand',
+      c.contract ? 'Ander contract' : 'Contract uploaden');
+    conKnop.type = 'button';
+    conKnop.addEventListener('click', function () { conKies.click(); });
+    conKies.addEventListener('change', function () {
+      var bestand = conKies.files && conKies.files[0];
+      if (!bestand) { return; }
+      bezig(conKnop, 'Uploaden\u2026', function (klaar) {
+        meldApp('');
+        var lezer = new FileReader();
+        lezer.onerror = function () {
+          meldApp('Dat bestand kon niet gelezen worden.');
+          klaar(false);
+        };
+        lezer.onload = function () {
+          verstuur('chauffeurcontract', {
+            id: c.id, naam: bestand.name, data: lezer.result
+          })
+            .then(function () { chauffeurs = []; haalChauffeurs(); })
+            .catch(function (fout) { meldApp(fout.message); klaar(false); });
+        };
+        lezer.readAsDataURL(bestand);
+      });
+    });
+    knoppen.appendChild(conKnop);
+    knoppen.appendChild(conKies);
 
     /* De code komt pas langs als je erop drukt. Zie haalChauffeurcode in de
        tussenlaag: in het overzicht zit hij bewust niet, want dat overzicht
@@ -1326,6 +1374,206 @@
     if (!meer) { sluitTabmenu(); }
     tekenMenubel();
   }
+
+  /* --------------------------------------------------------------- schade
+
+     Schade aan je eigen bus, aan de lading van een klant, of aan iets van een
+     ander. Met het schadeformulier en de foto's erbij.
+
+     Waarom het erin zit: een schade die je niet vastlegt is een schade die je
+     drie maanden later niet meer kunt onderbouwen. Dan staat het woord van de
+     tegenpartij tegenover jouw herinnering. Foto's op de dag zelf en een
+     toedracht in je eigen woorden zijn het hele verschil.
+
+     Er wordt niets berekend en niets gemeld: melden doe jij bij je verzekeraar.
+     Dit is de plek waar het bij elkaar blijft. */
+  var schades = [];
+
+  function haalSchades() {
+    var lijst = el('lijst-schade');
+    if (!lijst) { return; }
+    if (schades.length) { tekenSchades(); return; }
+    lijst.innerHTML = '';
+    lijst.appendChild(maak('div', 'leeg', 'Bezig met ophalen\u2026'));
+    verstuur('schades', {})
+      .then(function (data) {
+        schades = (data && data.schades) || [];
+        tekenSchades();
+      })
+      .catch(function (fout) {
+        lijst.innerHTML = '';
+        lijst.appendChild(maak('div', 'leeg', fout.message));
+      });
+  }
+
+  function tekenSchades() {
+    var lijst = el('lijst-schade');
+    if (!lijst) { return; }
+    lijst.innerHTML = '';
+    if (!schades.length) {
+      lijst.appendChild(maak('div', 'leeg',
+        'Nog geen schade vastgelegd. Dat is goed nieuws.'));
+      return;
+    }
+    schades.forEach(function (sch) { lijst.appendChild(tekenSchade(sch)); });
+  }
+
+  var SCHADE_STANDEN = ['Open', 'Gemeld bij verzekeraar', 'In behandeling',
+                        'Afgehandeld'];
+
+  function vervangSchade(nieuw) {
+    if (!nieuw) { return; }
+    for (var i = 0; i < schades.length; i++) {
+      if (schades[i].id === nieuw.id) { schades[i] = nieuw; break; }
+    }
+    tekenSchades();
+  }
+
+  function tekenSchade(sch) {
+    var kaart = maak('div', 'klantkaart');
+    var kop = maak('div', 'klantkaart__kop');
+    var titel = maak('div');
+    titel.appendChild(maak('div', 'klantkaart__naam', sch.wat || 'Schade'));
+    var onder = [];
+    if (sch.datum) { onder.push(datumKort(String(sch.datum).slice(0, 10))); }
+    if (sch.soort) { onder.push(sch.soort); }
+    if (sch.kenteken) { onder.push(sch.kenteken); }
+    titel.appendChild(maak('div', 'klantkaart__sub', onder.join(' \u00b7 ')));
+    kop.appendChild(titel);
+    var merk = maak('span', 'klantkaart__soort', sch.status || 'Open');
+    if (sch.status === 'Afgehandeld') { merk.setAttribute('data-vast', ''); }
+    kop.appendChild(merk);
+    kaart.appendChild(kop);
+
+    if (sch.toedracht) {
+      kaart.appendChild(maak('p', 'notitie__toon', sch.toedracht));
+    }
+
+    var regels = maak('div', 'regels');
+    [regel('Tegenpartij', sch.tegenpartij, true),
+     regel('Geschat bedrag', sch.bedrag ? euroCent.format(sch.bedrag) : '', false),
+     regel('Eigen risico', sch.eigenRisico ? euroCent.format(sch.eigenRisico) : '', false),
+     regel('Gemeld op', sch.gemeld ? datumKort(String(sch.gemeld).slice(0, 10)) : '', false)
+    ].forEach(function (r) { if (r) { regels.appendChild(r); } });
+    if (regels.childNodes.length) { kaart.appendChild(regels); }
+
+    /* De foto's, net als bij een rit: een postzegel, en de hele foto pas als je
+       erop drukt. */
+    if (sch.fotos && sch.fotos.length) {
+      var fotovak = maak('div', 'fotos');
+      sch.fotos.forEach(function (f, nr) {
+        var vakje = maak('a', '');
+        vakje.href = veiligAdres(f.url);
+        vakje.target = '_blank';
+        vakje.rel = 'noopener';
+        var plaat = document.createElement('img');
+        plaat.src = veiligePlaat(f.klein || f.url);
+        plaat.alt = 'Foto ' + (nr + 1) + ' bij deze schade';
+        plaat.loading = 'lazy';
+        vakje.appendChild(plaat);
+        fotovak.appendChild(vakje);
+      });
+      kaart.appendChild(fotovak);
+    }
+
+    var knoppen = maak('div', 'klantkaart__knoppen');
+
+    if (sch.formulier) {
+      var zien = maak('a', 'knop knop--rand', 'Schadeformulier bekijken');
+      zien.href = veiligAdres(sch.formulier);
+      zien.target = '_blank';
+      zien.rel = 'noopener';
+      knoppen.appendChild(zien);
+    }
+    knoppen.appendChild(bijlageKnop(sch,
+      sch.formulier ? 'Ander formulier' : 'Schadeformulier uploaden',
+      'schadeformulier', 'application/pdf,image/png,image/jpeg'));
+    knoppen.appendChild(bijlageKnop(sch, 'Foto erbij', 'schadefoto',
+      'image/png,image/jpeg'));
+
+    /* De stand. Zet je hem op gemeld en staat er nog geen datum, dan zet de
+       tussenlaag die op vandaag: de meeste polissen eisen melding binnen een
+       paar dagen, en die datum wil je later kunnen aanwijzen. */
+    var stand = document.createElement('select');
+    SCHADE_STANDEN.forEach(function (t) {
+      var o = document.createElement('option');
+      o.value = t; o.textContent = t;
+      stand.appendChild(o);
+    });
+    stand.value = sch.status || 'Open';
+    stand.addEventListener('change', function () {
+      meldApp('');
+      verstuur('schadebij', { id: sch.id, status: stand.value })
+        .then(function (data) { vervangSchade(data.schade); })
+        .catch(function (fout) { meldApp(fout.message); stand.value = sch.status; });
+    });
+    knoppen.appendChild(stand);
+
+    kaart.appendChild(knoppen);
+    return kaart;
+  }
+
+  /* Eén knop voor het uploaden van een bijlage bij een schade. Twee keer
+     hetzelfde met een ander veld en andere bestandssoorten. */
+  function bijlageKnop(sch, tekst, actie, soorten) {
+    var kies = document.createElement('input');
+    kies.type = 'file';
+    kies.accept = soorten;
+    kies.hidden = true;
+    var knop = maak('button', 'knop knop--rand', tekst);
+    knop.type = 'button';
+    knop.addEventListener('click', function () { kies.click(); });
+    kies.addEventListener('change', function () {
+      var bestand = kies.files && kies.files[0];
+      if (!bestand) { return; }
+      bezig(knop, 'Uploaden\u2026', function (klaar) {
+        meldApp('');
+        var lezer = new FileReader();
+        lezer.onerror = function () {
+          meldApp('Dat bestand kon niet gelezen worden.');
+          klaar(false);
+        };
+        lezer.onload = function () {
+          verstuur(actie, { id: sch.id, naam: bestand.name, data: lezer.result })
+            .then(function (data) { vervangSchade(data.schade); klaar(true); })
+            .catch(function (fout) { meldApp(fout.message); klaar(false); });
+        };
+        lezer.readAsDataURL(bestand);
+      });
+    });
+    var vak = maak('span', '');
+    vak.appendChild(knop);
+    vak.appendChild(kies);
+    return vak;
+  }
+
+  (function knoopSchade() {
+    var knop = el('sch-bewaar');
+    if (!knop) { return; }
+    knop.addEventListener('click', function () {
+      var wat = el('sch-wat').value.trim();
+      if (!wat) { meldApp('Zeg in \u00e9\u00e9n regel wat er gebeurd is.'); return; }
+      bezig(knop, 'Bezig\u2026', function (klaar) {
+        meldApp('');
+        verstuur('nieuweschade', {
+          wat: wat,
+          datum: el('sch-datum').value,
+          soort: el('sch-soort').value,
+          kenteken: el('sch-kenteken').value,
+          toedracht: el('sch-toedracht').value
+        })
+          .then(function (data) {
+            ['sch-wat', 'sch-kenteken', 'sch-toedracht'].forEach(function (id) {
+              el(id).value = '';
+            });
+            schades.unshift(data.schade);
+            tekenSchades();
+            klaar(true);
+          })
+          .catch(function (fout) { meldApp(fout.message); klaar(false); });
+      });
+    });
+  })();
 
   /* --------------------------------------------------------- systeemcheck
 

@@ -12,7 +12,7 @@ const env = {
   AIRTABLE_TOKEN: 'tok-geheim-niet-lekken', AIRTABLE_BASE: 'appX',
   AIRTABLE_RITTEN: 'tblR', AIRTABLE_OPDRACHTEN: 'tblO', AIRTABLE_AANVRAGEN: 'tblA',
   AIRTABLE_KLANTEN: 'tblK', AIRTABLE_FACTUREN: 'tblF', AIRTABLE_CHAUFFEURS: 'tblC',
-  AIRTABLE_DAGSTATEN: 'tblD', AIRTABLE_PUSH: 'tblP',
+  AIRTABLE_DAGSTATEN: 'tblD', AIRTABLE_PUSH: 'tblP', AIRTABLE_SCHADES: 'tblSCH',
   VAPID_CONTACT: 'mailto:info@schaaplogistics.nl',
   TOEGESTANE_ORIGIN: 'https://schaaplogistics.nl',
   PORTAAL_CODE: 'geheim-hoofdsleutel-1234'
@@ -23,7 +23,7 @@ const BAAS = 'eigen-code-van-de-baas-5678';
 const KLANT = 'klantcode-abcdefgh';
 
 let gesprek = [];
-let rit, klant, medewerkers;
+let rit, klant, medewerkers, schade;
 
 function zetKlaar() {
   rit = { id: 'recAAAAAAAAAAAAAA', fields: {
@@ -38,6 +38,10 @@ function zetKlaar() {
   klant = { id: 'recKKKKKKKKKKKKKK', fields: {
     Klantnaam: 'Klant BV', Portaalcode: KLANT, 'Soort klant': 'Vaste klant',
     Ritten: [rit.id], Facturen: []
+  } };
+  schade = { id: 'recSCHADE00000001', fields: {
+    Schade: 'Spiegel geraakt', Datum: '2026-09-03', Soort: 'Eigen voertuig',
+    Status: 'Open', Kenteken: '12-AB-34'
   } };
   /* Id's in de vorm die Airtable werkelijk teruggeeft: rec plus veertien
      tekens. Stond er iets korters, dan wijst de tussenlaag het af op de vorm
@@ -61,10 +65,17 @@ globalThis.fetch = async (url, opties = {}) => {
   const leesbaar = decodeURIComponent(u.replace(/\+/g, ' '));
 
   if (u.includes('/tblC')) {
+    if (/\/tblC\/rec/.test(u) || opties.method === 'PATCH') {
+      return new Response(JSON.stringify(medewerkers[0]), { status: 200 });
+    }
+    /* Zonder filter geeft Airtable de hele tabel terug — dat is wat het
+       tabblad Chauffeurs ophaalt. Stond hier alleen de filtertak, dan kwam die
+       lijst altijd leeg terug en slaagde elke proef erover om de verkeerde
+       reden. */
     const m = /\{Toegangscode\} = '([^']*)'/.exec(leesbaar);
-    const gezocht = m ? m[1] : ' ';
+    if (!m) { return new Response(JSON.stringify({ records: medewerkers }), { status: 200 }); }
     return new Response(JSON.stringify({
-      records: medewerkers.filter((w) => w.fields.Toegangscode === gezocht) }), { status: 200 });
+      records: medewerkers.filter((w) => w.fields.Toegangscode === m[1]) }), { status: 200 });
   }
   if (u.includes('/tblK')) {
     if (/\/tblK\/rec/.test(u)) { return new Response(JSON.stringify(klant), { status: 200 }); }
@@ -74,6 +85,20 @@ globalThis.fetch = async (url, opties = {}) => {
         records: klant.fields.Portaalcode === m[1] ? [klant] : [] }), { status: 200 });
     }
     return new Response(JSON.stringify({ records: [klant] }), { status: 200 });
+  }
+  if (u.includes('/tblSCH')) {
+    if (opties.method === 'POST') {
+      return new Response(JSON.stringify({ records: [{ id: 'recSCHADE00000001',
+        fields: JSON.parse(opties.body).records[0].fields }] }), { status: 200 });
+    }
+    if (opties.method === 'PATCH') {
+      Object.assign(schade.fields, JSON.parse(opties.body).fields);
+      return new Response(JSON.stringify(schade), { status: 200 });
+    }
+    if (/\/tblSCH\/rec/.test(u)) {
+      return new Response(JSON.stringify(schade), { status: 200 });
+    }
+    return new Response(JSON.stringify({ records: [schade] }), { status: 200 });
   }
   if (u.includes('/tblP')) {
     /* Airtable geeft bij het aanmaken een lijst terug en bij het bijwerken
@@ -697,6 +722,123 @@ console.log('\nde systeemcheck');
   const schrijf = r.gesprek.filter((c) => c.method && c.method !== 'GET');
   keur('de systeemcheck schrijft nergens iets weg', schrijf.length === 0,
     JSON.stringify(schrijf.map((c) => c.method + ' ' + c.url)).slice(0, 200));
+}
+
+/* =========================================================================
+   Schade en contracten.
+
+   Twee stukken administratie waar de tussenlaag verder niets mee rekent. Dat
+   maakt ze niet vrijblijvend: er gaan bestanden in, en alles wat een bestand
+   aanneemt moet weten wat het níét aanneemt.
+   ========================================================================= */
+console.log('\nschade vastleggen');
+{
+  zetKlaar();
+
+  let r = await doe({ actie: 'nieuweschade', wat: 'Spiegel geraakt',
+    datum: '2026-09-03', soort: 'Eigen voertuig', kenteken: '12-ab-34',
+    toedracht: 'Bij het inparkeren tegen een paaltje.' });
+  keur('een schade vastleggen lukt', r.res.status === 200, r.res.status);
+  const velden = (r.gesprek.find((c) => c.method === 'POST' &&
+    (c.body || {}).records) || {}).body.records[0].fields;
+  keur('met de datum erbij', velden.Datum === '2026-09-03', velden.Datum);
+  keur('het kenteken in hoofdletters', velden.Kenteken === '12-AB-34', velden.Kenteken);
+  keur('en hij begint op Open', velden.Status === 'Open', velden.Status);
+
+  r = await doe({ actie: 'nieuweschade', wat: '' });
+  keur('zonder omschrijving wordt hij geweigerd', r.res.status === 400, r.res.status);
+
+  /* Een verzonnen soort mag niet doorschieten naar Airtable: dat veld is een
+     keuzelijst en een onbekende waarde laat de hele schrijfactie omvallen. */
+  r = await doe({ actie: 'nieuweschade', wat: 'Iets', soort: '<script>' });
+  const v2 = (r.gesprek.find((c) => c.method === 'POST' &&
+    (c.body || {}).records) || {}).body.records[0].fields;
+  keur('een verzonnen soort valt terug op een bestaande',
+    v2.Soort === 'Eigen voertuig', v2.Soort);
+
+  /* De stand bijwerken, en de meldingsdatum die vanzelf meekomt. */
+  r = await doe({ actie: 'schadebij', id: 'recSCHADE00000001',
+    status: 'Gemeld bij verzekeraar' });
+  keur('de stand bijwerken lukt', r.res.status === 200, r.res.status);
+  const p1 = patches()[0] || {};
+  keur('en zet meteen de meldingsdatum', !!p1['Gemeld op'], JSON.stringify(p1));
+
+  r = await doe({ actie: 'schadebij', id: 'recSCHADE00000001', status: 'Verzonnen' });
+  keur('een verzonnen stand wordt geweigerd', r.res.status === 400, r.res.status);
+
+  r = await doe({ actie: 'schadebij', id: 'recSCHADE00000001' });
+  keur('een bijwerking zonder velden ook', r.res.status === 400, r.res.status);
+
+  /* En de lijst. */
+  r = await doe({ actie: 'schades' });
+  keur('de lijst komt terug', r.res.status === 200 &&
+    Array.isArray(r.data.schades), r.res.status);
+
+  /* Een chauffeur heeft hier niets te zoeken. */
+  r = await doe({ actie: 'schades' }, { code: CHAUF });
+  keur('een chauffeur mag de schadelijst niet zien', r.res.status === 403,
+    r.res.status);
+}
+
+console.log('\nbestanden bij een schade en bij een chauffeur');
+{
+  zetKlaar();
+  const pdf = 'data:application/pdf;base64,' + 'A'.repeat(40);
+  const jpg = 'data:image/jpeg;base64,' + 'A'.repeat(40);
+
+  let r = await doe({ actie: 'schadeformulier', id: 'recSCHADE00000001',
+    naam: 'formulier.pdf', data: pdf });
+  keur('een schadeformulier als pdf mag', r.res.status === 200,
+    r.res.status + ' ' + r.tekst.slice(0, 120));
+
+  r = await doe({ actie: 'schadeformulier', id: 'recSCHADE00000001',
+    naam: 'foto.jpg', data: jpg });
+  keur('een foto van het papier ook', r.res.status === 200, r.res.status);
+
+  /* Bij de foto's hoort geen pdf: dat veld staat op de kaart als plaatje en
+     een pdf zou daar als gebroken afbeelding in komen. */
+  r = await doe({ actie: 'schadefoto', id: 'recSCHADE00000001',
+    naam: 'formulier.pdf', data: pdf });
+  keur('maar een pdf als schadefoto niet', r.res.status === 400, r.res.status);
+
+  /* En alles wat geen van beide is. */
+  const rommel = ['data:text/html;base64,PHNjcmlwdD4=', 'gewoon tekst',
+    'data:image/svg+xml;base64,PHN2Zz4=', ''];
+  for (const w of rommel) {
+    r = await doe({ actie: 'schadeformulier', id: 'recSCHADE00000001', data: w });
+    keur('geweigerd: ' + (w || '(leeg)').slice(0, 30), r.res.status === 400,
+      r.res.status);
+  }
+
+  /* Te groot. */
+  r = await doe({ actie: 'schadeformulier', id: 'recSCHADE00000001',
+    data: 'data:application/pdf;base64,' + 'A'.repeat(20 * 1024 * 1024) });
+  keur('een te groot bestand wordt geweigerd', r.res.status === 413, r.res.status);
+
+  /* Hetzelfde voor het contract van een chauffeur. */
+  r = await doe({ actie: 'chauffeurcontract', id: 'recPIETRIJDER0001',
+    naam: 'contract.pdf', data: pdf });
+  keur('een contract bij een chauffeur mag', r.res.status === 200,
+    r.res.status + ' ' + r.tekst.slice(0, 120));
+
+  r = await doe({ actie: 'chauffeurcontract', id: 'recPIETRIJDER0001',
+    data: 'data:text/html;base64,PHNjcmlwdD4=' });
+  keur('maar geen html', r.res.status === 400, r.res.status);
+
+  r = await doe({ actie: 'chauffeurcontract', id: 'onzin', data: pdf });
+  keur('en niet op een verzonnen id', r.res.status === 400, r.res.status);
+
+  r = await doe({ actie: 'chauffeurcontract', id: 'recPIETRIJDER0001',
+    naam: 'contract.pdf', data: pdf }, { code: CHAUF });
+  keur('een chauffeur mag zelf geen contract uploaden', r.res.status === 403,
+    r.res.status);
+
+  /* De chauffeurslijst zegt of er een contract hangt, met een adres erbij —
+     maar de toegangscode blijft er net zo goed uit als eerst. */
+  r = await doe({ actie: 'chauffeurs' });
+  keur('de lijst noemt de contractsoort',
+    r.tekst.includes('"soort"'), r.tekst.slice(0, 200));
+  keur('en nog steeds geen toegangscode', !r.tekst.includes(CHAUF));
 }
 
 console.log(fouten ? '\n' + fouten + ' fout(en)\n' : '\nalles goed\n');

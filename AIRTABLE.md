@@ -396,6 +396,12 @@ tabblad **Chauffeurs**; Airtable hoef je er niet meer voor te openen.
 `Kenteken` is de bus waar deze chauffeur in rijdt — handig bij een boete, een
 schade of een tankpas. `Notitie` is voor jou en komt nergens buiten je portaal.
 
+Daarnaast staan er `Contract` (bijlage), `Contractsoort` en `Rijdt sinds`. Het
+contract upload je vanuit het portaal, net als bij een klant: bij een controle
+of een discussie wil je het papier kunnen laten zien zonder eerst een map op je
+laptop open te zoeken. De tussenlaag doet er verder niets mee — geen enkele
+beslissing hangt ervan af.
+
 **Twee mensen met dezelfde naam kan niet.** Ritten worden op naam verdeeld
 (`ritIsVan` vergelijkt het veld `Chauffeur` op de rit met de naam van de
 ingelogde persoon), dus twee keer *Piet* betekent dat ze elkaars ritten zien en
@@ -417,6 +423,39 @@ te vullen.
 staat de knop *Op non-actief* er niet, en de tussenlaag weigert het ook als je
 het langs de knop om probeert — net als jezelf terugzetten naar *Chauffeur*.
 Vanuit Airtable kan het natuurlijk wel; dan is de hoofdsleutel de weg terug.
+
+### De tabel Schades
+
+`Schades` (`tbl5uGDQ2ZMQCeeyT`) houdt schadegevallen bij: aan je eigen bus, aan
+de lading van een klant, of aan iets van een ander.
+
+| Veld | Wat het doet |
+| --- | --- |
+| `Schade` | In één regel wat er gebeurde |
+| `Datum` | Wanneer |
+| `Soort` | Eigen voertuig / Lading van de klant / Schade aan derden / Anders |
+| `Status` | Open / Gemeld bij verzekeraar / In behandeling / Afgehandeld |
+| `Toedracht` | Wat er precies gebeurde, in je eigen woorden |
+| `Schadeformulier` | Bijlage: het ingevulde formulier of de melding, als pdf of foto |
+| `Foto's` | Bijlagen: foto's van de schade |
+| `Kenteken`, `Tegenpartij` | Om wie en wat het gaat |
+| `Geschat bedrag`, `Eigen risico` | Wat het kost en wat er voor eigen rekening blijft |
+| `Gemeld op` | Wanneer je het bij de verzekeraar meldde |
+| `Notitie` | Polisnummer, schadenummer, met wie je sprak |
+
+Zet je de status op *Gemeld bij verzekeraar* en staat er nog geen datum, dan
+vult de tussenlaag `Gemeld op` op vandaag. De meeste polissen eisen melding
+binnen een paar dagen; die datum wil je later kunnen aanwijzen.
+
+Er wordt niets berekend en niets doorbelast. Dit is administratie: de plek waar
+het bij elkaar blijft tot je verzekeraar erom vraagt.
+
+**Waarom een eigen tabel en geen veld op de rit:** schade hoort niet altijd bij
+een rit. Een deuk op de oprit of steenslag op de terugweg horen er net zo goed
+in, en die hebben geen rit om aan te hangen.
+
+Laat je `AIRTABLE_SCHADES` in `wrangler.toml` leeg, dan verdwijnt het tabblad en
+werkt de rest gewoon door.
 
 ### De systeemcheck kijkt of deze tabel nog klopt
 
