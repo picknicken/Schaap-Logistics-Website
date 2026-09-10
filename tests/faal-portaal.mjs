@@ -731,6 +731,64 @@ console.log('\nde systeemcheck');
    maakt ze niet vrijblijvend: er gaan bestanden in, en alles wat een bestand
    aanneemt moet weten wat het níét aanneemt.
    ========================================================================= */
+/* =========================================================================
+   Twee chauffeurs die tegelijk dezelfde rit oppakken.
+
+   Tussen "is hij vrij?" en "zet mijn naam erop" zit een oproep naar Airtable.
+   Drukken er twee in datzelfde ogenblik, dan zien ze allebei een vrije rit.
+   Airtable kent geen voorwaardelijke schrijfactie, dus die race is niet weg te
+   nemen — wel moet de verliezer de waarheid te horen krijgen in plaats van een
+   groene knop en een rit die hij niet rijdt.
+   ========================================================================= */
+console.log('\ntwee chauffeurs op dezelfde rit');
+{
+  zetKlaar();
+  rit.fields.Chauffeur = '';
+  medewerkers.push({ id: 'recKLAASJANSEN001', fields: {
+    Chauffeur: 'Klaas Jansen', Toegangscode: 'code-van-klaas-9876',
+    Rol: { id: 'r2', name: 'Chauffeur' }, Actief: true } });
+
+  /* De ander is net iets eerder: hij schrijft zijn naam terwijl dit verzoek
+     nog onderweg is. Dat bootsen we na door bij de PATCH een andere naam terug
+     te geven dan er verstuurd werd — precies wat Airtable doet als er in de
+     tussentijd iets overheen is geschreven. */
+  const echt = globalThis.fetch;
+  globalThis.fetch = async (url, opties = {}) => {
+    const u = String(url);
+    if (opties.method === 'PATCH' && /\/tblR\/rec/.test(u)) {
+      gesprek.push({ url: u, method: 'PATCH', body: JSON.parse(opties.body) });
+      return new Response(JSON.stringify({ id: rit.id,
+        fields: { ...rit.fields, Chauffeur: 'Klaas Jansen' } }), { status: 200 });
+    }
+    return echt(url, opties);
+  };
+  let r = await doe({ actie: 'ritoppakken', id: rit.id }, { code: CHAUF });
+  keur('wie de race verliest krijgt geen groene knop', r.res.status === 409,
+    r.res.status);
+  keur('en hoort wie hem wel heeft', /Klaas Jansen/.test(r.tekst), r.tekst.slice(0, 160));
+  globalThis.fetch = echt;
+
+  /* Zonder race gaat het gewoon goed. zetKlaar zet de nagebootste tabellen
+     terug, dus Klaas moet er opnieuw bij. */
+  zetKlaar();
+  rit.fields.Chauffeur = '';
+  medewerkers.push({ id: 'recKLAASJANSEN001', fields: {
+    Chauffeur: 'Klaas Jansen', Toegangscode: 'code-van-klaas-9876',
+    Rol: { id: 'r2', name: 'Chauffeur' }, Actief: true } });
+  r = await doe({ actie: 'ritoppakken', id: rit.id }, { code: CHAUF });
+  keur('en zonder race pakt hij hem gewoon op', r.res.status === 200,
+    r.res.status + ' ' + r.tekst.slice(0, 120));
+  keur('met zijn naam erop', rit.fields.Chauffeur === 'Piet Rijder',
+    rit.fields.Chauffeur);
+
+  /* En de gewone gevallen blijven staan: een rit die al bezet is, en een rit
+     die niet meer op Gepland staat. */
+  r = await doe({ actie: 'ritoppakken', id: rit.id }, { code: 'code-van-klaas-9876' });
+  keur('een rit die al bezet is wordt geweigerd', r.res.status === 409, r.res.status);
+  keur('met de naam van wie hem heeft', /Piet Rijder/.test(r.tekst),
+    r.tekst.slice(0, 160));
+}
+
 console.log('\nschade vastleggen');
 {
   zetKlaar();

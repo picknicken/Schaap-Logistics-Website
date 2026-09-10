@@ -398,6 +398,24 @@ portaal vanaf je beginscherm draait: daar is geen adresbalk en geen terugknop,
 en zou je jezelf op de marketingpagina opsluiten. Dan blijft het bij het
 inlogscherm.
 
+### Twee chauffeurs die tegelijk dezelfde rit oppakken
+
+Uit de tweede review kwam één punt dat werkelijk een gat bleek. Tussen *"is deze
+rit nog vrij?"* en *"zet mijn naam erop"* zit een oproep naar Airtable. Drukken
+er twee in datzelfde ogenblik, dan zien ze allebei een vrije rit en schrijven ze
+allebei hun naam — en de verliezer kreeg een groene knop en een rit die hij niet
+rijdt.
+
+Airtable kent geen *"schrijf alleen als dit veld nog leeg is"*, dus die race is
+niet weg te nemen. Wat wel kan: **teruglezen wat er nu werkelijk staat.** Airtable
+zet de twee schrijfacties achter elkaar, dus de laatste wint en beide lezers zien
+dezelfde naam. Wie de race verliest krijgt nu *"Klaas Jansen was net iets eerder.
+Deze rit is van hem."*
+
+Met één chauffeur is dit theorie. Zodra er twee rijden is het dat niet meer, en
+dan is het verschil tussen twee mensen die naar hetzelfde adres rijden en twee
+mensen die weten wie gaat.
+
 ### Schade vastleggen
 
 Nieuw tabblad **Schade**, en een nieuwe tabel `Schades` in Airtable. Aan je
@@ -893,9 +911,9 @@ netjes van h1 naar h2 zonder gaten, en de foutpagina werkt weer — die verwees 
 de domeinverhuizing nog naar het oude adres en kwam daardoor zonder opmaak en met
 dode links binnen.
 
-**866 controles draaien groen**, verdeeld over negen faaltests: 268 in een
-echte browser (`faal-portalen` 175, `faal-site` 93), 481 tegen de portaal-Worker
-(`faal-portaal` 201, `faal-klantplicht` 195, `faal-toegang` 31, `faal-push` 54),
+**872 controles draaien groen**, verdeeld over negen faaltests: 268 in een
+echte browser (`faal-portalen` 175, `faal-site` 93), 487 tegen de portaal-Worker
+(`faal-portaal` 207, `faal-klantplicht` 195, `faal-toegang` 31, `faal-push` 54),
 79 tegen de aanvraag-Worker en 38 op de prijsberekening. Daaronder zitten
 controles dat de prijzen op de site kloppen met de calculator, dat een klant
 nooit een cent van jouw kosten te zien krijgt, en dat een creditnota naar de

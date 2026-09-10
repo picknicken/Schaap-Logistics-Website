@@ -883,9 +883,25 @@ async function pakRitOp(env, body, origin, wie) {
     }, origin, true);
   }
 
-  const rit = naarRitVoorChauffeur(
-    await patch(env, env.AIRTABLE_RITTEN, id, { [R.chauffeur]: naam }));
-  return antwoord(200, { ok: true, rit }, origin, true);
+  /* Tussen het kijken hierboven en het schrijven hieronder zit een oproep naar
+     Airtable. Drukken twee chauffeurs in datzelfde ogenblik, dan zien ze allebei
+     een vrije rit en schrijven ze allebei hun naam. Airtable kent geen
+     "schrijf alleen als het veld nog leeg is", dus die race is niet te
+     voorkomen — wel is te voorkomen dat iemand denkt dat hij hem heeft.
+
+     Daarom lezen we terug wat er nu werkelijk staat. Airtable zet de twee
+     schrijfacties achter elkaar, dus de laatste wint en beide lezers zien
+     dezelfde naam. Wie de race verloor krijgt de waarheid te horen in plaats
+     van een groene knop en een rit die hij niet rijdt. */
+  const na = await patch(env, env.AIRTABLE_RITTEN, id, { [R.chauffeur]: naam });
+  const staatEr = String((na.fields || {})[R.chauffeur] || '').trim();
+  if (staatEr && staatEr.toLowerCase() !== naam.toLowerCase()) {
+    return antwoord(409, {
+      fout: staatEr + ' was net iets eerder. Deze rit is van hem.'
+    }, origin, true);
+  }
+
+  return antwoord(200, { ok: true, rit: naarRitVoorChauffeur(na) }, origin, true);
 }
 
 /* En weer loslaten. Alleen je eigen rit, en alleen zolang je niet bent
