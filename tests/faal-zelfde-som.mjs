@@ -197,5 +197,52 @@ keur('de stoptoeslag is aan beide kanten 25', SL.CONFIG.stoptoeslag === 25);
     !o.vergelijkbaar && !o.buiten, JSON.stringify(o));
 }
 
+/* ---------------------------------------------------------------------------
+   De vensters van de tijdvakken.
+
+   Op de site staat per tijdvak een venster: overdag 08:00-18:00, avond tot
+   23:00, de rest nacht. Als tijdvakUit iets anders doet dan wat daar staat,
+   dan liegt de site tegen de klant — en dat merk je pas op de factuur.
+   --------------------------------------------------------------------------- */
+{
+  const maandag = '2026-09-07';
+  const zaterdag = '2026-09-12';
+  const zondag = '2026-09-13';
+
+  const proef = [
+    [maandag, '08:00', 'dag',   'acht uur is het begin van de dag'],
+    [maandag, '07:59', 'nacht', 'een minuut eerder is nog nacht'],
+    [maandag, '07:00', 'nacht', 'zeven uur laden is geen gewone werkdag'],
+    [maandag, '17:59', 'dag',   'tot zes uur is dag'],
+    [maandag, '18:00', 'avond', 'zes uur is het begin van de avond'],
+    [maandag, '22:59', 'avond', 'tot elf uur is avond'],
+    [maandag, '23:00', 'nacht', 'elf uur is het begin van de nacht'],
+    [maandag, '03:00', 'nacht', 'midden in de nacht ook'],
+    [zaterdag, '10:00', 'nacht', 'zaterdag telt als weekend'],
+    [zondag,  '10:00', 'nacht', 'zondag ook']
+  ];
+  let mis = 0;
+  proef.forEach(([d, t, verwacht, waarom]) => {
+    const uit = SL.tijdvakUit(d, t);
+    if (uit !== verwacht) { mis++; keur(waarom, false, t + ' gaf ' + uit); }
+    else { keur(waarom, true); }
+  });
+
+  /* En de vensters die op de site staan moeten diezelfde grenzen noemen. Staat
+     er 08:00 en rekent hij vanaf 06:00, dan klopt de site niet met de factuur. */
+  keur('het venster van overdag noemt 08:00 en 18:00',
+    /08:00/.test(SL.CONFIG.tijden.dag.venster) &&
+    /18:00/.test(SL.CONFIG.tijden.dag.venster), SL.CONFIG.tijden.dag.venster);
+  keur('het venster van de avond noemt 18:00 en 23:00',
+    /18:00/.test(SL.CONFIG.tijden.avond.venster) &&
+    /23:00/.test(SL.CONFIG.tijden.avond.venster), SL.CONFIG.tijden.avond.venster);
+  keur('het venster van de nacht noemt 23:00 en 08:00',
+    /23:00/.test(SL.CONFIG.tijden.nacht.venster) &&
+    /08:00/.test(SL.CONFIG.tijden.nacht.venster), SL.CONFIG.tijden.nacht.venster);
+  keur('en er staat bij wanneer je iemand aan de lijn krijgt',
+    SL.CONFIG.bereikbaar.tijden.length >= 2 && !!SL.CONFIG.bereikbaar.buiten,
+    JSON.stringify(SL.CONFIG.bereikbaar));
+}
+
 console.log(fouten ? '\n' + fouten + ' fout(en)\n' : '\nalles goed\n');
 process.exit(fouten ? 1 : 0);

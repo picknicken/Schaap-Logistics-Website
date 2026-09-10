@@ -609,5 +609,95 @@ console.log('\njezelf buitensluiten');
     r.res.status === 200, r.res.status);
 }
 
+/* =========================================================================
+   De systeemcheck.
+
+   Een controle die groen zegt terwijl er iets stuk is, is erger dan geen
+   controle: dan zoek je in de verkeerde hoek. Dus is de vraag hier niet of hij
+   werkt als alles klopt, maar of hij het ziet als er iets niet klopt.
+   ========================================================================= */
+console.log('\nde systeemcheck');
+{
+  zetKlaar();
+  const echt = globalThis.fetch;
+
+  /* Alles in orde. */
+  let r = await doe({ actie: 'systeemcheck' });
+  keur('de check draait', r.res.status === 200, r.res.status);
+  keur('en geeft punten terug', Array.isArray(r.data.punten) && r.data.punten.length > 5,
+    (r.data.punten || []).length);
+  keur('met een naam en een stand per punt',
+    (r.data.punten || []).every((p) => p.naam && p.stand), JSON.stringify(r.data.punten));
+
+  /* Wat er nooit in mag staan: de sleutels zelf. Een controle die je geheimen
+     op je scherm zet is zelf het lek. */
+  keur('geen enkele sleutel staat in de uitslag',
+    !r.tekst.includes(env.AIRTABLE_TOKEN) && !r.tekst.includes(env.PORTAAL_CODE),
+    r.tekst.slice(0, 200));
+
+  /* Een chauffeur heeft hier niets te zoeken: hij zou de namen van alle
+     tabellen en instellingen te zien krijgen. */
+  r = await doe({ actie: 'systeemcheck' }, { code: CHAUF });
+  keur('een chauffeur mag de systeemcheck niet draaien', r.res.status === 403,
+    r.res.status);
+
+  /* Een hernoemd veld in Airtable. Dat is de storing waar dit voor bedoeld is:
+     hij geeft een 422 bij het opslaan en zegt verder niets. */
+  globalThis.fetch = async (url, opties = {}) => {
+    if (String(url).includes('/tblR?') && String(url).includes('fields%5B%5D')) {
+      return new Response(JSON.stringify({ error: {
+        type: 'UNKNOWN_FIELD_NAME', message: 'Unknown field names: kilometers' } }),
+        { status: 422 });
+    }
+    return echt(url, opties);
+  };
+  r = await doe({ actie: 'systeemcheck' });
+  const ritregel = (r.data.punten || []).find((p) => /Ritten/.test(p.naam)) || {};
+  keur('een hernoemd veld valt op', ritregel.stand === 'fout', JSON.stringify(ritregel));
+  keur('en de melding noemt het veld bij naam',
+    /kilometers/i.test(ritregel.tekst || ''), ritregel.tekst);
+  keur('met wat je eraan doet erbij',
+    /hernoemd|veldkaart/i.test(ritregel.doen || ''), ritregel.doen);
+  keur('en de teller telt hem mee', r.data.fouten >= 1, r.data.fouten);
+  globalThis.fetch = echt;
+
+  /* Een instelling die ontbreekt verklaart meestal alles eronder. */
+  const kaal = { ...env, PORTAAL_CODE: 'geheim-hoofdsleutel-1234', VAPID_PUBLIEK: '' };
+  delete kaal.AIRTABLE_TOKEN;
+  const res = await worker.fetch(vraag({ actie: 'systeemcheck' }), kaal);
+  const uit = await res.json();
+  const instel = (uit.punten || []).find((p) => p.naam === 'Instellingen') || {};
+  keur('een ontbrekende token valt op', instel.stand === 'fout', JSON.stringify(instel));
+  keur('en wordt bij naam genoemd', /AIRTABLE_TOKEN/.test(instel.tekst || ''),
+    instel.tekst);
+
+  /* De rekenformule in Airtable. Valt die om, dan rolt er een factuur van nul
+     euro uit en merk je dat pas als de klant belt. */
+  globalThis.fetch = async (url, opties = {}) => {
+    const u = String(url);
+    if (u.includes('/tblR?') && u.includes('filterByFormula')) {
+      return new Response(JSON.stringify({ records: [
+        { id: 'recA', fields: { Kilometers: 20 } },
+        { id: 'recB', fields: { Kilometers: 40 } }
+      ] }), { status: 200 });
+    }
+    return echt(url, opties);
+  };
+  r = await doe({ actie: 'systeemcheck' });
+  const som = (r.data.punten || []).find((p) => /prijsberekening/i.test(p.naam)) || {};
+  keur('een formule die niet meer rekent valt op', som.stand === 'fout',
+    JSON.stringify(som));
+  keur('en zegt dat er anders een factuur van nul euro uit rolt',
+    /nul euro/.test(som.doen || ''), som.doen);
+  globalThis.fetch = echt;
+
+  /* En de controle mag zelf niets veranderen. Draai je hem omdat je twijfelt,
+     dan hoort hij die twijfel niet erger te maken. */
+  r = await doe({ actie: 'systeemcheck' });
+  const schrijf = r.gesprek.filter((c) => c.method && c.method !== 'GET');
+  keur('de systeemcheck schrijft nergens iets weg', schrijf.length === 0,
+    JSON.stringify(schrijf.map((c) => c.method + ' ' + c.url)).slice(0, 200));
+}
+
 console.log(fouten ? '\n' + fouten + ' fout(en)\n' : '\nalles goed\n');
 process.exit(fouten ? 1 : 0);

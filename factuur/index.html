@@ -336,9 +336,10 @@ tbody td.af{color:#1d7a4c}
          houdbaarheidsdatum in plaats van een betaaltermijn. -->
     <p id="v-offertezin" hidden>
       Deze prijs is geldig tot <b id="v-geldig">—</b>. De afstand is een
-      schatting op basis van de opgegeven adressen. Wijkt de werkelijk gereden
-      afstand daar meer dan 10% van af, met een ondergrens van 5 km, dan
-      factureren wij de werkelijk gereden kilometers — ook als dat minder is.
+      schatting op basis van de opgegeven adressen. Blijft de werkelijk gereden
+      afstand binnen 10% daarvan (met een ondergrens van 5 km), dan rekenen wij
+      deze prijs. Loopt de route verder uiteen, dan rekenen wij de werkelijk
+      gereden kilometers; valt de rit korter uit, dan betaalt u navenant minder.
       Wachttijd boven het kwartier, extra stops en
       doorberekende kosten zoals tol of parkeren komen erbij tegen de tarieven
       op onze tarievenpagina. Alle bedragen zijn exclusief btw.
@@ -354,12 +355,6 @@ tbody td.af{color:#1d7a4c}
         <span>IBAN: [NL00 XXXX 0000 0000 00]</span>
         <span>BIC: [BIC]</span>
         <span>Ten name van: Schaap Express Transport</span>
-      </span>
-      <!-- Nog een keer, hier. Wie betaalt heeft dit blok voor zich en tikt het
-           rekeningnummer over; dan is dit de plek waar de omschrijving hoort te
-           staan, niet drie regels hoger. -->
-      <span class="betaalregels" id="v-kenmerkregel">
-        <span>Vermelden bij betaling: <b id="v-betaalnr2">—</b></span>
       </span>
     </p>
   </section>
@@ -452,7 +447,6 @@ tbody td.af{color:#1d7a4c}
   var nummer = lees('nr', 'SL-2026-0001');
   zet('v-nr',         nummer);
   zet('v-betaalnr',   nummer);
-  zet('v-betaalnr2',  nummer);
   zet('v-datum',      datum(lees('datum', '2026-09-15')));
   zet('v-debiteur',   lees('debiteur', '1001'));
   zet('v-klantbtw',   lees('klantbtw', 'NL000000000B01'));
@@ -522,7 +516,6 @@ tbody td.af{color:#1d7a4c}
     /* "Te betalen" hoort er niet op: er valt nog niets te betalen. */
     zet('v-totaallabel', 'Totaal');
     document.getElementById('v-betaalzin').hidden = true;
-    document.getElementById('v-kenmerkregel').hidden = true;
     soortNaam = 'Conceptfactuur';
   }
 
@@ -567,9 +560,6 @@ tbody td.af{color:#1d7a4c}
     document.getElementById('v-creditvan').hidden = false;
     document.getElementById('v-betaalzin').hidden = true;
     document.getElementById('v-creditzin').hidden = false;
-    /* Bij een creditnota betaalt de klant niets, dus is er ook niets te
-       vermelden bij een betaling. */
-    document.getElementById('v-kenmerkregel').hidden = true;
     soortNaam = 'Creditfactuur';
     zet('v-route', '—');
     zet('v-omschrijving', 'Creditering van factuur ' + (creditVan || ''));

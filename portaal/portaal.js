@@ -907,7 +907,7 @@
     /* Meldingen gaan over aanvragen, klanten en facturen — jouw bedrijfsvoering.
        Een chauffeur heeft daar niets te zoeken, dus dat tabblad gaat mee weg. */
     verborgen = alleenRitten
-      ? ['aanvragen', 'planning', 'meldingen', 'klanten', 'chauffeurs']
+      ? ['aanvragen', 'planning', 'meldingen', 'klanten', 'chauffeurs', 'systeem']
       : [];
     if (alleenRitten && tabblad !== 'ritten') { kiesTab('ritten'); }
     regelMenuknop();
@@ -1024,12 +1024,12 @@
      passen is het punt: wat om aandacht vraagt hoort in beeld te staan. De
      rekenmachine stond daar eerst, en die pak je er juist af en toe bij. */
   var TABBLADEN = ['ritten', 'aanvragen', 'meldingen', 'planning',
-                   'klanten', 'chauffeurs', 'prijs'];
+                   'klanten', 'chauffeurs', 'prijs', 'systeem'];
 
   var TABNAAM = {
     ritten: 'Ritten', aanvragen: 'Aanvragen', meldingen: 'Meldingen',
     planning: 'Planning', klanten: 'Klanten', chauffeurs: 'Chauffeurs',
-    prijs: 'Prijs'
+    prijs: 'Prijs', systeem: 'Systeemcheck'
   };
 
   /* Welke tabbladen deze persoon niet mag zien. Stond eerst als hidden op de
@@ -1326,6 +1326,72 @@
     if (!meer) { sluitTabmenu(); }
     tekenMenubel();
   }
+
+  /* --------------------------------------------------------- systeemcheck
+
+     Wat je wilt weten als er iets niet werkt is niet dát er iets stuk is —
+     dat merk je zelf wel — maar wáár het zit. Dit haalt dat antwoord op bij
+     de tussenlaag, want daar staan de sleutels en daar loopt het verkeer.
+
+     Niet automatisch bij het openen van het tabblad: de controle praat met
+     Airtable en met twee adressen buiten de deur, en dat wil je niet elke keer
+     dat je per ongeluk op dit tabblad drukt. */
+  function tekenSysteem(data) {
+    var lijst = el('lijst-systeem');
+    if (!lijst) { return; }
+    lijst.innerHTML = '';
+
+    var wanneer = el('systeem-wanneer');
+    if (wanneer) {
+      var fout = Number(data.fouten) || 0;
+      var letop = Number(data.letop) || 0;
+      wanneer.textContent = fout ? fout + ' ding(en) staan fout.'
+        : letop ? 'Niets stuk; ' + letop + ' punt(en) om naar te kijken.'
+        : 'Alles in orde.';
+      wanneer.hidden = false;
+    }
+
+    (data.punten || []).forEach(function (p) {
+      var vak = maak('div', 'checkregel');
+      vak.setAttribute('data-stand', p.stand || 'goed');
+      var kop = maak('div', 'checkregel__kop');
+      kop.appendChild(maak('span', 'checkregel__stip'));
+      kop.appendChild(maak('span', 'checkregel__naam', p.naam || ''));
+      vak.appendChild(kop);
+      if (p.tekst) { vak.appendChild(maak('p', 'checkregel__tekst', p.tekst)); }
+      /* Wat eraan te doen is staat er alleen als er iets aan te doen is. Bij
+         een groene regel is dat niets, en dan hoort er ook niets te staan. */
+      if (p.doen) { vak.appendChild(maak('p', 'checkregel__doen', p.doen)); }
+      lijst.appendChild(vak);
+    });
+  }
+
+  (function knoopSysteem() {
+    var knop = el('systeem-start');
+    if (!knop) { return; }
+    knop.addEventListener('click', function () {
+      bezig(knop, 'Bezig met controleren\u2026', function (klaar) {
+        meldApp('');
+        el('lijst-systeem').innerHTML = '';
+        var vak = el('systeem-wanneer');
+        if (vak) { vak.hidden = true; }
+        verstuur('systeemcheck', {})
+          .then(function (data) { tekenSysteem(data); klaar(true); })
+          .catch(function (fout) {
+            /* Loopt de controle zelf stuk, dan is dat zelf een uitslag: de
+               tussenlaag is niet bereikbaar, en dat is het antwoord. */
+            tekenSysteem({ fouten: 1, letop: 0, punten: [{
+              naam: 'De tussenlaag', stand: 'fout',
+              tekst: fout.message,
+              doen: 'Dit scherm praat met dezelfde tussenlaag als de rest van ' +
+                    'het portaal. Krijg je dit te zien, dan ligt het daaraan of ' +
+                    'aan je verbinding \u2014 niet aan Airtable.'
+            }] });
+            klaar(false);
+          });
+      });
+    });
+  })();
 
   /* ------------------------------------------------------------- het menu
 

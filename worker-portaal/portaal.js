@@ -684,6 +684,7 @@ async function schakel(env, body, origin, wie) {
     case 'klanttarief':  return await zetKlanttarief(env, body, origin);
     case 'klantcontract':return await zetKlantcontract(env, body, origin);
     case 'toegangweg':   return await trekToegangIn(env, body, origin);
+    case 'systeemcheck': return await systeemcheck(env, body, origin);
     case 'facturen':     return await haalFacturen(env, body, origin);
     case 'portaallink':  return await haalPortaallink(env, body, origin);
     case 'leesbericht':  return await leesBericht(env, body, origin);
@@ -3809,6 +3810,315 @@ async function leesBericht(env, body, origin) {
         : []
     }
   }, origin, true);
+}
+
+/* ============================================================ systeemcheck
+
+   Wat je wilt weten als er iets niet werkt is niet dát er iets niet werkt —
+   dat merk je zelf wel — maar wáár het zit. Anders sta je met een telefoon in
+   je hand bij een klant en weet je niet of het aan je bereik ligt, aan
+   Cloudflare, aan Airtable of aan iets wat je gisteren zelf hebt aangepast.
+
+   Deze controle loopt langs alle schakels en zegt van elk hetzelfde drietal:
+   hoe het ervoor staat, wat er gezien is, en wat je eraan doet. Dat laatste is
+   het hele punt. "Airtable 422" zegt niets; "het veld Kilometers heet in
+   Airtable niet meer zo" zegt precies wat je moet doen.
+
+   Wat hij NIET is: een virusscanner. Er is niets om te scannen — de site is
+   een handvol vaste bestanden en de tussenlaag draait bij Cloudflare, en geen
+   van beide kan iets oplopen. Wat wél kan gebeuren is dat een schakel wegvalt
+   of dat er in Airtable iets hernoemd wordt, en dáár kijkt dit naar.
+
+   Alles wat hier gebeurt is lezen. Geen enkele controle verandert iets, zodat
+   je hem kunt draaien terwijl je twijfelt zonder de twijfel erger te maken. */
+
+/* Een functie en geen constante: MW staat verderop in dit bestand, en een
+   const die daarnaar wijst zou bij het laden van de module al gelezen worden.
+   Dat viel om met "Cannot access MW before initialization" — de proef zag het,
+   de opmaak niet. Bij het aanroepen bestaat alles wel. */
+function controleTabellen() {
+  return [
+  { env: 'AIRTABLE_RITTEN',       naam: 'Ritten',            kaarten: [R] },
+  { env: 'AIRTABLE_OPDRACHTEN',   naam: 'Opdrachten',        kaarten: [O] },
+  { env: 'AIRTABLE_AANVRAGEN',    naam: 'Website-aanvragen', kaarten: [A] },
+  { env: 'AIRTABLE_KLANTEN',      naam: 'Klanten',           kaarten: [K] },
+  { env: 'AIRTABLE_FACTUREN',     naam: 'Facturen',          kaarten: [FA, FL] },
+  { env: 'AIRTABLE_CHAUFFEURS',   naam: 'Chauffeurs',        kaarten: [MW] },
+  { env: 'AIRTABLE_DAGSTATEN',    naam: 'Dagstaten',         kaarten: [D] },
+  { env: 'AIRTABLE_PUSH',         naam: 'Pushmeldingen',     kaarten: [PU] },
+  { env: 'AIRTABLE_TOEGANGSLOG',  naam: 'Toegangslog',       kaarten: [TL],
+    magOntbreken: true }
+  ];
+}
+
+/* De instellingen die er moeten staan. De waarde noemen we nooit — dit is een
+   lijst met "staat er wel/niet", en een controle die je geheimen op je scherm
+   zet is zelf het lek. */
+const CONTROLE_INSTELLINGEN = [
+  { sleutel: 'AIRTABLE_TOKEN',     nodig: true,
+    zonder: 'Zonder token komt er geen enkel gegeven binnen. Zet hem met wrangler secret put AIRTABLE_TOKEN.' },
+  { sleutel: 'AIRTABLE_BASE',      nodig: true,
+    zonder: 'Zonder basis-id weet de tussenlaag niet welke Airtable hij moet hebben.' },
+  { sleutel: 'PORTAAL_CODE',       nodig: true,
+    zonder: 'Zonder hoofdsleutel kan niemand meer inloggen als de tabel Chauffeurs onbereikbaar is.' },
+  { sleutel: 'TOEGESTANE_ORIGIN',  nodig: true,
+    zonder: 'Zonder toegestaan adres weigert de tussenlaag elk verzoek van de site.' },
+  { sleutel: 'VAPID_PUBLIEK',      nodig: false,
+    zonder: 'Zonder publieke pushsleutel kun je je niet aanmelden voor meldingen. De rest werkt gewoon.' },
+  { sleutel: 'VAPID_PRIVE',        nodig: false,
+    zonder: 'Zonder private pushsleutel komen meldingen niet aan. De rest werkt gewoon.' },
+  { sleutel: 'VAPID_CONTACT',      nodig: false,
+    zonder: 'Zonder contactadres weigeren sommige pushdiensten de melding.' },
+  { sleutel: 'EIGENAAR_NAAM',      nodig: false,
+    zonder: 'Zonder naam staat er "Eigenaar" op een rit die je zelf oppakt.' }
+];
+
+function punt(naam, stand, tekst, doen) {
+  return { naam, stand, tekst, doen: doen || '' };
+}
+
+/* De velden die de tussenlaag van een tabel gebruikt, uit dezelfde kaarten
+   waarmee hij leest en schrijft. Eén bron: hernoem je hierboven iets, dan
+   controleert deze functie meteen het nieuwe. */
+function veldenVan(kaarten) {
+  const uit = [];
+  kaarten.forEach((kaart) => {
+    Object.keys(kaart).forEach((sleutel) => {
+      const naam = kaart[sleutel];
+      if (typeof naam === 'string' && naam && uit.indexOf(naam) < 0) { uit.push(naam); }
+    });
+  });
+  return uit;
+}
+
+/* Bestaan die velden nog? Airtable geeft bij fields[] een 422 terug met de
+   naam van het veld dat hij niet kent. Dat is precies de melding die je wilt
+   zien: niet "er ging iets mis bij het opslaan", maar welk veld het is.
+
+   Eén record ophalen is genoeg — het gaat om de namen, niet om de inhoud. */
+async function controleerTabel(env, opzet) {
+  const tabel = env[opzet.env];
+  if (!tabel) {
+    return punt('Airtable: ' + opzet.naam,
+      opzet.magOntbreken ? 'let op' : 'fout',
+      'Er staat geen tabel-id ingesteld (' + opzet.env + ').',
+      opzet.magOntbreken
+        ? 'Mag leeg blijven; dan wordt er alleen niets vastgelegd.'
+        : 'Zet ' + opzet.env + ' in wrangler.toml en rol de tussenlaag opnieuw uit.');
+  }
+
+  const velden = veldenVan(opzet.kaarten);
+  const zoek = new URLSearchParams();
+  zoek.set('maxRecords', '1');
+  velden.forEach((v) => zoek.append('fields[]', v));
+
+  try {
+    const data = await airtable(env, `${tabel}?${zoek}`);
+    const aantal = (data.records || []).length;
+    return punt('Airtable: ' + opzet.naam, 'goed',
+      'Bereikbaar, en alle ' + velden.length + ' velden die de tussenlaag ' +
+      'gebruikt bestaan nog.' + (aantal ? '' : ' De tabel is nog leeg.'));
+  } catch (fout) {
+    const melding = String(fout.message || '');
+    /* Airtable noemt het veld bij naam. Die melding is het antwoord, dus die
+       geven we door in plaats van hem samen te vatten. */
+    const onbekend = /UNKNOWN_FIELD_NAME|Unknown field name/i.test(melding);
+    return punt('Airtable: ' + opzet.naam, 'fout',
+      onbekend ? 'Airtable kent een veld niet meer: ' + melding
+               : 'Niet bereikbaar: ' + melding,
+      onbekend
+        ? 'Iemand heeft dat veld in Airtable hernoemd of weggegooid. Zet de naam ' +
+          'terug, of pas de veldkaart bovenin portaal.js aan.'
+        : 'Kijk of de token nog geldig is en of de tabel nog bestaat.');
+  }
+}
+
+/* Rekent Airtable nog? De prijs komt uit formulevelden op de rit. Valt daar
+   iets om — een formule die naar een hernoemd veld wijst — dan blijft het veld
+   leeg en rolt er een factuur van nul euro uit. Dat merk je pas als de klant
+   belt, dus kijken we hier of een rit met kilometers ook een bedrag heeft. */
+async function controleerRekenwerk(env) {
+  if (!env.AIRTABLE_RITTEN) { return null; }
+  try {
+    const zoek = new URLSearchParams();
+    zoek.set('maxRecords', '5');
+    zoek.set('filterByFormula', `{${R.km}} > 0`);
+    zoek.append('sort[0][field]', R.datum);
+    zoek.append('sort[0][direction]', 'desc');
+    const data = await airtable(env, `${env.AIRTABLE_RITTEN}?${zoek}`);
+    const ritten = data.records || [];
+    if (!ritten.length) {
+      return punt('De prijsberekening in Airtable', 'let op',
+        'Er is nog geen rit met kilometers om op na te rekenen.',
+        'Zodra je een rit met kilometers hebt, kijkt deze controle mee.');
+    }
+    const zonder = ritten.filter((r) => !((r.fields || {})[R.totaal] > 0));
+    if (zonder.length === ritten.length) {
+      return punt('De prijsberekening in Airtable', 'fout',
+        'Geen van de laatste ' + ritten.length + ' ritten met kilometers heeft ' +
+        'een berekend bedrag.',
+        'Het formuleveld "' + R.totaal + '" rekent niet. Open het in Airtable en ' +
+        'kijk of het naar een veld verwijst dat is hernoemd. Zo blijft dit staan, ' +
+        'dan rolt er een factuur van nul euro uit.');
+    }
+    if (zonder.length) {
+      return punt('De prijsberekening in Airtable', 'let op',
+        zonder.length + ' van de laatste ' + ritten.length + ' ritten met ' +
+        'kilometers heeft geen berekend bedrag.',
+        'Bij internationaal transport hoort dat zo — daar vul je het bedrag zelf ' +
+        'in. Staat er iets anders tussen, kijk die rit dan na.');
+    }
+    return punt('De prijsberekening in Airtable', 'goed',
+      'De laatste ' + ritten.length + ' ritten met kilometers hebben allemaal ' +
+      'een berekend bedrag.');
+  } catch (fout) {
+    return punt('De prijsberekening in Airtable', 'fout',
+      'Kon het niet nakijken: ' + fout.message,
+      'Kijk eerst naar de regel over de tabel Ritten hierboven.');
+  }
+}
+
+/* Staan er nog apparaten aangemeld voor pushmeldingen, en werken ze? Een
+   telefoon die zijn aanmelding kwijt is blijft in de tabel staan met een fout
+   erbij; dat is het verschil tussen "er komt niets binnen omdat het stuk is"
+   en "er komt niets binnen omdat er niets te melden was". */
+async function controleerPush(env) {
+  if (!pushKan(env)) {
+    return punt('Pushmeldingen', 'let op',
+      'Staan uit: er ontbreekt een VAPID-sleutel.',
+      'Maak een sleutelpaar met scripts/pushsleutels.html en zet ze in ' +
+      'wrangler.toml en als secret. De rest van het portaal werkt gewoon door.');
+  }
+  if (!env.AIRTABLE_PUSH) { return null; }
+  try {
+    const data = await airtable(env, `${env.AIRTABLE_PUSH}?maxRecords=100`);
+    const rijen = data.records || [];
+    const aan = rijen.filter((r) => (r.fields || {})[PU.actief] !== false);
+    const stuk = aan.filter((r) => (r.fields || {})[PU.fout]);
+    if (!aan.length) {
+      return punt('Pushmeldingen', 'let op',
+        'Er staat geen enkel apparaat aangemeld.',
+        'Open het portaal op je telefoon en zet meldingen aan. Zonder aanmelding ' +
+        'komt er niets binnen, ook niet als de rest klopt.');
+    }
+    if (stuk.length === aan.length) {
+      return punt('Pushmeldingen', 'fout',
+        'Alle ' + aan.length + ' aangemelde apparaten hebben een fout bij de ' +
+        'laatste poging: ' + String((stuk[0].fields || {})[PU.fout]).slice(0, 120),
+        'Meld je telefoon opnieuw aan. Blijft het staan, dan klopt het ' +
+        'VAPID-sleutelpaar niet meer met de aanmeldingen: dan moeten alle ' +
+        'apparaten zich opnieuw aanmelden.');
+    }
+    return punt('Pushmeldingen', stuk.length ? 'let op' : 'goed',
+      aan.length + ' apparaat/apparaten aangemeld' +
+      (stuk.length ? ', waarvan ' + stuk.length + ' met een fout' : '') + '.',
+      stuk.length ? 'Meld dat apparaat opnieuw aan.' : '');
+  } catch (fout) {
+    return punt('Pushmeldingen', 'fout', 'Kon het niet nakijken: ' + fout.message);
+  }
+}
+
+/* De twee adressen buiten deze tussenlaag: de site zelf en de Worker waar het
+   aanvraagformulier heen post. Valt die tweede weg, dan komt er geen enkele
+   aanvraag meer binnen — en dat is precies het soort stilte dat je aanziet
+   voor een rustige week. */
+async function controleerBuiten(naam, adres, uitleg) {
+  if (!adres) { return null; }
+  try {
+    const res = await fetch(adres, { method: 'GET' });
+    /* 405 is bij de aanvraag-Worker het goede antwoord: hij neemt alleen POST
+       aan. Dat hij antwoordt is wat we willen weten. */
+    if (res.status >= 500) {
+      return punt(naam, 'fout', 'Antwoordt met ' + res.status + '.', uitleg);
+    }
+    return punt(naam, 'goed', 'Bereikbaar (antwoordt met ' + res.status + ').');
+  } catch (fout) {
+    return punt(naam, 'fout', 'Niet bereikbaar: ' + String(fout.message).slice(0, 160),
+      uitleg);
+  }
+}
+
+/* Hoeveel mensen er de afgelopen dag tevergeefs aan de deur stonden. Eén of
+   twee is een typefout van jezelf; twintig is iemand die zit te proberen. */
+async function controleerToegang(env) {
+  if (!env.AIRTABLE_TOEGANGSLOG) { return null; }
+  try {
+    const grens = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    const zoek = new URLSearchParams();
+    zoek.set('maxRecords', '100');
+    zoek.set('filterByFormula',
+      `AND({${TL.soort}} = 'Geweigerd', IS_AFTER({${TL.wanneer}}, '${grens}'))`);
+    const data = await airtable(env, `${env.AIRTABLE_TOEGANGSLOG}?${zoek}`);
+    const aantal = (data.records || []).length;
+    if (aantal >= 20) {
+      return punt('Geweigerde pogingen (24 uur)', 'let op',
+        aantal + (aantal === 100 ? '+' : '') + ' geweigerde pogingen.',
+        'Kijk in de tabel Toegangslog vanaf welk netwerk ze komen. De rem op ' +
+        'raden houdt ze tegen, maar dit is het moment om je code te vervangen.');
+    }
+    return punt('Geweigerde pogingen (24 uur)', 'goed',
+      aantal === 0 ? 'Geen.' : aantal + ', wat normaal is voor een vertypte code.');
+  } catch (fout) {
+    return punt('Geweigerde pogingen (24 uur)', 'let op',
+      'Kon het niet nakijken: ' + fout.message);
+  }
+}
+
+async function systeemcheck(env, body, origin) {
+  const punten = [];
+
+  /* Eerst de instellingen. Ontbreekt daar iets, dan verklaart dat meestal alle
+     regels eronder, en dan hoef je die niet meer los uit te zoeken. */
+  const mist = CONTROLE_INSTELLINGEN.filter((i) => !env[i.sleutel]);
+  const mistNodig = mist.filter((i) => i.nodig);
+  if (mistNodig.length) {
+    punten.push(punt('Instellingen', 'fout',
+      'Er ontbreekt iets: ' + mistNodig.map((i) => i.sleutel).join(', ') + '.',
+      mistNodig.map((i) => i.zonder).join(' ')));
+  } else if (mist.length) {
+    punten.push(punt('Instellingen', 'let op',
+      'Niet alles staat ingevuld: ' + mist.map((i) => i.sleutel).join(', ') + '.',
+      mist.map((i) => i.zonder).join(' ')));
+  } else {
+    punten.push(punt('Instellingen', 'goed',
+      'Alle ' + CONTROLE_INSTELLINGEN.length + ' instellingen staan er. ' +
+      'Wat erin staat wordt hier nooit getoond.'));
+  }
+
+  /* De tabellen naast elkaar in plaats van achter elkaar: negen keer wachten
+     op Airtable duurt anders langer dan je geduld bij een storing. */
+  const tabellen = await Promise.all(
+    controleTabellen().map((t) => controleerTabel(env, t)));
+  tabellen.forEach((p) => { if (p) { punten.push(p); } });
+
+  const rest = await Promise.all([
+    controleerRekenwerk(env),
+    controleerPush(env),
+    controleerBuiten('De website', eersteOrigin(env),
+      'Kijk of GitHub Pages of Cloudflare storing heeft. Het portaal zelf staat ' +
+      'op dezelfde plek, dus dan kom je hier ook niet meer in.'),
+    controleerBuiten('Het aanvraagformulier', env.AANVRAAG_URL,
+      'Zonder deze tussenlaag komt er geen enkele aanvraag van de website binnen. ' +
+      'Kijk bij Cloudflare of schaap-aanvragen nog draait.'),
+    controleerToegang(env)
+  ]);
+  rest.forEach((p) => { if (p) { punten.push(p); } });
+
+  const fouten = punten.filter((p) => p.stand === 'fout').length;
+  const letop = punten.filter((p) => p.stand === 'let op').length;
+
+  console.log(`Systeemcheck: ${punten.length} punten, ${fouten} fout, ${letop} let op`);
+  return antwoord(200, {
+    ok: true,
+    gekeken: new Date().toISOString(),
+    fouten, letop,
+    punten
+  }, origin, true);
+}
+
+/* Het eerste toegestane adres, om te kijken of de site zelf nog staat. */
+function eersteOrigin(env) {
+  return String(env.TOEGESTANE_ORIGIN || '').split(',')[0].trim();
 }
 
 /* ------------------------------------------------------- wie ben je

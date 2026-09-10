@@ -632,6 +632,112 @@ console.log('\n=== de marge op de kilometers ===');
   }
 }
 
+/* =========================================================================
+   Het tabblad Systeemcheck.
+
+   Dit is het scherm dat je opent als er iets níét werkt. Dan moet het zelf wel
+   werken, en vooral: het mag niet groen zeggen terwijl de tussenlaag onbereikbaar
+   is. Dan zoek je in de verkeerde hoek.
+   ========================================================================= */
+console.log('\n=== de systeemcheck in het portaal ===');
+{
+  const uitslag = { ok: true, dag,
+    ik: { rol: 'Eigenaar', naam: 'Shane' },
+    ritten: [], aanvragen: [], opdrachten: [], klanten: [],
+    fouten: 1, letop: 1,
+    punten: [
+      { naam: 'Instellingen', stand: 'goed', tekst: 'Alles staat er.', doen: '' },
+      { naam: 'Airtable: Ritten', stand: 'fout',
+        tekst: 'Airtable kent een veld niet meer: Unknown field names: Kilometers',
+        doen: 'Zet de naam terug in Airtable.' },
+      { naam: 'Pushmeldingen', stand: 'let op', tekst: 'Geen apparaat aangemeld.',
+        doen: 'Zet meldingen aan op je telefoon.' }
+    ] };
+
+  const { ctx, p } = await opent(uitslag);
+  await p.click('#tabmenu-knop');
+  await p.click('#tabmenu button:has-text("Systeemcheck")');
+  keur('het tabblad staat er voor de eigenaar',
+    await p.isVisible('#paneel-systeem'));
+  keur('en er staat nog geen uitslag tot je drukt',
+    (await p.$$('#lijst-systeem .checkregel')).length === 0);
+
+  await p.click('#systeem-start');
+  await p.waitForSelector('#lijst-systeem .checkregel', { timeout: 5000 })
+    .catch(() => {});
+  const regels = await p.$$eval('#lijst-systeem .checkregel', (l) => l.map((r) => ({
+    stand: r.getAttribute('data-stand'),
+    naam: (r.querySelector('.checkregel__naam') || {}).textContent || '',
+    doen: (r.querySelector('.checkregel__doen') || {}).textContent || ''
+  })));
+  keur('alle drie de punten komen op het scherm', regels.length === 3,
+    JSON.stringify(regels));
+  keur('een fout staat als fout gemerkt',
+    (regels.find((r) => /Ritten/.test(r.naam)) || {}).stand === 'fout',
+    JSON.stringify(regels));
+  keur('met wat je eraan doet eronder',
+    /Zet de naam terug/.test((regels.find((r) => /Ritten/.test(r.naam)) || {}).doen),
+    JSON.stringify(regels));
+  keur('bij een punt dat goed staat, staat er niets te doen',
+    (regels.find((r) => /Instellingen/.test(r.naam)) || {}).doen === '',
+    JSON.stringify(regels));
+  keur('en er staat een samenvatting boven',
+    /staan fout/.test(await p.textContent('#systeem-wanneer')),
+    await p.textContent('#systeem-wanneer'));
+  await ctx.close();
+}
+
+/* Praat de tussenlaag niet, dan is dát de uitslag — en niet een leeg scherm of
+   een groen vinkje. */
+{
+  const ctx = await b.newContext({ viewport: { width: 390, height: 900 },
+    locale: 'nl-NL', timezoneId: 'Europe/Amsterdam', hasTouch: true });
+  const p = await ctx.newPage();
+  let eerste = true;
+  await p.route(WORKER + '/**', (route) => {
+    /* Inloggen mag; de systeemcheck erna valt om. */
+    if (eerste) {
+      eerste = false;
+      return route.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify({ ok: true, dag, ik: { rol: 'Eigenaar', naam: 'Shane' },
+          ritten: [], aanvragen: [], opdrachten: [], klanten: [] }) });
+    }
+    return route.fulfill({ status: 502, contentType: 'application/json',
+      body: JSON.stringify({ fout: 'De tussenlaag antwoordt niet' }) });
+  });
+  await p.goto(BASIS + '/portaal/', { waitUntil: 'domcontentloaded' });
+  await p.click('#zetop-weg').catch(() => {});
+  await p.fill('#slot-code', 'test-code-123');
+  await p.click('#slot-form button');
+  await p.waitForSelector('#app:not([hidden])', { timeout: 8000 }).catch(() => {});
+  await p.click('#tabmenu-knop');
+  await p.click('#tabmenu button:has-text("Systeemcheck")');
+  await p.click('#systeem-start');
+  await p.waitForSelector('#lijst-systeem .checkregel', { timeout: 5000 })
+    .catch(() => {});
+  const tekst = (await p.textContent('#paneel-systeem')).replace(/\s+/g, ' ');
+  keur('een stukke tussenlaag levert een rode regel op en geen leeg scherm',
+    (await p.$$('#lijst-systeem .checkregel[data-stand="fout"]')).length === 1,
+    tekst.slice(0, 200));
+  keur('en die zegt dat het aan de tussenlaag ligt en niet aan Airtable',
+    /niet aan Airtable/.test(tekst), tekst.slice(0, 300));
+  await ctx.close();
+}
+
+/* Een chauffeur hoort dit tabblad niet te zien: er staan de namen van alle
+   tabellen en instellingen in. */
+{
+  const { ctx, p } = await opent({ ok: true, dag,
+    ik: { rol: 'Chauffeur', naam: 'Piet' },
+    ritten: [], aanvragen: [], opdrachten: [], klanten: [] });
+  await p.click('#tabmenu-knop');
+  const regels = await p.$$eval('#tabmenu button',
+    (l) => l.map((k) => (k.textContent || '').trim()));
+  keur('een chauffeur ziet de systeemcheck niet in zijn menu',
+    !regels.some((t) => /Systeem/i.test(t)), regels.join(' | '));
+  await ctx.close();
+}
+
 console.log('\n=== jezelf in het tabblad Chauffeurs ===');
 {
   const antwoord = { ok: true, dag,

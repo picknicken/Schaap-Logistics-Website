@@ -720,6 +720,27 @@ input{font:inherit}
 .tabmenu button[aria-current="true"]{background:var(--paper-2);color:var(--navy)}
 .tabmenu button[aria-current="true"]::after{content:'\2713';color:var(--amber)}
 
+/* De systeemcheck. Groen, amber, rood — en bij de laatste twee staat eronder
+   wat je eraan doet, want een rode stip zonder handeling is alleen schrikken. */
+.checkregel{
+  border:1px solid var(--line);border-radius:12px;background:var(--paper);
+  padding:12px 14px;margin-bottom:9px;
+}
+.checkregel__kop{display:flex;align-items:baseline;gap:9px}
+.checkregel__stip{
+  width:9px;height:9px;border-radius:99px;flex:none;align-self:center;
+  background:var(--ok);
+}
+.checkregel[data-stand="let op"] .checkregel__stip{background:var(--amber)}
+.checkregel[data-stand="fout"]   .checkregel__stip{background:var(--urgent)}
+.checkregel__naam{font-weight:700;color:var(--heading);font-size:.92rem}
+.checkregel__tekst{margin:6px 0 0;font-size:.88rem;color:var(--muted)}
+.checkregel__doen{
+  margin:9px 0 0;font-size:.86rem;color:var(--heading);
+  border-left:2.5px solid var(--amber);padding-left:10px;
+}
+.checkregel[data-stand="fout"] .checkregel__doen{border-left-color:var(--urgent)}
+
 /* De notitie bij een klant. Leeg is hij een grijs regeltje dat niet in de weg
    zit; staat er iets, dan hoort hij op te vallen — dat is het hele punt. */
 .notitie{margin:0 0 12px}
@@ -1251,6 +1272,19 @@ input{font:inherit}
        oog op uitbreiding, zodat je bij de eerste chauffeur niet eerst iets
        hoeft te bouwen. Toegangscodes staan er met opzet niet in: die horen in
        Airtable en niet in het geheugen van een telefoon. -->
+  <!-- De systeemcheck. Geen scherm dat je dagelijks opent, maar het scherm dat
+       je opent als er iets niet werkt en je niet weet waar het zit. -->
+  <div id="paneel-systeem" class="wrap" hidden>
+    <p class="terzijde" style="margin-top:14px">
+      Loopt er iets niet, druk dan hier. De controle kijkt langs alle schakels —
+      Cloudflare, Airtable, de pushmeldingen, de website — en zegt van elk wat
+      eraan te doen is. Er wordt alleen gelezen: deze knop verandert niets.
+    </p>
+    <button class="knop knop--rand" id="systeem-start" type="button">Nu controleren</button>
+    <p class="terzijde" id="systeem-wanneer" hidden></p>
+    <div id="lijst-systeem"></div>
+  </div>
+
   <div id="paneel-chauffeurs" class="wrap" hidden>
     <details class="nieuwvak">
       <summary>Chauffeur toevoegen</summary>

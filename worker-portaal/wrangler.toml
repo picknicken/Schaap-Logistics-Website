@@ -36,6 +36,11 @@ AIRTABLE_TOEGANGSLOG = "tblieegCnsk3Pjd4i"
 # Allebei maak je ze met scripts/pushsleutels.html, in je eigen browser.
 VAPID_PUBLIEK = "BIn5p0Z2yy20cJX-NgKUOfcx5mRbIO2qpGUuAAEGha_aMYUyD58IOaq7Pz8NuFzdpIFzKpXahcdaJzBiflDELdY"
 VAPID_CONTACT = "mailto:info@schaaplogistics.nl"
+# De andere Worker: die neemt het aanvraagformulier van de website aan. De
+# systeemcheck kijkt of hij nog antwoordt. Valt hij weg, dan komt er geen
+# enkele aanvraag meer binnen, en dat is stilte die je aanziet voor een rustige
+# week. Laat je dit leeg, dan slaat de systeemcheck dat punt over.
+AANVRAAG_URL = "https://schaap-aanvragen.rt5twh6n7h.workers.dev"
 # Jouw naam, zoals hij op een rit komt te staan als je hem zelf oppakt.
 # Zonder dit staat er "Eigenaar" op, en dat zegt een chauffeur niets.
 EIGENAAR_NAAM = "Shane"

@@ -70,9 +70,33 @@
        tarief. Wijzig je hier iets, doe het dan ook in het veld Tijdtoeslag in
        Airtable en op de tarievenpagina. */
     tijden: {
-      dag:   { naam: 'Overdag',                deel: 0,    bodem: 0  },
-      avond: { naam: 'Avondrit (18:00-23:00)', deel: 0.20, bodem: 25 },
-      nacht: { naam: 'Nacht- of weekendrit',   deel: 0.40, bodem: 50 }
+      dag:   { naam: 'Overdag',                deel: 0,    bodem: 0,
+               venster: 'ma t/m za, 08:00 - 18:00' },
+      avond: { naam: 'Avondrit (18:00-23:00)', deel: 0.20, bodem: 25,
+               venster: 'ma t/m za, 18:00 - 23:00' },
+      nacht: { naam: 'Nacht- of weekendrit',   deel: 0.40, bodem: 50,
+               venster: '23:00 - 08:00, en de hele zondag' }
+    },
+
+    /* Wanneer je iemand aan de lijn krijgt.
+
+       Dit is iets anders dan wanneer wij rijden, en dat verschil hoort op de
+       site te staan. Een eenmanszaak kan geen 24-uursbereikbaarheid beloven:
+       wie 's nachts belooft op te nemen en dan slaapt, is onbetrouwbaarder dan
+       wie eerlijk zegt tot hoe laat hij opneemt.
+
+       Het aanvraagformulier staat wel dag en nacht open — daar is niets op
+       tegen, zolang erbij staat wanneer er antwoord komt. Een aanvraag die om
+       drie uur 's nachts binnenkomt wordt 's ochtends bevestigd, en wie het
+       eerder nodig heeft belt. */
+    bereikbaar: {
+      tijden: [
+        { dagen: 'Maandag t/m vrijdag', van: '07:00', tot: '23:00' },
+        { dagen: 'Zaterdag',            van: '08:00', tot: '17:00' }
+      ],
+      buiten: 'Daarbuiten rijden wij op afspraak: bel ons overdag, dan zetten ' +
+              'wij een nachtrit of een zondagrit voor u klaar. Een aanvraag die ' +
+              "'s nachts binnenkomt bevestigen wij de volgende ochtend."
     },
     /* Toeslag per extra adres onderweg. Een stop is omrijden plus laden en
        lossen; dat zit niet in het kilometertarief. */
@@ -246,7 +270,11 @@
     var m = /^(\d{1,2}):(\d{2})$/.exec(String(tijd || ''));
     if (!m) { return 'dag'; }
     var uur = Number(m[1]);
-    if (uur >= 23 || uur < 6) { return 'nacht'; }
+    /* De dag begint om 08:00 en niet om 06:00. Wie om zeven uur laadt is om
+       vijf uur opgestaan, en dat is geen gewone werkdag. Deze grens hoort
+       gelijk te lopen met wat er in CONFIG.tijden als venster op de site
+       staat: staat er 08:00 en rekent hij vanaf 06:00, dan liegt de site. */
+    if (uur >= 23 || uur < 8) { return 'nacht'; }
     if (uur >= 18) { return 'avond'; }
     return 'dag';
   }

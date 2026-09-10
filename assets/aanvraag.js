@@ -60,6 +60,59 @@
     return window.SL.stopsUit(veld('r-stops'));
   }
 
+  /* De keuzelijst met tijdvakken uit CONFIG in plaats van ingetikt in de HTML.
+
+     Er stond "+ €15" en "+ €35" in de opties. Dat waren de vaste bedragen van
+     vóór de percentages, en ze logen dus al een tijd: een avondrit is 20% met
+     een ondergrens van 25 euro. Hetzelfde ging eerder mis in het portaal.
+     Zolang zo'n bedrag met de hand in de HTML staat, gaat het bij de eerste
+     tariefwijziging weer mis — dus komt het nu uit dezelfde plek als de
+     berekening. */
+  function vulTijdvakken() {
+    var kies = document.getElementById('r-tijdstip');
+    if (!kies) { return; }
+    var was = kies.value;
+    kies.textContent = '';
+    Object.keys(CONFIG.tijden).forEach(function (k) {
+      var t = CONFIG.tijden[k];
+      var optie = document.createElement('option');
+      optie.value = t.naam;
+      /* SL.euro is een Intl-formatter en geen functie: .format() dus. */
+      var deel = t.deel ? ' \u2014 + ' + Math.round(t.deel * 100) + '%, min. ' +
+                          window.SL.euro.format(t.bodem) : ' \u2014 geen toeslag';
+      optie.textContent = (t.venster ? t.naam.replace(/\s*\(.*\)$/, '') +
+                           ' (' + t.venster + ')' : t.naam) + deel;
+      kies.appendChild(optie);
+    });
+    if (was) { kies.value = was; }
+    if (!kies.value) { kies.selectedIndex = 0; }
+  }
+
+  /* Wanneer er iemand opneemt is iets anders dan wanneer er gereden wordt, en
+     het tweede zonder het eerste is een belofte die je 's nachts niet waarmaakt.
+     Vraagt iemand een moment buiten de bereikbaarheid, dan zegt het formulier
+     dat hier — vóór het versturen, niet in een bevestigingsmail achteraf. */
+  function bereikbaarOp(datum, tijd) {
+    var m = /^(\d{1,2}):(\d{2})$/.exec(String(tijd || ''));
+    var d = /^\d{4}-\d{2}-\d{2}$/.test(datum || '') ? new Date(datum + 'T12:00:00') : null;
+    if (!m || !d) { return true; }
+    var minuut = Number(m[1]) * 60 + Number(m[2]);
+    var dag = d.getDay();
+    if (dag === 0) { return false; }                       /* zondag */
+    if (dag === 6) { return minuut >= 8 * 60 && minuut < 17 * 60; }
+    return minuut >= 7 * 60 && minuut < 23 * 60;
+  }
+
+  function ververBereikbaar() {
+    var noot = document.getElementById('bereikNoot');
+    if (!noot) { return; }
+    var datum = veld('r-datum');
+    var tijd = veld('r-tijd');
+    var buiten = datum && tijd && !bereikbaarOp(datum, tijd);
+    noot.hidden = !buiten;
+    if (buiten) { noot.textContent = CONFIG.bereikbaar.buiten; }
+  }
+
   /* Zet het derde blok in de stand die bij de gekozen dienst hoort. */
   function ververWanneer() {
     var spoed = isSpoed();
@@ -145,6 +198,7 @@
   var SPELING_MIN = 15;
 
   function keurMoment() {
+    ververBereikbaar();
     var v = document.getElementById('r-tijd');
     if (!v) { return; }
     v.setCustomValidity('');
@@ -526,6 +580,9 @@
       'de aanvraag'
     );
   });
+
+  vulTijdvakken();
+  ververBereikbaar();
 
   ritForm.addEventListener('input', ververSamenvatting);
   ritForm.addEventListener('change', ververSamenvatting);

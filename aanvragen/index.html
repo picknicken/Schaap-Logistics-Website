@@ -147,14 +147,14 @@
             Staat het klaar in de avond, &rsquo;s nachts of in het weekend, dan geldt de
             bijbehorende toeslag.
           </p>
+          <!-- De opties worden bij het laden uit CONFIG.tijden gevuld, met de
+               vensters en de werkelijke toeslagen erbij. Hier stonden ze eerst
+               met de hand ingetikt, met bedragen die niet meer klopten. -->
           <div class="field" id="tijdvakVeld" style="margin-bottom:0">
             <label for="r-tijdstip">Tijdvak</label>
-            <select id="r-tijdstip" name="tijdstip">
-              <option value="Overdag">Overdag — geen toeslag</option>
-              <option value="Avondrit (18:00-23:00)">Avond (18:00-23:00) — + €15</option>
-              <option value="Nacht- of weekendrit">Nacht of weekend — + €35</option>
-            </select>
+            <select id="r-tijdstip" name="tijdstip"></select>
           </div>
+          <p class="veldnoot" id="bereikNoot" hidden style="margin-top:10px;margin-bottom:0"></p>
         </div>
 
         <div class="stap">

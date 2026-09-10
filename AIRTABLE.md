@@ -418,6 +418,21 @@ staat de knop *Op non-actief* er niet, en de tussenlaag weigert het ook als je
 het langs de knop om probeert — net als jezelf terugzetten naar *Chauffeur*.
 Vanuit Airtable kan het natuurlijk wel; dan is de hoofdsleutel de weg terug.
 
+### De systeemcheck kijkt of deze tabel nog klopt
+
+Het tabblad **Systeemcheck** in je portaal vraagt van elke tabel hierboven één
+record op met alle veldnamen die de tussenlaag gebruikt erbij. Airtable geeft
+dan een 422 met de naam van het veld dat hij niet kent, en die melding komt
+ongewijzigd op je scherm.
+
+Dat is de reden dat hij bestaat: hernoem je hier een veld, dan geeft het
+opslaan vanaf dat moment een 422 en zegt verder niets — niet welk veld, niet
+welke tabel. Nu wel.
+
+De veldnamen komen uit dezelfde kaarten (`R`, `O`, `A`, `K`, `FA`, `FL`, `D`,
+`MW`, `PU`, `TL`) waarmee de tussenlaag leest en schrijft. Eén bron: pas je een
+naam daar aan, dan controleert de systeemcheck meteen de nieuwe.
+
 ### Het toegangslog
 
 De tabel `Toegangslog` (`tblieegCnsk3Pjd4i`) houdt bij wie er bij het portaal

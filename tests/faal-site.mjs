@@ -147,13 +147,12 @@ console.log('\nhet factuurnummer en waar de klant het moet vermelden');
   keur('en vraagt om het te vermelden',
     /vermelding van factuurnummer/i.test(betaalzin), betaalzin);
 
-  /* En nog een keer bij de betaalgegevens: daar staat iemand het rekeningnummer
-     over te tikken, en dan is dát de plek waar de omschrijving hoort. */
-  keur('bij de betaalgegevens staat het er ook',
-    await p.isVisible('#v-kenmerkregel'));
-  keur('met hetzelfde nummer',
-    (await p.textContent('#v-betaalnr2')).trim() === 'SL-2026-0042',
-    await p.textContent('#v-betaalnr2'));
+  /* En verder niet. Het stond er eerst ook onder de betaalgegevens; twee keer
+     hetzelfde nummer op één vel leest als twee nummers. */
+  const heleVel = (await p.textContent('body')).replace(/\s+/g, ' ');
+  keur('het nummer staat er niet drie keer',
+    (heleVel.match(/SL-2026-0042/g) || []).length === 2,
+    (heleVel.match(/SL-2026-0042/g) || []).length);
 
   /* Een concept heeft geen nummer maar wel een kenmerk. Een doorlopende
      nummering mag geen gaten hebben, dus een concept dat nooit een factuur
@@ -167,8 +166,6 @@ console.log('\nhet factuurnummer en waar de klant het moet vermelden');
     await p.textContent('#v-nrlabel'));
   keur('een concept vraagt niet om te betalen',
     !(await p.isVisible('#v-betaalzin')));
-  keur('en zet er ook geen betaalkenmerk bij',
-    !(await p.isVisible('#v-kenmerkregel')));
   const balk = (await p.textContent('#conceptbalk')).replace(/\s+/g, ' ');
   keur('de conceptbalk legt uit wanneer het nummer er wel komt',
     /factuurnummer/i.test(balk) && /vermeld/i.test(balk), balk.slice(0, 200));
@@ -181,11 +178,11 @@ console.log('\nhet factuurnummer en waar de klant het moet vermelden');
     (await p.textContent('#v-nr')).trim() === 'CONCEPT-20260915',
     await p.textContent('#v-nr'));
 
-  /* Een creditnota vraagt niets, dus hoort er ook geen betaalkenmerk op. */
+  /* Een creditnota vraagt niets, dus hoort er geen betaalverzoek op. */
   await p.goto(BASIS + '/factuur/?credit=1&nr=SL-2026-0043&creditvan=SL-2026-0042' +
     '&km=10&kmtarief=1.5&start=75', { waitUntil: 'networkidle' });
-  keur('een creditnota vraagt geen betaling onder vermelding van iets',
-    !(await p.isVisible('#v-kenmerkregel')));
+  keur('een creditnota vraagt niet om betaling',
+    !(await p.isVisible('#v-betaalzin')));
 }
 
 console.log('\nde offerte en het concept door elkaar');
@@ -300,6 +297,58 @@ console.log('\n=== het aanvraagformulier ===');
   await p.goto(BASIS + '/aanvragen/', { waitUntil: 'networkidle' });
   const knoppen = await p.locator('button').count();
   keur('er zijn knoppen om mee verder te gaan', knoppen > 0);
+}
+
+console.log('\n=== de tijdvakken en wanneer je iemand aan de lijn krijgt ===');
+{
+  await p.goto(BASIS + '/aanvragen/', { waitUntil: 'networkidle' });
+
+  /* De keuzelijst kwam uit de HTML met "+ €15" en "+ €35" erin — bedragen
+     van vóór de percentages. Nu komt hij uit CONFIG, dus moet daar het
+     percentage en de ondergrens in staan en geen vast bedrag. */
+  const opties = await p.$$eval('#r-tijdstip option',
+    (l) => l.map((o) => (o.textContent || '').trim()));
+  keur('er staan drie tijdvakken', opties.length === 3, opties.join(' | '));
+  const avond = opties.find((t) => /Avond/i.test(t)) || '';
+  keur('de avond noemt een percentage en geen vast bedrag',
+    /20%/.test(avond) && !/\u20ac\s?15\b/.test(avond), avond);
+  keur('met de ondergrens erbij', /25/.test(avond), avond);
+  keur('en het venster', /18:00/.test(avond) && /23:00/.test(avond), avond);
+  const dag = opties.find((t) => /Overdag/i.test(t)) || '';
+  keur('overdag noemt 08:00 tot 18:00',
+    /08:00/.test(dag) && /18:00/.test(dag), dag);
+
+  /* En de mededeling over bereikbaarheid: die hoort te verschijnen zodra
+     iemand een moment kiest waarop er niemand opneemt, en niet eerder. */
+  keur('zonder datum en tijd staat er niets over bereikbaarheid',
+    !(await p.isVisible('#bereikNoot')));
+
+  await p.fill('#r-datum', '2026-09-14');   /* een maandag */
+  await p.fill('#r-tijd', '10:00');
+  await p.waitForTimeout(150);
+  keur('op een maandagochtend ook niet', !(await p.isVisible('#bereikNoot')));
+
+  await p.fill('#r-tijd', '03:00');
+  await p.waitForTimeout(150);
+  keur("om drie uur 's nachts wel", await p.isVisible('#bereikNoot'));
+  const noot = (await p.textContent('#bereikNoot')).replace(/\s+/g, ' ');
+  keur('en er staat wat de klant dan moet doen', /bel/i.test(noot), noot);
+  keur('en wanneer hij antwoord krijgt', /ochtend/i.test(noot), noot);
+
+  await p.fill('#r-datum', '2026-09-20');   /* een zondag */
+  await p.fill('#r-tijd', '10:00');
+  await p.waitForTimeout(150);
+  keur('op zondag ook', await p.isVisible('#bereikNoot'));
+
+  /* De tarievenpagina moet dezelfde vensters noemen. */
+  await p.goto(BASIS + '/tarieven/', { waitUntil: 'networkidle' });
+  const tarief = (await p.textContent('body')).replace(/\s+/g, ' ');
+  keur('de tarievenpagina noemt het venster van overdag',
+    /08:00 en 18:00/.test(tarief));
+  keur('en wanneer je iemand aan de lijn krijgt',
+    /Wanneer u ons bereikt/.test(tarief));
+  keur("en dat er 's nachts niet spontaan wordt aangenomen",
+    /op afspraak/i.test(tarief));
 }
 
 console.log('\n=== pagina’s die er niet zijn ===');

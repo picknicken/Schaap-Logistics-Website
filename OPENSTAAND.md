@@ -398,18 +398,99 @@ portaal vanaf je beginscherm draait: daar is geen adresbalk en geen terugknop,
 en zou je jezelf op de marketingpagina opsluiten. Dan blijft het bij het
 inlogscherm.
 
+### De systeemcheck: waar zit het als er iets niet werkt
+
+Nieuw tabblad **Systeemcheck**, alleen voor jou. Eén knop, en dan loopt de
+tussenlaag alle schakels langs en zegt van elk drie dingen: hoe het ervoor
+staat, wat er gezien is, en wat je eraan doet. Dat laatste is het punt.
+*"Airtable 422"* zegt niets; *"het veld Kilometers heet in Airtable niet meer
+zo"* zegt precies wat je moet doen.
+
+Dertien punten:
+
+- **Instellingen** — staat alles er (token, hoofdsleutel, pushsleutels,
+  toegestane adressen). Alleen "staat er wel/niet"; wat erin staat wordt nooit
+  getoond. Een controle die je geheimen op je scherm zet is zelf het lek.
+- **Negen Airtable-tabellen** — bereikbaar, én bestaan alle velden nog die de
+  tussenlaag gebruikt. Dat is de belangrijkste: hernoem je in Airtable een veld,
+  dan geeft het opslaan vanaf dat moment een 422 en zegt verder niets. Deze
+  controle vraagt de velden bij naam op en geeft de melding van Airtable
+  ongewijzigd door, mét de naam van het veld dat hij niet kent.
+- **De prijsberekening** — heeft een rit met kilometers ook een berekend bedrag?
+  Zo niet, dan rekent het formuleveld niet meer en rolt er een factuur van nul
+  euro uit. Dat merk je anders pas als de klant belt.
+- **Pushmeldingen** — staan er apparaten aangemeld en gaf de laatste poging een
+  fout. Het verschil tussen "er komt niets binnen omdat het stuk is" en "er komt
+  niets binnen omdat er niets te melden was".
+- **De website en de aanvraag-Worker** — antwoorden ze nog. Valt die tweede weg,
+  dan komt er geen enkele aanvraag meer binnen, en dat is stilte die je aanziet
+  voor een rustige week.
+- **Geweigerde pogingen (24 uur)** — één of twee is een typefout van jezelf,
+  twintig is iemand die zit te proberen.
+
+**Het is geen virusscanner**, en dat kan ook niet: er is niets om te scannen.
+De site is een handvol vaste bestanden en de tussenlaag draait bij Cloudflare;
+geen van beide kan iets oplopen. Wat wél gebeurt is dat een schakel wegvalt of
+dat er in Airtable iets hernoemd wordt, en dáár kijkt dit naar.
+
+Alles wat hij doet is lezen. Geen enkele controle verandert iets, zodat je hem
+kunt draaien terwijl je twijfelt zonder die twijfel erger te maken — en daar is
+een faaltest voor die meekijkt of er werkelijk niets wordt weggeschreven.
+
+Draait de controle zelf niet, dan is dát de uitslag: je krijgt één rode regel
+die zegt dat het aan de tussenlaag of je verbinding ligt en niet aan Airtable.
+Een leeg scherm zou je in de verkeerde hoek laten zoeken.
+
+Bij het bouwen liep hij meteen ergens tegenaan: alle 185 veldnamen die de
+tussenlaag gebruikt zijn nagelopen tegen de echte Airtable. Ze kloppen alle 185.
+
+### Wanneer je rijdt, en wanneer je opneemt
+
+Bij de tijdvakken staat nu een venster, en de grens van de nacht is verschoven
+van 06:00 naar **08:00**:
+
+| Tijdvak | Venster | Toeslag |
+| --- | --- | --- |
+| Overdag | ma t/m za, 08:00 – 18:00 | geen |
+| Avondrit | ma t/m za, 18:00 – 23:00 | + 20%, min. € 25 |
+| Nacht- of weekendrit | 23:00 – 08:00 en de hele zondag | + 40%, min. € 50 |
+
+**Dat verschuift een prijs.** Een rit die om 07:00 wordt opgehaald telde tot nu
+toe als dagrit; nu is het een nachtrit met + 40%. Dat is een keuze en geen
+detail: wie om zeven uur laadt is om vijf uur opgestaan. Wil je dat niet, dan
+zet ik de grens terug op 06:00 of 07:00 — dan moet het venster op de site
+meebewegen, want anders staat er 08:00 en rekent hij vanaf 06:00.
+
+**Wanneer je opneemt is iets anders dan wanneer je rijdt**, en dat verschil
+staat er nu apart bij:
+
+| | Telefonisch |
+| --- | --- |
+| Maandag t/m vrijdag | 07:00 – 23:00 |
+| Zaterdag | 08:00 – 17:00 |
+| Nacht en zondag | op afspraak |
+
+Het aanvraagformulier blijft dag en nacht open — daar is niets op tegen, zolang
+erbij staat wanneer er antwoord komt. Kiest iemand een ophaalmoment buiten die
+tijden, dan verschijnt onder het tijdveld dat wij het de volgende ochtend
+bevestigen en dat bellen sneller gaat.
+
+**En de keuzelijst met tijdvakken loog.** Daar stond met de hand "+ €15" en
+"+ €35" in de HTML — de vaste bedragen van vóór de percentages. Precies dezelfde
+fout als eerder in het portaal. Hij komt nu uit dezelfde plek als de berekening,
+met het venster erbij.
+
 ### Het factuurnummer, en waar de klant het moet vermelden
 
 Op de conceptfactuur stond geen nummer en op de echte stond het wel, maar de
 betaalzin noemde het niet: er stond "onder vermelding van het factuurnummer" en
 dan mocht de klant zelf terugbladeren.
 
-Nu staat het nummer op **drie plekken**: bovenaan bij de gegevens, in de
-betaalzin zelf (*"onder vermelding van factuurnummer SL-2026-0042"*), en nog een
-keer onder de betaalgegevens bij IBAN en tenaamstelling. Dat laatste is de plek
-waar iemand het rekeningnummer zit over te tikken; dán heeft hij de omschrijving
-nodig, niet drie regels hoger. Het nummer wordt één keer uit de adresregel
-gelezen en drie keer neergezet, zodat ze niet uit elkaar kunnen lopen.
+Nu staat het nummer in de betaalzin zelf: *"onder vermelding van factuurnummer
+SL-2026-0042"*. Het stond er even ook nog onder de betaalgegevens, maar twee
+keer hetzelfde nummer op één vel leest als twee nummers — die is er weer af. Het
+nummer wordt één keer uit de adresregel gelezen en twee keer neergezet (bovenaan
+en in de betaalzin), zodat ze niet uit elkaar kunnen lopen.
 
 **Op de conceptfactuur staat nu een kenmerk.** Geen factuurnummer, en dat is
 geen slordigheid: een factuurnummer is doorlopend en mag geen gaten hebben. Zou
@@ -474,7 +555,10 @@ geen regel.
 
 **Bij de klant staat het er ook**, want anders kun je het niet rekenen: in de
 voorwaarden (artikel 3), als eigen regel in de tarieventabel, en in de tekst
-onder een offerte. Die drie en de code delen één bron — `kmMarge` in
+onder een offerte. Die drie zijn herschreven: er stond *"wij factureren de
+werkelijk gereden kilometers — ook als dat minder is"*, en dat las alsof er
+sowieso nagerekend werd. Nu begint het bij wat er meestal gebeurt (binnen de
+marge verandert er niets) en komt de uitzondering daarna. Die drie en de code delen één bron — `kmMarge` in
 `assets/site.js` — en een faaltest bewaakt dat de code doet wat er op papier
 staat.
 
@@ -753,10 +837,10 @@ netjes van h1 naar h2 zonder gaten, en de foutpagina werkt weer — die verwees 
 de domeinverhuizing nog naar het oude adres en kwam daardoor zonder opmaak en met
 dode links binnen.
 
-**767 controles draaien groen**, verdeeld over negen faaltests: 223 in een
-echte browser (`faal-portalen` 152, `faal-site` 71), 441 tegen de portaal-Worker
-(`faal-portaal` 161, `faal-klantplicht` 195, `faal-toegang` 31, `faal-push` 54),
-79 tegen de aanvraag-Worker en 24 op de prijsberekening. Daaronder zitten
+**817 controles draaien groen**, verdeeld over negen faaltests: 245 in een
+echte browser (`faal-portalen` 162, `faal-site` 83), 455 tegen de portaal-Worker
+(`faal-portaal` 175, `faal-klantplicht` 195, `faal-toegang` 31, `faal-push` 54),
+79 tegen de aanvraag-Worker en 38 op de prijsberekening. Daaronder zitten
 controles dat de prijzen op de site kloppen met de calculator, dat een klant
 nooit een cent van jouw kosten te zien krijgt, en dat een creditnota naar de
 oorspronkelijke factuur verwijst.
